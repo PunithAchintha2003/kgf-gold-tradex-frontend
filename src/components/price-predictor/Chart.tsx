@@ -4,10 +4,6 @@ import type { DailyDataPoint, HistoricalPrediction, Prediction } from '../../sto
 import type { CurrencyUnit } from './CurrencyDropdown';
 // Assuming this utility is correctly defined elsewhere:
 import { convertPrice } from '../../utils/currencyConverter';
-import { Box, IconButton, Tooltip, Typography } from '@mui/material';
-import { ZoomIn, ZoomOut, FitScreen } from '@mui/icons-material';
-import { TbWorldSearch } from 'react-icons/tb';
-import Sidebar from './Sidebar';
 
 // Import Plotly directly to avoid React module resolution issues
 import Plot from 'react-plotly.js';
@@ -24,6 +20,7 @@ interface ChartProps {
   realtimePrice?: number;
   currencyUnit: CurrencyUnit;
   usdToLkrRate: number;
+  zoomLevel?: number;
 }
 
 const Chart: React.FC<ChartProps> = ({
@@ -35,12 +32,8 @@ const Chart: React.FC<ChartProps> = ({
   realtimePrice,
   currencyUnit,
   usdToLkrRate,
+  zoomLevel = 0,
 }) => {
-  // Zoom state: 0 = default (10% padding), positive = zoomed in, negative = zoomed out
-  const [zoomLevel, setZoomLevel] = useState(0);
-  
-  // Sidebar state
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   
   // Convert realtime price if it exists and we're in LKR mode (pawn)
   const convertedRealtimePrice = useMemo(() => {
@@ -58,18 +51,6 @@ const Chart: React.FC<ChartProps> = ({
     }
   }, [realtimePrice, currencyUnit, usdToLkrRate]);
   
-  // Zoom functions
-  const handleZoomIn = useCallback(() => {
-    setZoomLevel(prev => Math.min(prev + 1, 5)); // Max 5 levels zoom in
-  }, []);
-  
-  const handleZoomOut = useCallback(() => {
-    setZoomLevel(prev => Math.max(prev - 1, -3)); // Max 3 levels zoom out
-  }, []);
-  
-  const handleResetZoom = useCallback(() => {
-    setZoomLevel(0);
-  }, []);
   
   // Calculate current price (this will be the converted price from the data)
   const currentPrice = useMemo(() => {
@@ -651,106 +632,6 @@ const Chart: React.FC<ChartProps> = ({
 
   return (
     <div className="w-full relative">
-      {/* Sidebar Toggle Button */}
-      <Box
-        sx={{
-          position: 'absolute',
-          top: { xs: 8, sm: 10 },
-          right: { xs: 8, sm: 10 },
-          zIndex: 10,
-        }}
-      >
-        <Tooltip title="Reasons" placement="left">
-          <IconButton
-            size="small"
-            onClick={() => setSidebarOpen(true)}
-            sx={{
-              color: isDark ? '#fff' : '#000',
-              backgroundColor: isDark ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.9)',
-              border: `1px solid ${isDark ? '#333' : '#ddd'}`,
-              padding: { xs: '4px', sm: '8px' },
-              '&:hover': {
-                backgroundColor: isDark ? 'rgba(0, 0, 0, 0.9)' : 'rgba(255, 255, 255, 1)',
-              },
-            }}
-          >
-            <TbWorldSearch size={18} style={{ width: '18px', height: '18px' }} />
-          </IconButton>
-        </Tooltip>
-      </Box>
-
-      {/* Zoom Controls */}
-      <Box
-        sx={{
-          position: 'absolute',
-          top: { xs: 42, sm: 50 },
-          right: { xs: 8, sm: 10 },
-          zIndex: 10,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 0.5,
-          backgroundColor: isDark ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.9)',
-          borderRadius: 1,
-          padding: { xs: '2px', sm: '4px' },
-          border: `1px solid ${isDark ? '#333' : '#ddd'}`,
-        }}
-      >
-        <Tooltip title="Zoom In" placement="left">
-          <span>
-            <IconButton
-              size="small"
-              onClick={handleZoomIn}
-              disabled={zoomLevel >= 5}
-              sx={{
-                color: isDark ? '#fff' : '#000',
-                padding: { xs: '4px', sm: '8px' },
-                '&:disabled': {
-                  color: isDark ? '#555' : '#ccc',
-                },
-              }}
-            >
-              <ZoomIn fontSize="small" />
-            </IconButton>
-          </span>
-        </Tooltip>
-        <Tooltip title="Zoom Out" placement="left">
-          <span>
-            <IconButton
-              size="small"
-              onClick={handleZoomOut}
-              disabled={zoomLevel <= -3}
-              sx={{
-                color: isDark ? '#fff' : '#000',
-                padding: { xs: '4px', sm: '8px' },
-                '&:disabled': {
-                  color: isDark ? '#555' : '#ccc',
-                },
-              }}
-            >
-              <ZoomOut fontSize="small" />
-            </IconButton>
-          </span>
-        </Tooltip>
-        <Tooltip title="Reset Zoom" placement="left">
-          <span>
-            <IconButton
-              size="small"
-              onClick={handleResetZoom}
-              disabled={zoomLevel === 0}
-              sx={{
-                color: isDark ? '#fff' : '#000',
-                padding: { xs: '4px', sm: '8px' },
-                '&:disabled': {
-                  color: isDark ? '#555' : '#ccc',
-                },
-              }}
-            >
-              <FitScreen fontSize="small" />
-            </IconButton>
-          </span>
-        </Tooltip>
-      </Box>
-      
       <Plot
         key={`plot-${currencyUnit}-${data?.length || 0}-${isDark}-${zoomLevel}`}
         data={plotData || []}
@@ -762,30 +643,6 @@ const Chart: React.FC<ChartProps> = ({
           console.error('Plotly error:', error);
         }}
       />
-      
-      {/* Sidebar */}
-      <Sidebar
-        open={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-        title="Chart Information"
-      >
-        <Box sx={{ 
-          display: 'flex', 
-          flexDirection: 'column', 
-          gap: { xs: 1.5, sm: 2 } 
-        }}>
-          <Typography
-            variant="body1"
-            sx={{
-              color: isDark ? '#cccccc' : '#666666',
-              lineHeight: 1.6,
-              fontSize: { xs: '0.875rem', sm: '1rem' },
-            }}
-          >
-            This sidebar can contain additional information, filters, or controls related to the chart.
-          </Typography>
-        </Box>
-      </Sidebar>
     </div>
   );
 };

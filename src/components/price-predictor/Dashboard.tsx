@@ -1,5 +1,7 @@
-import React, { useEffect, useState, useMemo, Suspense, lazy } from 'react';
-import { Box, Typography, CircularProgress, Alert, useMediaQuery, useTheme as useMuiTheme } from '@mui/material';
+import React, { useEffect, useState, useMemo, Suspense, lazy, useCallback } from 'react';
+import { Box, Typography, CircularProgress, Alert, useMediaQuery, useTheme as useMuiTheme, IconButton, Tooltip } from '@mui/material';
+import { ZoomIn, ZoomOut, FitScreen } from '@mui/icons-material';
+import { TbWorldSearch } from 'react-icons/tb';
 import { 
   useGetDailyDataQuery, 
   useGetRealtimePriceQuery, 
@@ -10,6 +12,8 @@ import {
 import { useTheme } from '../../hooks/useTheme';
 import type { CurrencyUnit } from './CurrencyDropdown';
 import { convertPrice, convertChartData } from '../../utils/currencyConverter';
+import CurrencyDropdown from './CurrencyDropdown';
+import Sidebar from './Sidebar';
 
 // Lazy load heavy components including Chart (Plotly is ~6-7MB)
 const Chart = lazy(() => import('./Chart'));
@@ -20,31 +24,56 @@ const PredictionHistoryTable = lazy(() => import('./PredictionHistoryTable'));
 
 interface DashboardProps {
   currencyUnit: CurrencyUnit;
+  onCurrencyUnitChange: (unit: CurrencyUnit) => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ currencyUnit }) => {
+const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChange }) => {
   const { isDark } = useTheme();
   const muiTheme = useMuiTheme();
   const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(muiTheme.breakpoints.down('md'));
   const [realtimePrice, setRealtimePrice] = useState<number | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(0);
   
-  // Calculate chart height to fit viewport with better balance
+  // Zoom handlers
+  const handleZoomIn = useCallback(() => {
+    setZoomLevel(prev => Math.min(prev + 1, 5));
+  }, []);
+  
+  const handleZoomOut = useCallback(() => {
+    setZoomLevel(prev => Math.max(prev - 1, -3));
+  }, []);
+  
+  const handleResetZoom = useCallback(() => {
+    setZoomLevel(0);
+  }, []);
+  
+  // Calculate chart height to match sidebar height - both should align at bottom
   const chartHeight = useMemo(() => {
+    if (typeof window === 'undefined') return 600;
+    
     const viewportHeight = window.innerHeight;
     const headerHeight = 64; // Main app header
-    const pageHeaderHeight = isMobile ? 60 : isTablet ? 70 : 80; // Title
-    const padding = isMobile ? 30 : isTablet ? 50 : 60;
-    const availableHeight = viewportHeight - headerHeight - pageHeaderHeight - padding;
+    const pageHeaderHeight = isMobile ? 100 : isTablet ? 120 : 140; // Title + description + spacing
+    const currencyDropdownHeight = isMobile ? 50 : isTablet ? 60 : 70; // Currency dropdown height
+    const topPadding = isMobile ? 32 : isTablet ? 40 : 48; // Top padding (pt-8 = 32px)
+    const containerPadding = 16; // Container px-4 = 16px
     
-    // Increased chart height - chart takes more space
+    // For desktop, sidebar maxHeight is calc(100vh - 240px)
+    // We need to calculate the exact same height for the chart
+    // The 240px accounts for: header (64) + pageHeader (~140) + topPadding (48) + containerPadding (16) + gap/margin (~-28)
     if (isMobile) {
-      return Math.max(400, Math.min(500, availableHeight * 0.75));
+      const availableHeight = viewportHeight - headerHeight - pageHeaderHeight - currencyDropdownHeight - topPadding - containerPadding;
+      return Math.max(400, availableHeight);
     }
     if (isTablet) {
-      return Math.max(500, Math.min(650, availableHeight * 0.8));
+      const availableHeight = viewportHeight - headerHeight - pageHeaderHeight - currencyDropdownHeight - topPadding - containerPadding;
+      return Math.max(500, availableHeight);
     }
-    return Math.max(600, Math.min(750, availableHeight * 0.85));
+    // Desktop: match sidebar maxHeight exactly (calc(100vh - 240px))
+    const sidebarHeight = viewportHeight - 240;
+    return Math.max(600, sidebarHeight);
   }, [isMobile, isTablet]);
 
   // WebSocket connection disabled - using REST API polling instead
@@ -212,76 +241,77 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit }) => {
 
   return (
     <Box 
-      className="w-full"
+      className="w-full h-full"
       sx={{
-        height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        overflow: 'hidden'
+        gap: 0,
+        pb: 0,
+        mb: 0,
+        height: '100%',
+        overflow: 'hidden',
       }}
     >
-      {/* Header */}
-      <Typography 
-        variant="h1" 
-        className={`${isDark ? 'text-white' : 'text-black'} text-center`}
-        sx={{
-          fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem', lg: '3rem' },
-          fontWeight: 700,
-          textAlign: 'center',
-          marginBottom: { xs: '1rem', sm: '1.5rem', md: '2rem' },
-          paddingX: { xs: '0.5rem', sm: 0 },
-          color: isDark ? '#FFFFFF' : '#000000',
-          flexShrink: 0,
-        }}
-      >
-        Gold Price Prediction
-      </Typography>
-
       {/* Main Layout: Stats on Left, Chart on Right */}
       <Box 
         sx={{
           display: 'flex',
           flexDirection: { xs: 'column', lg: 'row' },
-          gap: { xs: 2, sm: 2.5, lg: 3 },
-          alignItems: { xs: 'stretch', lg: 'flex-start' },
-          flex: 1,
+          gap: { xs: 3, sm: 4, lg: 4 },
+          alignItems: { xs: 'stretch', lg: 'stretch' },
           minHeight: 0,
+          flex: 1,
           overflow: 'hidden',
         }}
       >
         {/* Left Side: Price Cards and Stats */}
         <Box 
           sx={{
-            width: { xs: '100%', lg: '380px' },
+            width: { xs: '100%', lg: '400px' },
             flexShrink: 0,
             display: 'flex',
             flexDirection: 'column',
-            gap: { xs: 1.5, sm: 2 },
-            alignSelf: 'flex-start',
-            overflowY: 'auto',
-            maxHeight: '100%',
-            height: '100%',
+            gap: { xs: 2, sm: 2.5 },
+            height: { 
+              xs: 'auto', 
+              lg: chartHeight 
+            },
+            maxHeight: { 
+              xs: 'none', 
+              lg: 'calc(100vh - 240px)' 
+            },
+            overflowY: { xs: 'visible', lg: 'auto' },
+            overflowX: 'hidden',
+            pr: { xs: 0, lg: 2 },
+            pb: 0,
+            backgroundColor: isDark ? '#121212' : 'var(--background)',
+            WebkitOverflowScrolling: 'touch',
+            scrollBehavior: 'smooth',
             '&::-webkit-scrollbar': {
-              width: '8px',
+              width: '10px',
+            },
+            '&::-webkit-scrollbar-track': {
+              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
+              borderRadius: '5px',
+              marginY: '8px',
             },
             '&::-webkit-scrollbar-thumb': {
-              backgroundColor: isDark ? '#555' : '#bbb',
-              borderRadius: '4px',
+              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.3)',
+              borderRadius: '5px',
+              border: `2px solid ${isDark ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)'}`,
             },
             '&::-webkit-scrollbar-thumb:hover': {
-              backgroundColor: isDark ? '#666' : '#999',
+              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)',
             },
           }}
         >
           {/* Price Information Cards */}
-          <Box>
+          <Box sx={{ flexShrink: 0 }}>
             <Box 
               sx={{ 
-                backgroundColor: isDark ? '#111111' : '#FFFFFF',
-                border: `1px solid ${isDark ? '#1f1f1f' : '#E0E0E0'}`,
-                borderRadius: '10px',
-                padding: { xs: '1rem', sm: '1.25rem', lg: '1.5rem' },
+                padding: { xs: '1.25rem', sm: '1.5rem', lg: '1.75rem' },
               }}
+              className="bg-card text-card-foreground border rounded-xl flex flex-col gap-6"
             >
           {/* Grid layout for cards - 2 columns on left sidebar */}
           <Box 
@@ -294,20 +324,20 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit }) => {
             {/* Current Price Card */}
             <Box 
               sx={{ 
-                backgroundColor: isDark ? '#1a1a1a' : '#F5F5F5',
-                borderRadius: '10px',
+                backgroundColor: 'var(--muted)',
+                borderRadius: 'var(--radius)',
                 padding: { xs: '1rem', sm: '1.25rem' },
                 minHeight: { xs: '100px', sm: '110px', lg: '120px' },
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'center',
               }}
+              className="bg-muted rounded-lg"
             >
               <Typography 
                 variant="body2" 
-                className={`${isDark ? 'text-gray-300' : 'text-gray-600'} text-sm font-medium`}
                 sx={{ 
-                  color: isDark ? '#cccccc' : '#666666',
+                  color: 'var(--muted-foreground)',
                   fontSize: { xs: '0.75rem', sm: '0.8125rem', lg: '0.875rem' },
                   fontWeight: 500,
                   marginBottom: { xs: '0.25rem', sm: '0.5rem' },
@@ -318,9 +348,8 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit }) => {
               </Typography>
               <Typography 
                 variant="h5" 
-                className="text-yellow-500 font-bold"
                 sx={{ 
-                  color: '#F5D300',
+                  color: 'var(--primary)',
                   fontSize: { xs: '1.1rem', sm: '1.25rem', lg: '1.5rem' },
                   fontWeight: 'bold',
                   lineHeight: 1.2,
@@ -335,37 +364,38 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit }) => {
               <>
                 <Box 
                   sx={{ 
-                    backgroundColor: isDark ? '#1a1a1a' : '#F5F5F5',
-                    borderRadius: '10px',
+                    backgroundColor: 'var(--muted)',
+                    borderRadius: 'var(--radius)',
                     padding: '1rem',
                     minHeight: { xs: '100px', lg: '120px' },
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'center',
                   }}
+                  className="bg-muted rounded-lg"
                 >
                   <Typography 
                     variant="body2" 
-                    className={`${isDark ? 'text-gray-300' : 'text-gray-600'} text-sm font-medium`}
                     sx={{ 
-                      color: isDark ? '#cccccc' : '#666666',
+                      color: 'var(--muted-foreground)',
                       fontSize: { xs: '0.8125rem', lg: '0.875rem' },
                       fontWeight: 500,
                       marginBottom: '0.5rem',
                       lineHeight: 1.3,
                     }}
+                    className="text-muted-foreground"
                   >
                     Next Day Prediction
                   </Typography>
                   <Typography 
                     variant="h6" 
-                    className="text-prediction-green font-bold"
                     sx={{ 
                       color: '#26d4b4',
                       fontSize: { xs: '1rem', sm: '1.125rem', lg: '1.375rem' },
                       fontWeight: 'bold',
                       lineHeight: 1.2,
                     }}
+                    className="font-bold"
                   >
                     {convertedPredictionPrice?.displayText || `$${displayData.prediction.predicted_price.toFixed(2)}`}
                   </Typography>
@@ -374,36 +404,36 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit }) => {
                 {/* Expected Change Card */}
                 <Box 
                   sx={{ 
-                    backgroundColor: isDark ? '#1a1a1a' : '#F5F5F5',
-                    borderRadius: '10px',
+                    backgroundColor: 'var(--muted)',
+                    borderRadius: 'var(--radius)',
                     padding: '1rem',
                     minHeight: { xs: '100px', lg: '120px' },
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'center',
                   }}
+                  className="bg-muted rounded-lg"
                 >
                   <Typography 
                     variant="body2" 
-                    className={`${isDark ? 'text-gray-300' : 'text-gray-600'} text-sm font-medium`}
                     sx={{ 
-                      color: isDark ? '#cccccc' : '#666666',
+                      color: 'var(--muted-foreground)',
                       fontSize: { xs: '0.8125rem', lg: '0.875rem' },
                       fontWeight: 500,
                       marginBottom: '0.5rem',
                       lineHeight: 1.3,
                     }}
+                    className="text-muted-foreground"
                   >
                     Expected Change
                   </Typography>
                   <Typography 
                     variant="body1" 
-                    className="font-bold"
                     sx={{ 
                       color: (() => {
-                        if (!convertedPredictionPrice) return '#666666';
+                        if (!convertedPredictionPrice) return 'var(--muted-foreground)';
                         const priceChange = convertedPredictionPrice.price - convertedCurrentPrice.price;
-                        return priceChange >= 0 ? '#26d4b4' : '#ff4757';
+                        return priceChange >= 0 ? 'var(--secondary)' : 'var(--destructive)';
                       })(),
                       fontSize: { xs: '0.8125rem', sm: '0.9375rem', lg: '1.125rem' },
                       fontWeight: 'bold',
@@ -425,37 +455,38 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit }) => {
                 {/* Method Card */}
                 <Box 
                   sx={{ 
-                    backgroundColor: isDark ? '#1a1a1a' : '#F5F5F5',
-                    borderRadius: '10px',
+                    backgroundColor: 'var(--muted)',
+                    borderRadius: 'var(--radius)',
                     padding: '1rem',
                     minHeight: { xs: '100px', lg: '120px' },
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'center',
                   }}
+                  className="bg-muted rounded-lg"
                 >
                   <Typography 
                     variant="body2" 
-                    className={`${isDark ? 'text-gray-300' : 'text-gray-600'} text-sm font-medium`}
                     sx={{ 
-                      color: isDark ? '#cccccc' : '#666666',
+                      color: 'var(--muted-foreground)',
                       fontSize: { xs: '0.8125rem', lg: '0.875rem' },
                       fontWeight: 500,
                       marginBottom: '0.5rem',
                       lineHeight: 1.3,
                     }}
+                    className="text-muted-foreground"
                   >
                     Method
                   </Typography>
                   <Typography 
                     variant="body1" 
-                    className={`${isDark ? 'text-gray-400' : 'text-gray-600'} font-bold`}
                     sx={{ 
-                      color: isDark ? '#888888' : '#666666',
+                      color: 'var(--muted-foreground)',
                       fontSize: { xs: '0.8125rem', sm: '0.875rem', lg: '1rem' },
                       fontWeight: 'bold',
                       lineHeight: 1.3,
                     }}
+                    className="text-muted-foreground font-bold"
                   >
                     Lasso Regression
                   </Typography>
@@ -467,7 +498,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit }) => {
       </Box>
 
           {/* Accuracy Stats */}
-          <Box sx={{ flexShrink: 0 }}>
+          <Box sx={{ flexShrink: 0, mt: { xs: 0, lg: 0 } }}>
             <Suspense fallback={
               <Box display="flex" justifyContent="center" alignItems="center" minHeight="120px">
                 <CircularProgress size={24} />
@@ -533,30 +564,177 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit }) => {
             flex: 1,
             minWidth: 0,
             width: { xs: '100%', lg: 'auto' },
-            alignSelf: 'flex-start',
             display: 'flex',
             flexDirection: 'column',
-            overflow: 'hidden',
-            minHeight: 0,
+            gap: { xs: 1.5, sm: 2, md: 2.5 },
+            height: { xs: 'auto', lg: chartHeight },
+          }}
+        >
+          {/* Controls and Currency Dropdown - Above Chart */}
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              alignItems: 'center',
+              width: '100%',
+              flexShrink: 0,
+              gap: 1.5,
+            }}
+          >
+            {/* Chart Controls - Left Side of Dropdown */}
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+              }}
+            >
+              {/* Sidebar Toggle Button */}
+              <Tooltip title="Chart Information" placement="top">
+                <IconButton
+                  size="small"
+                  onClick={() => setSidebarOpen(true)}
+                  sx={{
+                    color: '#26d4b4',
+                    backgroundColor: isDark ? 'rgba(38, 212, 180, 0.1)' : 'rgba(38, 212, 180, 0.1)',
+                    border: `1px solid rgba(38, 212, 180, 0.3)`,
+                    padding: { xs: '6px', sm: '8px' },
+                    '&:hover': {
+                      backgroundColor: isDark ? 'rgba(38, 212, 180, 0.2)' : 'rgba(38, 212, 180, 0.2)',
+                      borderColor: 'rgba(38, 212, 180, 0.5)',
+                    },
+                  }}
+                >
+                  <TbWorldSearch size={18} style={{ width: '18px', height: '18px', color: '#26d4b4' }} />
+                </IconButton>
+              </Tooltip>
+
+              {/* Zoom Controls */}
+              <Box
+                sx={{
+                  display: 'flex',
+                  gap: 0.5,
+                  backgroundColor: isDark ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.9)',
+                  borderRadius: 1,
+                  padding: { xs: '2px', sm: '4px' },
+                  border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : '#ddd'}`,
+                }}
+              >
+                <Tooltip title="Zoom In" placement="top">
+                  <span>
+                    <IconButton
+                      size="small"
+                      onClick={handleZoomIn}
+                      disabled={zoomLevel >= 5}
+                      sx={{
+                        color: isDark ? '#fff' : '#000',
+                        padding: { xs: '4px', sm: '6px' },
+                        '&:disabled': {
+                          color: isDark ? '#555' : '#ccc',
+                        },
+                      }}
+                    >
+                      <ZoomIn fontSize="small" />
+                    </IconButton>
+                  </span>
+                </Tooltip>
+                <Tooltip title="Zoom Out" placement="top">
+                  <span>
+                    <IconButton
+                      size="small"
+                      onClick={handleZoomOut}
+                      disabled={zoomLevel <= -3}
+                      sx={{
+                        color: isDark ? '#fff' : '#000',
+                        padding: { xs: '4px', sm: '6px' },
+                        '&:disabled': {
+                          color: isDark ? '#555' : '#ccc',
+                        },
+                      }}
+                    >
+                      <ZoomOut fontSize="small" />
+                    </IconButton>
+                  </span>
+                </Tooltip>
+                <Tooltip title="Reset Zoom" placement="top">
+                  <span>
+                    <IconButton
+                      size="small"
+                      onClick={handleResetZoom}
+                      disabled={zoomLevel === 0}
+                      sx={{
+                        color: isDark ? '#fff' : '#000',
+                        padding: { xs: '4px', sm: '6px' },
+                        '&:disabled': {
+                          color: isDark ? '#555' : '#ccc',
+                        },
+                      }}
+                    >
+                      <FitScreen fontSize="small" />
+                    </IconButton>
+                  </span>
+                </Tooltip>
+              </Box>
+            </Box>
+            
+            {/* Currency Dropdown - Right Side */}
+            <CurrencyDropdown
+              value={currencyUnit}
+              onChange={onCurrencyUnitChange}
+            />
+          </Box>
+          
+          {/* Chart Sidebar */}
+          <Sidebar
+            open={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
+            title="Chart Information"
+          >
+            <Box sx={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: { xs: 1.5, sm: 2 } 
+            }}>
+              <Typography
+                variant="body1"
+                sx={{
+                  color: isDark ? '#cccccc' : '#666666',
+                  lineHeight: 1.6,
+                  fontSize: { xs: '0.875rem', sm: '1rem' },
+                }}
+              >
+                This sidebar can contain additional information, filters, or controls related to the chart.
+              </Typography>
+            </Box>
+          </Sidebar>
+          
+          <Box
+            sx={{
+              flex: 1,
+              minHeight: 0,
+              display: 'flex',
+              flexDirection: 'column',
           }}
         >
           <Suspense fallback={
-            <Box display="flex" justifyContent="center" alignItems="center" height={600}>
+              <Box display="flex" justifyContent="center" alignItems="center" flex={1}>
               <CircularProgress />
             </Box>
           }>
             <Chart
-              key={`chart-${realtimePrice || displayData?.current_price || 0}-${currencyUnit}`}
+                key={`chart-${realtimePrice || displayData?.current_price || 0}-${currencyUnit}-${zoomLevel}`}
               data={chartData}
               prediction={displayData.prediction}
               historicalPredictions={displayData.historical_predictions}
               isDark={isDark}
-              height={chartHeight}
+                height={chartHeight - (isMobile ? 50 : isTablet ? 60 : 70)}
               realtimePrice={realtimePrice || undefined}
               currencyUnit={currencyUnit}
               usdToLkrRate={usdToLkrRate}
+                zoomLevel={zoomLevel}
             />
           </Suspense>
+          </Box>
         </Box>
       </Box>
 

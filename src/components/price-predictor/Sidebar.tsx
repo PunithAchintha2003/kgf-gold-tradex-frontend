@@ -31,8 +31,8 @@ const Sidebar: React.FC<SidebarProps> = ({
         '& .MuiDrawer-paper': {
           width: { xs: '100%', sm: '85%', md: width },
           maxWidth: { xs: '100vw', sm: '90vw', md: width },
-          backgroundColor: isDark ? '#111111' : '#FFFFFF',
-          borderLeft: `1px solid ${isDark ? '#1f1f1f' : '#E0E0E0'}`,
+          backgroundColor: isDark ? '#121212' : '#FFFFFF',
+          borderLeft: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : '#E0E0E0'}`,
           boxShadow: isDark 
             ? '-4px 0 20px rgba(0, 0, 0, 0.5)' 
             : '-4px 0 20px rgba(0, 0, 0, 0.1)',
@@ -57,8 +57,9 @@ const Sidebar: React.FC<SidebarProps> = ({
             alignItems: 'center',
             justifyContent: 'space-between',
             padding: { xs: '1rem', sm: '1.5rem' },
-            borderBottom: `1px solid ${isDark ? '#1f1f1f' : '#E0E0E0'}`,
+            borderBottom: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : '#E0E0E0'}`,
             minHeight: { xs: '56px', sm: '64px' },
+            backgroundColor: isDark ? '#121212' : '#FFFFFF',
           }}
         >
           <Typography
@@ -98,19 +99,20 @@ const Sidebar: React.FC<SidebarProps> = ({
             flex: 1,
             overflow: 'auto',
             padding: { xs: '1rem', sm: '1.5rem' },
+            backgroundColor: isDark ? '#121212' : '#FFFFFF',
             WebkitOverflowScrolling: 'touch', // Smooth scrolling on iOS
             '&::-webkit-scrollbar': {
               width: '8px',
             },
             '&::-webkit-scrollbar-track': {
-              background: isDark ? '#1a1a1a' : '#f1f1f1',
+              background: isDark ? 'rgba(255, 255, 255, 0.08)' : '#f1f1f1',
             },
             '&::-webkit-scrollbar-thumb': {
-              background: isDark ? '#444' : '#888',
+              background: isDark ? 'rgba(255, 255, 255, 0.3)' : '#888',
               borderRadius: '4px',
             },
             '&::-webkit-scrollbar-thumb:hover': {
-              background: isDark ? '#555' : '#666',
+              background: isDark ? 'rgba(255, 255, 255, 0.5)' : '#666',
             },
           }}
         >

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { ThemeProvider, CssBaseline, Container, Box } from '@mui/material';
+import { ThemeProvider, CssBaseline } from '@mui/material';
 import { createAppTheme } from '../../theme/theme';
 import { useTheme } from '../../hooks/useTheme';
 import Dashboard from './Dashboard';
-import CurrencyDropdown from './CurrencyDropdown';
+import { useApp } from '../../contexts/AppContext';
 import type { CurrencyUnit } from './CurrencyDropdown';
 
 interface PricePredictorPageProps {
@@ -11,53 +11,34 @@ interface PricePredictorPageProps {
 }
 
 const PricePredictorPage: React.FC<PricePredictorPageProps> = ({ onNavigate }) => {
+  const { t } = useApp();
   const { mode } = useTheme();
   const theme = createAppTheme(mode);
   const [currencyUnit, setCurrencyUnit] = useState<CurrencyUnit>('troy-ounce');
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Box
-        sx={{
-          height: 'calc(100vh - 64px)',
-          overflow: 'hidden',
-          display: 'flex',
-          flexDirection: 'column',
-          backgroundColor: theme.palette.background.default,
-          color: theme.palette.text.primary,
-        }}
-      >
-        <Container 
-          maxWidth="xl"
-          sx={{ 
-            padding: { xs: '1rem', sm: '1.5rem', md: '2rem' },
-            height: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
-            position: 'relative',
-          }}
-        >
-          {/* Currency Dropdown - Top Right Corner */}
-          <Box
-            sx={{
-              position: 'absolute',
-              top: { xs: '1rem', sm: '1.5rem', md: '2rem' },
-              right: { xs: '1rem', sm: '1.5rem', md: '2rem' },
-              zIndex: 10,
-            }}
-          >
-            <CurrencyDropdown
-              value={currencyUnit}
-              onChange={setCurrencyUnit}
+    <div className="h-screen overflow-hidden pt-4 sm:pt-8 pb-0">
+      <div className="container mx-auto px-3 sm:px-4 h-full flex flex-col">
+        {/* Header */}
+        <div className="mb-4 sm:mb-8 flex-shrink-0">
+          <h1 className="text-2xl sm:text-3xl font-bold mb-2">Gold Price Prediction</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
+            Real-time gold price predictions powered by AI
+          </p>
+        </div>
+        
+        {/* Wrap Dashboard with MUI ThemeProvider for its internal MUI components */}
+        <ThemeProvider theme={theme}>
+          <CssBaseline />
+          <div className="w-full flex-1 min-h-0 overflow-hidden">
+            <Dashboard 
+              currencyUnit={currencyUnit} 
+              onCurrencyUnitChange={setCurrencyUnit}
             />
-          </Box>
-          
-          <Dashboard currencyUnit={currencyUnit} />
-        </Container>
-      </Box>
-    </ThemeProvider>
+          </div>
+        </ThemeProvider>
+      </div>
+    </div>
   );
 };
 
