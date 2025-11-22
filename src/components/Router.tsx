@@ -1,41 +1,55 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense, lazy, useMemo, useCallback } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { Header } from './Header';
-import { HomePage } from './HomePage';
-import { ProductsPage } from './ProductsPage';
-import { AuctionsPage } from './AuctionsPage';
-import { LoginPage } from './LoginPage';
-import { RegisterPage } from './RegisterPage';
-import { CustomerDashboard } from './dashboards/CustomerDashboard';
-import { SellerDashboard } from './dashboards/SellerDashboard';
-import { PawnshopDashboard } from './dashboards/PawnshopDashboard';
-import { InvestorDashboard } from './dashboards/InvestorDashboard';
-import { AdminDashboard } from './dashboards/AdminDashboard';
-import { ARTryOnModal } from './ARTryOnModal';
-import { ChatModal } from './ChatModal';
-import PricePredictorPage from './price-predictor/PricePredictorPage';
+import { ErrorBoundary } from './ErrorBoundary';
+import { PageLoader } from './LoadingSpinner';
+import { Product } from '../types';
+
+// Lazy load heavy components for code splitting
+const HomePage = lazy(() => import('./HomePage').then(module => ({ default: module.HomePage })));
+const ProductsPage = lazy(() => import('./ProductsPage').then(module => ({ default: module.ProductsPage })));
+const AuctionsPage = lazy(() => import('./AuctionsPage').then(module => ({ default: module.AuctionsPage })));
+const LoginPage = lazy(() => import('./LoginPage').then(module => ({ default: module.LoginPage })));
+const RegisterPage = lazy(() => import('./RegisterPage').then(module => ({ default: module.RegisterPage })));
+const CustomerDashboard = lazy(() => import('./dashboards/CustomerDashboard').then(module => ({ default: module.CustomerDashboard })));
+const SellerDashboard = lazy(() => import('./dashboards/SellerDashboard').then(module => ({ default: module.SellerDashboard })));
+const PawnshopDashboard = lazy(() => import('./dashboards/PawnshopDashboard').then(module => ({ default: module.PawnshopDashboard })));
+const InvestorDashboard = lazy(() => import('./dashboards/InvestorDashboard').then(module => ({ default: module.InvestorDashboard })));
+const AdminDashboard = lazy(() => import('./dashboards/AdminDashboard').then(module => ({ default: module.AdminDashboard })));
+const ARTryOnModal = lazy(() => import('./ARTryOnModal').then(module => ({ default: module.ARTryOnModal })));
+const ChatModal = lazy(() => import('./ChatModal').then(module => ({ default: module.ChatModal })));
+const PricePredictorPage = lazy(() => import('./price-predictor/PricePredictorPage'));
 
 export const Router: React.FC = () => {
   const [currentPath, setCurrentPath] = useState('/');
   const [isARModalOpen, setIsARModalOpen] = useState(false);
   const [isChatModalOpen, setIsChatModalOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const { user, isAuthenticated } = useApp();
 
-  const navigate = (path: string) => {
+  const navigate = useCallback((path: string) => {
     setCurrentPath(path);
-  };
+  }, []);
 
-  const openARModal = (product: any) => {
+  const openARModal = useCallback((product: Product) => {
     setSelectedProduct(product);
     setIsARModalOpen(true);
-  };
+  }, []);
 
-  const openChat = () => {
+  const openChat = useCallback(() => {
     setIsChatModalOpen(true);
-  };
+  }, []);
 
-  const renderPage = () => {
+  const closeARModal = useCallback(() => {
+    setIsARModalOpen(false);
+    setSelectedProduct(null);
+  }, []);
+
+  const closeChatModal = useCallback(() => {
+    setIsChatModalOpen(false);
+  }, []);
+
+  const renderPage = useMemo(() => {
     // Protect dashboard routes
     if (currentPath.startsWith('/dashboard') && !isAuthenticated) {
       return <LoginPage onNavigate={navigate} />;
@@ -68,25 +82,35 @@ export const Router: React.FC = () => {
       default:
         return <HomePage onNavigate={navigate} />;
     }
-  };
+  }, [currentPath, isAuthenticated, user?.role, navigate, openARModal, openChat]);
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header onNavigate={navigate} currentPath={currentPath} />
-      <main>
-        {renderPage()}
-      </main>
-      
-      {/* Modals */}
-      <ARTryOnModal 
-        isOpen={isARModalOpen} 
-        onClose={() => setIsARModalOpen(false)}
-        product={selectedProduct}
-      />
-      <ChatModal 
-        isOpen={isChatModalOpen} 
-        onClose={() => setIsChatModalOpen(false)}
-      />
-    </div>
+    <ErrorBoundary>
+      <div className="min-h-screen bg-background">
+        <Header onNavigate={navigate} currentPath={currentPath} />
+        <main>
+          <Suspense fallback={<PageLoader />}>
+            {renderPage}
+          </Suspense>
+        </main>
+        
+        {/* Modals */}
+        <Suspense fallback={null}>
+          {isARModalOpen && (
+            <ARTryOnModal 
+              isOpen={isARModalOpen} 
+              onClose={closeARModal}
+              product={selectedProduct}
+            />
+          )}
+          {isChatModalOpen && (
+            <ChatModal 
+              isOpen={isChatModalOpen} 
+              onClose={closeChatModal}
+            />
+          )}
+        </Suspense>
+      </div>
+    </ErrorBoundary>
   );
 };

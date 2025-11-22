@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { Button } from './ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown_menu';
@@ -14,7 +14,7 @@ interface HeaderProps {
   currentPath: string;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPath }) => {
+export const Header: React.FC<HeaderProps> = React.memo(({ onNavigate, currentPath }) => {
   const { theme, toggleTheme, language, setLanguage, t, user, isAuthenticated, logout } = useApp();
 
   // Fetch real-time gold price
@@ -47,16 +47,16 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPath }) => {
     };
   }, [realtimeData?.current_price, exchangeRateData?.exchange_rate, priceLoading, rateLoading]);
 
-  const publicNavItems = [
+  const publicNavItems = useMemo(() => [
     { path: '/', label: t('nav.home'), icon: null },
     { path: '/products', label: t('nav.products'), icon: null },
     { path: '/auctions', label: t('nav.auctions'), icon: Gavel },
     { path: '/price-predictor', label: 'Predictor', icon: TrendingUp },
     { path: '/about', label: t('nav.about'), icon: null },
     { path: '/contact', label: t('nav.contact'), icon: null },
-  ];
+  ], [t]);
 
-  const getRoleBasedDashboard = () => {
+  const roleBasedDashboard = useMemo(() => {
     if (!user) return null;
     switch (user.role) {
       case 'buyer':
@@ -72,16 +72,24 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPath }) => {
       default:
         return null;
     }
-  };
+  }, [user, t]);
 
-  const roleColors = {
+  const roleColors = useMemo(() => ({
     buyer: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
     seller: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
     pawnshop: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300',
     investor: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
     admin: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
     visitor: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300',
-  };
+  }), []);
+
+  const handleHomeClick = useCallback(() => {
+    onNavigate('/');
+  }, [onNavigate]);
+
+  const handleLanguageChange = useCallback((lang: 'en' | 'si') => {
+    setLanguage(lang);
+  }, [setLanguage]);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -90,7 +98,7 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPath }) => {
           {/* Logo */}
           <div 
             className="flex items-center space-x-2 cursor-pointer"
-            onClick={() => onNavigate('/')}
+            onClick={handleHomeClick}
           >
             <Crown className="h-8 w-8 text-primary" />
             <span className="text-xl font-bold kgf-text-gradient">KGF</span>
@@ -142,10 +150,10 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPath }) => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => setLanguage('en')}>
+                <DropdownMenuItem onClick={() => handleLanguageChange('en')}>
                   English
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setLanguage('si')}>
+                <DropdownMenuItem onClick={() => handleLanguageChange('si')}>
                   සිංහල
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -176,11 +184,11 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPath }) => {
                     </Badge>
                   </div>
                   <DropdownMenuSeparator />
-                  {getRoleBasedDashboard() && (
+                  {roleBasedDashboard && (
                     <>
-                      <DropdownMenuItem onClick={() => onNavigate(getRoleBasedDashboard()!.path)}>
+                      <DropdownMenuItem onClick={() => onNavigate(roleBasedDashboard.path)}>
                         <Settings className="mr-2 h-4 w-4" />
-                        {getRoleBasedDashboard()!.label}
+                        {roleBasedDashboard.label}
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                     </>
@@ -227,4 +235,6 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPath }) => {
       </div>
     </header>
   );
-};
+});
+
+Header.displayName = 'Header';

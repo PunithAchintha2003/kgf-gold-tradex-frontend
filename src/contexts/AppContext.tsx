@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { store } from '../store';
 import { setTheme as setReduxTheme } from '../store/slices/themeSlice';
 
@@ -201,18 +201,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem('kgf-language', language);
   }, [language]);
 
-  const toggleTheme = () => {
-    const newTheme = theme === 'light' ? 'dark' : 'light';
-    setTheme(newTheme);
-    // Sync with Redux store (for price predictor page)
-    store.dispatch(setReduxTheme(newTheme));
-  };
+  const toggleTheme = useCallback(() => {
+    setTheme((prevTheme) => {
+      const newTheme = prevTheme === 'light' ? 'dark' : 'light';
+      // Sync with Redux store (for price predictor page)
+      store.dispatch(setReduxTheme(newTheme));
+      return newTheme;
+    });
+  }, []);
 
-  const t = (key: string): string => {
+  const t = useCallback((key: string): string => {
     return translations[language][key as keyof typeof translations['en']] || key;
-  };
+  }, [language]);
 
-  const login = async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string) => {
     // Mock login - in real app this would call an API
     const mockUser: User = {
       id: '1',
@@ -223,30 +225,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face'
     };
     setUser(mockUser);
-  };
+  }, []);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     setUser(null);
-  };
+  }, []);
 
-  const switchRole = (role: UserRole) => {
-    if (user) {
-      setUser({ ...user, role });
-    }
-  };
+  const switchRole = useCallback((role: UserRole) => {
+    setUser((prevUser) => {
+      if (prevUser) {
+        return { ...prevUser, role };
+      }
+      return null;
+    });
+  }, []);
 
-  const value: AppContextType = {
+  const setLanguageCallback = useCallback((lang: Language) => {
+    setLanguage(lang);
+  }, []);
+
+  const value: AppContextType = useMemo(() => ({
     theme,
     toggleTheme,
     language,
-    setLanguage,
+    setLanguage: setLanguageCallback,
     t,
     user,
     isAuthenticated: !!user,
     login,
     logout,
     switchRole,
-  };
+  }), [theme, toggleTheme, language, setLanguageCallback, t, user, login, logout, switchRole]);
 
   return (
     <AppContext.Provider value={value}>

@@ -7,10 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { useApp } from '../contexts/AppContext';
 import { Search, Filter, Star, Shield, Smartphone, Heart, ShoppingCart } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
+import { Product } from '../types';
 
 interface ProductsPageProps {
   onNavigate: (path: string) => void;
-  onTryAR: (product: any) => void;
+  onTryAR: (product: Product) => void;
 }
 
 export const ProductsPage: React.FC<ProductsPageProps> = ({ onNavigate, onTryAR }) => {

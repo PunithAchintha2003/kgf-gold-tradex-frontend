@@ -44,11 +44,18 @@ const Chart: React.FC<ChartProps> = ({
   
   // Convert realtime price if it exists and we're in LKR mode (pawn)
   const convertedRealtimePrice = useMemo(() => {
-    if (!realtimePrice) return realtimePrice;
+    if (realtimePrice == null || isNaN(realtimePrice)) {
+      return null;
+    }
     
-    return currencyUnit === 'pawn' 
-      ? convertPrice(realtimePrice, currencyUnit, usdToLkrRate).price 
-      : realtimePrice;
+    try {
+      return currencyUnit === 'pawn' 
+        ? convertPrice(realtimePrice, currencyUnit, usdToLkrRate).price 
+        : realtimePrice;
+    } catch (error) {
+      console.error('Error converting realtime price:', error);
+      return null;
+    }
   }, [realtimePrice, currencyUnit, usdToLkrRate]);
   
   // Zoom functions
@@ -66,12 +73,25 @@ const Chart: React.FC<ChartProps> = ({
   
   // Calculate current price (this will be the converted price from the data)
   const currentPrice = useMemo(() => {
-    if (convertedRealtimePrice) return convertedRealtimePrice;
-    return data && data.length > 0 ? data[data.length - 1].close : 0;
+    if (convertedRealtimePrice != null && !isNaN(convertedRealtimePrice)) {
+      return convertedRealtimePrice;
+    }
+    if (data && data.length > 0) {
+      const lastDataPoint = data[data.length - 1];
+      if (lastDataPoint.close != null && !isNaN(lastDataPoint.close)) {
+        return lastDataPoint.close;
+      }
+    }
+    return 0; // Default fallback
   }, [convertedRealtimePrice, data]);
   
   // Helper function to format LKR values in user-friendly way
-  const formatLKRValue = useCallback((value: number) => {
+  const formatLKRValue = useCallback((value: number | null | undefined) => {
+    // Handle null/undefined values
+    if (value == null || isNaN(value)) {
+      return currencyUnit === 'pawn' ? 'LKR 0' : '$0.00';
+    }
+    
     if (currencyUnit === 'pawn') {
       if (value >= 1000000) {
         return `LKR ${(value / 1000000).toFixed(1)}M`;
@@ -154,7 +174,7 @@ const Chart: React.FC<ChartProps> = ({
           width: 2,
         },
         hovertemplate: `Date: %{x}<br>Price: %{customdata}<extra></extra>`,
-        customdata: goldLineData.map(d => formatLKRValue(d.price!)),
+        customdata: goldLineData.map(d => formatLKRValue(d.price ?? 0)),
       });
     }
 
@@ -238,7 +258,7 @@ const Chart: React.FC<ChartProps> = ({
         },
         opacity: 0.8,
         hovertemplate: `Predicted: %{x}<br>Price: %{customdata}<extra></extra>`,
-        customdata: convertedGhostData.map(p => formatLKRValue(p.predicted_price)),
+        customdata: convertedGhostData.map(p => formatLKRValue(p.predicted_price ?? 0)),
       });
     }
 
@@ -267,7 +287,7 @@ const Chart: React.FC<ChartProps> = ({
         color: '#F5D300', // Back to original yellow
         size: 9,
       },
-      hovertemplate: `Current Price<br>Date: %{x}<br>Price: ${formatLKRValue(currentPrice)}<extra></extra>`,
+        hovertemplate: `Current Price<br>Date: %{x}<br>Price: ${formatLKRValue(currentPrice || 0)}<extra></extra>`,
     });
 
     // Current price horizontal line
@@ -304,7 +324,7 @@ const Chart: React.FC<ChartProps> = ({
           color: '#00fa2e',
           size: 7,
         },
-        hovertemplate: `Prediction Date: %{x}<br>Price: ${formatLKRValue(predPrice)}<extra></extra>`,
+        hovertemplate: `Prediction Date: %{x}<br>Price: ${formatLKRValue(predPrice || 0)}<extra></extra>`,
       });
 
       // Prediction horizontal line
@@ -566,7 +586,7 @@ const Chart: React.FC<ChartProps> = ({
         ...(dataToUse && dataToUse.length > 0 ? [{
           x: prediction && prediction.predicted_price ? prediction.next_day : dataToUse[dataToUse.length - 1].date,
           y: currentPrice,
-          text: formatLKRValue(currentPrice),
+          text: formatLKRValue(currentPrice || 0),
           showarrow: false,
           font: {
             color: '#F5D300',
@@ -581,7 +601,7 @@ const Chart: React.FC<ChartProps> = ({
         ...(predPriceConverted !== undefined && prediction ? [{
           x: prediction.next_day,
           y: predPriceConverted, // Use the converted price
-          text: formatLKRValue(predPriceConverted),
+          text: formatLKRValue(predPriceConverted || 0),
           showarrow: false,
           font: {
             color: '#26d4b4',
@@ -676,52 +696,58 @@ const Chart: React.FC<ChartProps> = ({
         }}
       >
         <Tooltip title="Zoom In" placement="left">
-          <IconButton
-            size="small"
-            onClick={handleZoomIn}
-            disabled={zoomLevel >= 5}
-            sx={{
-              color: isDark ? '#fff' : '#000',
-              padding: { xs: '4px', sm: '8px' },
-              '&:disabled': {
-                color: isDark ? '#555' : '#ccc',
-              },
-            }}
-          >
-            <ZoomIn fontSize="small" />
-          </IconButton>
+          <span>
+            <IconButton
+              size="small"
+              onClick={handleZoomIn}
+              disabled={zoomLevel >= 5}
+              sx={{
+                color: isDark ? '#fff' : '#000',
+                padding: { xs: '4px', sm: '8px' },
+                '&:disabled': {
+                  color: isDark ? '#555' : '#ccc',
+                },
+              }}
+            >
+              <ZoomIn fontSize="small" />
+            </IconButton>
+          </span>
         </Tooltip>
         <Tooltip title="Zoom Out" placement="left">
-          <IconButton
-            size="small"
-            onClick={handleZoomOut}
-            disabled={zoomLevel <= -3}
-            sx={{
-              color: isDark ? '#fff' : '#000',
-              padding: { xs: '4px', sm: '8px' },
-              '&:disabled': {
-                color: isDark ? '#555' : '#ccc',
-              },
-            }}
-          >
-            <ZoomOut fontSize="small" />
-          </IconButton>
+          <span>
+            <IconButton
+              size="small"
+              onClick={handleZoomOut}
+              disabled={zoomLevel <= -3}
+              sx={{
+                color: isDark ? '#fff' : '#000',
+                padding: { xs: '4px', sm: '8px' },
+                '&:disabled': {
+                  color: isDark ? '#555' : '#ccc',
+                },
+              }}
+            >
+              <ZoomOut fontSize="small" />
+            </IconButton>
+          </span>
         </Tooltip>
         <Tooltip title="Reset Zoom" placement="left">
-          <IconButton
-            size="small"
-            onClick={handleResetZoom}
-            disabled={zoomLevel === 0}
-            sx={{
-              color: isDark ? '#fff' : '#000',
-              padding: { xs: '4px', sm: '8px' },
-              '&:disabled': {
-                color: isDark ? '#555' : '#ccc',
-              },
-            }}
-          >
-            <FitScreen fontSize="small" />
-          </IconButton>
+          <span>
+            <IconButton
+              size="small"
+              onClick={handleResetZoom}
+              disabled={zoomLevel === 0}
+              sx={{
+                color: isDark ? '#fff' : '#000',
+                padding: { xs: '4px', sm: '8px' },
+                '&:disabled': {
+                  color: isDark ? '#555' : '#ccc',
+                },
+              }}
+            >
+              <FitScreen fontSize="small" />
+            </IconButton>
+          </span>
         </Tooltip>
       </Box>
       

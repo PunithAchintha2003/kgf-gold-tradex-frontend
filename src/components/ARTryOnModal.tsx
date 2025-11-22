@@ -6,11 +6,12 @@ import { Slider } from './ui/slider';
 import { useApp } from '../contexts/AppContext';
 import { Camera, RotateCcw, Download, Share2, X, Zap, Smartphone } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
+import { Product } from '../types';
 
 interface ARTryOnModalProps {
   isOpen: boolean;
   onClose: () => void;
-  product: any;
+  product: Product | null;
 }
 
 export const ARTryOnModal: React.FC<ARTryOnModalProps> = ({ isOpen, onClose, product }) => {
