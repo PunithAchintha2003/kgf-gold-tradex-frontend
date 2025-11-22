@@ -158,15 +158,15 @@ export const AuctionsPage: React.FC<AuctionsPageProps> = ({ onNavigate }) => {
     <div className="min-h-screen py-8">
       <div className="container mx-auto px-4">
         {/* Header */}
-        <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold mb-2">{t('auctions.title')}</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">{t('auctions.title')}</h1>
+          <p className="text-muted-foreground">
             Bid on premium gold items from verified pawnshops
           </p>
         </div>
 
         {/* Live Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <Card className="text-center">
             <CardContent className="pt-6">
               <div className="text-2xl font-bold text-primary">{auctions.length}</div>
@@ -210,7 +210,7 @@ export const AuctionsPage: React.FC<AuctionsPageProps> = ({ onNavigate }) => {
         </div>
 
         {/* Auctions Grid */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {auctions.map((auction) => (
             <Card key={auction.id} className="overflow-hidden hover:shadow-lg transition-shadow">
               <div className="relative">
@@ -252,7 +252,7 @@ export const AuctionsPage: React.FC<AuctionsPageProps> = ({ onNavigate }) => {
                 </div>
               </div>
 
-              <CardContent className="p-4 sm:p-6">
+              <CardContent className="p-6">
                 <div className="space-y-4">
                   {/* Title and Description */}
                   <div>

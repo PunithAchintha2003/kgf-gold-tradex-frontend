@@ -104,7 +104,7 @@ export const Header: React.FC<HeaderProps> = React.memo(({ onNavigate, currentPa
             <img 
               src={logoImage} 
               alt="KGF Logo" 
-              className="h-8 sm:h-10 w-auto object-contain"
+              className="h-10 w-auto object-contain"
             />
           </div>
 
@@ -127,22 +127,22 @@ export const Header: React.FC<HeaderProps> = React.memo(({ onNavigate, currentPa
           </nav>
 
           {/* User Actions */}
-          <div className="flex items-center space-x-2 sm:space-x-4 md:space-x-6">
-            {/* Gold Price Display - Hidden on very small screens */}
-            <div className="hidden sm:flex items-center space-x-2 md:space-x-3 px-2 md:px-3 py-1.5 rounded-md bg-primary/10 text-primary font-semibold">
+          <div className="flex items-center space-x-6">
+            {/* Gold Price Display */}
+            <div className="flex items-center space-x-3 px-3 py-1.5 rounded-md bg-primary/10 text-primary font-semibold">
               {/* 24K with Gold Icon */}
-              <div className="flex items-center space-x-1 md:space-x-1.5">
+              <div className="flex items-center space-x-1.5">
                 <GiGoldBar 
                   style={{ 
                     color: '#F5D300',  
                   }} 
                 />
-                <span className="text-xs md:text-sm font-bold">{goldPriceData.karat}</span>
+                <span className="text-sm font-bold">{goldPriceData.karat}</span>
               </div>
               {/* Separator */}
-              <span className="text-primary/50 hidden md:inline">|</span>
+              <span className="text-primary/50">|</span>
               {/* LKR Price */}
-              <span className="text-xs md:text-sm whitespace-nowrap">{goldPriceData.price || 'LKR 310K'}</span>
+              <span className="text-sm whitespace-nowrap">{goldPriceData.price || 'LKR 310K'}</span>
             </div>
 
             {/* Language Switcher */}
@@ -208,14 +208,12 @@ export const Header: React.FC<HeaderProps> = React.memo(({ onNavigate, currentPa
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <div className="flex items-center space-x-1 sm:space-x-2">
-                <Button variant="ghost" size="sm" className="text-xs sm:text-sm" onClick={() => onNavigate('/login')}>
-                  <span className="hidden sm:inline">{t('nav.login')}</span>
-                  <span className="sm:hidden">Login</span>
+              <div className="flex items-center space-x-2">
+                <Button variant="ghost" onClick={() => onNavigate('/login')}>
+                  {t('nav.login')}
                 </Button>
-                <Button size="sm" className="text-xs sm:text-sm" onClick={() => onNavigate('/register')}>
-                  <span className="hidden sm:inline">{t('nav.register')}</span>
-                  <span className="sm:hidden">Sign Up</span>
+                <Button onClick={() => onNavigate('/register')}>
+                  {t('nav.register')}
                 </Button>
               </div>
             )}

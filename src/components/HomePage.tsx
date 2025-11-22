@@ -99,19 +99,19 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative py-12 sm:py-16 md:py-20 lg:py-32 overflow-hidden">
+      <section className="relative py-20 lg:py-32 overflow-hidden">
         <div className="absolute inset-0 kgf-gradient opacity-5"></div>
         <div className="container mx-auto px-4 relative">
-          <div className="grid lg:grid-cols-2 gap-8 md:gap-12 items-center">
-            <div className="space-y-6 md:space-y-8">
-              <div className="space-y-3 md:space-y-4">
-                <Badge className="kgf-gradient text-white text-xs sm:text-sm">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div className="space-y-8">
+              <div className="space-y-4">
+                <Badge className="kgf-gradient text-white">
                   Sri Lanka's Premier Gold Marketplace
                 </Badge>
-                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
+                <h1 className="text-4xl lg:text-6xl font-bold leading-tight">
                   {t('home.hero.title')}
                 </h1>
-                <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-lg">
+                <p className="text-xl text-muted-foreground max-w-lg">
                   {t('home.hero.subtitle')}
                 </p>
               </div>
@@ -135,12 +135,12 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
               </div>
 
               {/* Stats */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 pt-6 md:pt-8">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 pt-8">
                 {stats.map((stat, index) => (
                   <div key={index} className="text-center">
-                    <stat.icon className="h-6 w-6 sm:h-8 sm:w-8 text-primary mx-auto mb-2" />
-                    <div className="text-xl sm:text-2xl font-bold">{stat.number}</div>
-                    <div className="text-xs sm:text-sm text-muted-foreground">{stat.label}</div>
+                    <stat.icon className="h-8 w-8 text-primary mx-auto mb-2" />
+                    <div className="text-2xl font-bold">{stat.number}</div>
+                    <div className="text-sm text-muted-foreground">{stat.label}</div>
                   </div>
                 ))}
               </div>
@@ -154,12 +154,12 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
                   className="w-full h-full object-cover"
                 />
               </div>
-              <div className="absolute -bottom-4 -left-4 sm:-bottom-6 sm:-left-6 bg-card border rounded-lg sm:rounded-xl p-3 sm:p-4 shadow-lg">
-                <div className="flex items-center space-x-2 sm:space-x-3">
-                  <div className="w-2 h-2 sm:w-3 sm:h-3 bg-green-500 rounded-full animate-pulse"></div>
+              <div className="absolute -bottom-6 -left-6 bg-card border rounded-xl p-4 shadow-lg">
+                <div className="flex items-center space-x-3">
+                  <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
                   <div>
-                    <div className="text-xs sm:text-sm font-medium">Live Auctions</div>
-                    <div className="text-xs text-muted-foreground">24 active now</div>
+                    <div className="font-medium">Live Auctions</div>
+                    <div className="text-sm text-muted-foreground">24 active now</div>
                   </div>
                 </div>
               </div>
@@ -169,13 +169,13 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
       </section>
 
       {/* Features Section */}
-      <section className="py-12 sm:py-16 md:py-20 bg-muted/50">
+      <section className="py-20 bg-muted/50">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-8 sm:mb-12 md:mb-16">
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-3 sm:mb-4">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl lg:text-4xl font-bold mb-4">
               {t('home.features.title')}
             </h2>
-            <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               Experience the future of gold trading with our comprehensive platform
             </p>
           </div>
@@ -199,18 +199,18 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
       {/* Featured Products */}
       <section className="py-20">
         <div className="container mx-auto px-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 sm:mb-12 gap-4">
+          <div className="flex items-center justify-between mb-12">
             <div>
-              <h2 className="text-2xl sm:text-3xl font-bold mb-2">Featured Products</h2>
-              <p className="text-sm sm:text-base text-muted-foreground">Handpicked premium gold jewelry</p>
+              <h2 className="text-3xl font-bold mb-2">Featured Products</h2>
+              <p className="text-muted-foreground">Handpicked premium gold jewelry</p>
             </div>
-            <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => onNavigate('/products')}>
+            <Button variant="outline" onClick={() => onNavigate('/products')}>
               View All Products
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {featuredProducts.map((product) => (
               <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
                 <div className="aspect-square overflow-hidden">

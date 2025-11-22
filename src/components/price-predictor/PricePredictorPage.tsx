@@ -17,12 +17,12 @@ const PricePredictorPage: React.FC<PricePredictorPageProps> = ({ onNavigate }) =
   const [currencyUnit, setCurrencyUnit] = useState<CurrencyUnit>('troy-ounce');
 
   return (
-    <div className="h-screen overflow-hidden pt-4 sm:pt-8 pb-0">
-      <div className="container mx-auto px-3 sm:px-4 h-full flex flex-col">
+    <div className="h-screen overflow-hidden pt-8 pb-0">
+      <div className="container mx-auto px-4 h-full flex flex-col">
         {/* Header */}
-        <div className="mb-4 sm:mb-8 flex-shrink-0">
-          <h1 className="text-2xl sm:text-3xl font-bold mb-2">Gold Price Prediction</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">
+        <div className="mb-8 flex-shrink-0">
+          <h1 className="text-3xl font-bold mb-2">Gold Price Prediction</h1>
+          <p className="text-muted-foreground">
             Real-time gold price predictions powered by AI
           </p>
         </div>
