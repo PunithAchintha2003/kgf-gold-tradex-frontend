@@ -115,23 +115,23 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
   };
 
   return (
-    <div className="min-h-screen py-8 sm:py-12 bg-muted/50">
+    <div className="min-h-screen py-12 bg-muted/50">
       <div className="container mx-auto px-4 max-w-6xl">
-        <div className="text-center mb-6 sm:mb-8">
-          <div className="flex items-center justify-center mb-3 sm:mb-4">
+        <div className="text-center mb-8">
+          <div className="flex items-center justify-center mb-4">
             <img 
               src={logoImage} 
               alt="KGF Logo" 
-              className="h-12 sm:h-16 w-auto object-contain"
+              className="h-16 w-auto object-contain"
             />
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold mb-2">Welcome Back</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">
+          <h1 className="text-3xl font-bold mb-2">Welcome Back</h1>
+          <p className="text-muted-foreground">
             Sign in to your account or try our demo accounts
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-6 sm:gap-8">
+        <div className="grid lg:grid-cols-2 gap-8">
           {/* Login Form */}
           <Card>
             <CardHeader>

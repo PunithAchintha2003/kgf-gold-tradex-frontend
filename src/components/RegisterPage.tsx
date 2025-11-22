@@ -63,18 +63,18 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
   ];
 
   return (
-    <div className="min-h-screen py-8 sm:py-12 bg-muted/50">
+    <div className="min-h-screen py-12 bg-muted/50">
       <div className="container mx-auto px-4 max-w-2xl">
-        <div className="text-center mb-6 sm:mb-8">
-          <div className="flex items-center justify-center mb-3 sm:mb-4">
+        <div className="text-center mb-8">
+          <div className="flex items-center justify-center mb-4">
             <img 
               src={logoImage} 
               alt="KGF Logo" 
-              className="h-12 sm:h-16 w-auto object-contain"
+              className="h-16 w-auto object-contain"
             />
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold mb-2">Create Your Account</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">
+          <h1 className="text-3xl font-bold mb-2">Create Your Account</h1>
+          <p className="text-muted-foreground">
             Join Sri Lanka's premier gold marketplace
           </p>
         </div>
@@ -92,7 +92,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
               <div className="space-y-4">
                 <h3 className="text-lg font-medium">Personal Information</h3>
                 
-                <div className="grid sm:grid-cols-2 gap-4">
+                <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-2">Full Name</label>
                     <div className="relative">
@@ -177,7 +177,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
               <div className="space-y-4">
                 <h3 className="text-lg font-medium">Security</h3>
                 
-                <div className="grid sm:grid-cols-2 gap-4">
+                <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-2">Password</label>
                     <div className="relative">
