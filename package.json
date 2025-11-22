@@ -1,0 +1,24 @@
+{
+  "name": "kgf-gold-price-predictor-frontend",
+  "version": "1.0.0",
+  "description": "Gold Price Predictor Frontend - Web Service",
+  "scripts": {
+    "build": "cd react-frontend && npm install --include=dev && npm run build",
+    "dev": "cd react-frontend && npm run dev",
+    "test": "echo \"No tests specified\" && exit 0"
+  },
+  "keywords": [
+    "gold",
+    "price",
+    "predictor",
+    "react",
+    "frontend"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": "22.x",
+    "npm": ">=9.0.0"
+  }
+}
+
