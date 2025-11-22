@@ -5,7 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
 import { useApp, UserRole } from '../contexts/AppContext';
-import { Crown, Mail, Lock, Eye, EyeOff, Shield, User, Store, Gavel, TrendingUp, Settings } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Shield, User, Store, Gavel, TrendingUp, Settings } from 'lucide-react';
+import logoImage from '../assets/28A9A4B0-D00A-4539-82A6-89A2130B5FAF.PNG';
 
 interface LoginPageProps {
   onNavigate: (path: string) => void;
@@ -114,20 +115,23 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
   };
 
   return (
-    <div className="min-h-screen py-12 bg-muted/50">
+    <div className="min-h-screen py-8 sm:py-12 bg-muted/50">
       <div className="container mx-auto px-4 max-w-6xl">
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center space-x-2 mb-4">
-            <Crown className="h-8 w-8 text-primary" />
-            <span className="text-2xl font-bold kgf-text-gradient">KGF</span>
+        <div className="text-center mb-6 sm:mb-8">
+          <div className="flex items-center justify-center mb-3 sm:mb-4">
+            <img 
+              src={logoImage} 
+              alt="KGF Logo" 
+              className="h-12 sm:h-16 w-auto object-contain"
+            />
           </div>
-          <h1 className="text-3xl font-bold mb-2">Welcome Back</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold mb-2">Welcome Back</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Sign in to your account or try our demo accounts
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-8">
+        <div className="grid lg:grid-cols-2 gap-6 sm:gap-8">
           {/* Login Form */}
           <Card>
             <CardHeader>

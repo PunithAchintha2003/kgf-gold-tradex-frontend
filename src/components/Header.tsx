@@ -4,10 +4,11 @@ import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown_menu';
 import { Badge } from './ui/badge';
 import { useApp } from '../contexts/AppContext';
-import { Sun, Moon, Globe, ShoppingCart, Gavel, User, Settings, LogOut, Menu, Crown, TrendingUp } from 'lucide-react';
+import { Sun, Moon, Globe, ShoppingCart, Gavel, User, Settings, LogOut, Menu, TrendingUp } from 'lucide-react';
 import { GiGoldBar } from 'react-icons/gi';
 import { useGetRealtimePriceQuery, useGetExchangeRateQuery } from '../store/api/goldApi';
 import { convertTroyOunceToPawn } from '../utils/currencyConverter';
+import logoImage from '../assets/28A9A4B0-D00A-4539-82A6-89A2130B5FAF.PNG';
 
 interface HeaderProps {
   onNavigate: (path: string) => void;
@@ -97,11 +98,14 @@ export const Header: React.FC<HeaderProps> = React.memo(({ onNavigate, currentPa
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <div 
-            className="flex items-center space-x-2 cursor-pointer"
+            className="flex items-center cursor-pointer"
             onClick={handleHomeClick}
           >
-            <Crown className="h-8 w-8 text-primary" />
-            <span className="text-xl font-bold kgf-text-gradient">KGF</span>
+            <img 
+              src={logoImage} 
+              alt="KGF Logo" 
+              className="h-8 sm:h-10 w-auto object-contain"
+            />
           </div>
 
           {/* Desktop Navigation */}
@@ -123,22 +127,22 @@ export const Header: React.FC<HeaderProps> = React.memo(({ onNavigate, currentPa
           </nav>
 
           {/* User Actions */}
-          <div className="flex items-center space-x-6">
-            {/* Gold Price Display */}
-            <div className="flex items-center space-x-3 px-3 py-1.5 rounded-md bg-primary/10 text-primary font-semibold">
+          <div className="flex items-center space-x-2 sm:space-x-4 md:space-x-6">
+            {/* Gold Price Display - Hidden on very small screens */}
+            <div className="hidden sm:flex items-center space-x-2 md:space-x-3 px-2 md:px-3 py-1.5 rounded-md bg-primary/10 text-primary font-semibold">
               {/* 24K with Gold Icon */}
-              <div className="flex items-center space-x-1.5">
+              <div className="flex items-center space-x-1 md:space-x-1.5">
                 <GiGoldBar 
                   style={{ 
                     color: '#F5D300',  
                   }} 
                 />
-                <span className="text-sm font-bold">{goldPriceData.karat}</span>
+                <span className="text-xs md:text-sm font-bold">{goldPriceData.karat}</span>
               </div>
               {/* Separator */}
-              <span className="text-primary/50">|</span>
+              <span className="text-primary/50 hidden md:inline">|</span>
               {/* LKR Price */}
-              <span className="text-sm whitespace-nowrap">{goldPriceData.price || 'LKR 310K'}</span>
+              <span className="text-xs md:text-sm whitespace-nowrap">{goldPriceData.price || 'LKR 310K'}</span>
             </div>
 
             {/* Language Switcher */}
@@ -204,12 +208,14 @@ export const Header: React.FC<HeaderProps> = React.memo(({ onNavigate, currentPa
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <div className="flex items-center space-x-2">
-                <Button variant="ghost" onClick={() => onNavigate('/login')}>
-                  {t('nav.login')}
+              <div className="flex items-center space-x-1 sm:space-x-2">
+                <Button variant="ghost" size="sm" className="text-xs sm:text-sm" onClick={() => onNavigate('/login')}>
+                  <span className="hidden sm:inline">{t('nav.login')}</span>
+                  <span className="sm:hidden">Login</span>
                 </Button>
-                <Button onClick={() => onNavigate('/register')}>
-                  {t('nav.register')}
+                <Button size="sm" className="text-xs sm:text-sm" onClick={() => onNavigate('/register')}>
+                  <span className="hidden sm:inline">{t('nav.register')}</span>
+                  <span className="sm:hidden">Sign Up</span>
                 </Button>
               </div>
             )}
