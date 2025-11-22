@@ -100,7 +100,7 @@ export default defineConfig(({ mode }: { mode: string }) => ({
     logOverride: { 'this-is-undefined-in-esm': 'silent' as const }
   },
   server: {
-    port: 3000,
+    port: 5173,
     open: true,
   },
 }));
