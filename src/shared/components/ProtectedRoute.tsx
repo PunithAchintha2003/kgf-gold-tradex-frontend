@@ -1,6 +1,6 @@
 import React from 'react';
-import { useApp } from '../contexts/AppContext';
-import { LoginPage } from './LoginPage';
+import { useApp } from '../../contexts/AppContext';
+import { LoginPage } from '../../pages/LoginPage';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;

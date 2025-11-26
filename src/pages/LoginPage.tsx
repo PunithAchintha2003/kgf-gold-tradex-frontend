@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Badge } from './ui/badge';
-import { Separator } from './ui/separator';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { Badge } from '../components/ui/badge';
+import { Separator } from '../components/ui/separator';
 import { useApp, UserRole } from '../contexts/AppContext';
 import { Mail, Lock, Eye, EyeOff, Shield, User, Store, Gavel, TrendingUp, Settings } from 'lucide-react';
 import logoImage from '../assets/28A9A4B0-D00A-4539-82A6-89A2130B5FAF.PNG';

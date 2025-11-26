@@ -1,24 +1,24 @@
 import React, { useState, Suspense, lazy, useMemo, useCallback } from 'react';
 import { useApp } from '../contexts/AppContext';
-import { Header } from './Header';
-import { ErrorBoundary } from './ErrorBoundary';
-import { PageLoader } from './LoadingSpinner';
+import { Header } from '../layouts/Header';
+import { ErrorBoundary } from '../shared/components/ErrorBoundary';
+import { PageLoader } from '../shared/components/LoadingSpinner';
 import { Product } from '../types';
 
 // Lazy load heavy components for code splitting
-const HomePage = lazy(() => import('./HomePage').then(module => ({ default: module.HomePage })));
-const ProductsPage = lazy(() => import('./ProductsPage').then(module => ({ default: module.ProductsPage })));
-const AuctionsPage = lazy(() => import('./AuctionsPage').then(module => ({ default: module.AuctionsPage })));
-const LoginPage = lazy(() => import('./LoginPage').then(module => ({ default: module.LoginPage })));
-const RegisterPage = lazy(() => import('./RegisterPage').then(module => ({ default: module.RegisterPage })));
-const CustomerDashboard = lazy(() => import('./dashboards/CustomerDashboard').then(module => ({ default: module.CustomerDashboard })));
-const SellerDashboard = lazy(() => import('./dashboards/SellerDashboard').then(module => ({ default: module.SellerDashboard })));
-const PawnshopDashboard = lazy(() => import('./dashboards/PawnshopDashboard').then(module => ({ default: module.PawnshopDashboard })));
-const InvestorDashboard = lazy(() => import('./dashboards/InvestorDashboard').then(module => ({ default: module.InvestorDashboard })));
-const AdminDashboard = lazy(() => import('./dashboards/AdminDashboard').then(module => ({ default: module.AdminDashboard })));
-const ARTryOnModal = lazy(() => import('./ARTryOnModal').then(module => ({ default: module.ARTryOnModal })));
-const ChatModal = lazy(() => import('./ChatModal').then(module => ({ default: module.ChatModal })));
-const PricePredictorPage = lazy(() => import('./price-predictor/PricePredictorPage'));
+const HomePage = lazy(() => import('../pages/HomePage').then(module => ({ default: module.HomePage })));
+const ProductsPage = lazy(() => import('../pages/ProductsPage').then(module => ({ default: module.ProductsPage })));
+const AuctionsPage = lazy(() => import('../pages/AuctionsPage').then(module => ({ default: module.AuctionsPage })));
+const LoginPage = lazy(() => import('../pages/LoginPage').then(module => ({ default: module.LoginPage })));
+const RegisterPage = lazy(() => import('../pages/RegisterPage').then(module => ({ default: module.RegisterPage })));
+const CustomerDashboard = lazy(() => import('../components/dashboards/CustomerDashboard').then(module => ({ default: module.CustomerDashboard })));
+const SellerDashboard = lazy(() => import('../components/dashboards/SellerDashboard').then(module => ({ default: module.SellerDashboard })));
+const PawnshopDashboard = lazy(() => import('../components/dashboards/PawnshopDashboard').then(module => ({ default: module.PawnshopDashboard })));
+const InvestorDashboard = lazy(() => import('../components/dashboards/InvestorDashboard').then(module => ({ default: module.InvestorDashboard })));
+const AdminDashboard = lazy(() => import('../components/dashboards/AdminDashboard').then(module => ({ default: module.AdminDashboard })));
+const ARTryOnModal = lazy(() => import('../shared/components/ARTryOnModal').then(module => ({ default: module.ARTryOnModal })));
+const ChatModal = lazy(() => import('../shared/components/ChatModal').then(module => ({ default: module.ChatModal })));
+const PricePredictorPage = lazy(() => import('../components/price-predictor/PricePredictorPage'));
 
 export const Router: React.FC = () => {
   const [currentPath, setCurrentPath] = useState('/');

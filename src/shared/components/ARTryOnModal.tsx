@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
-import { Slider } from './ui/slider';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog';
+import { Button } from '../../components/ui/button';
+import { Badge } from '../../components/ui/badge';
+import { Slider } from '../../components/ui/slider';
 import { Camera, RotateCcw, Share2, X, Zap, Smartphone } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
-import { Product } from '../types';
+import { Product } from '../../types';
 
 interface ARTryOnModalProps {
   isOpen: boolean;

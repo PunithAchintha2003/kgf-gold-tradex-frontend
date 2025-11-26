@@ -1,10 +1,10 @@
 import React from 'react';
-import { Button } from './ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Badge } from './ui/badge';
+import { Button } from '../components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { Badge } from '../components/ui/badge';
 import { useApp } from '../contexts/AppContext';
 import { ArrowRight, Shield, Smartphone, Gavel, TrendingUp, Star, Users, Award, Clock } from 'lucide-react';
-import { ImageWithFallback } from './figma/ImageWithFallback';
+import { ImageWithFallback } from '../shared/components/figma/ImageWithFallback';
 
 interface HomePageProps {
   onNavigate: (path: string) => void;

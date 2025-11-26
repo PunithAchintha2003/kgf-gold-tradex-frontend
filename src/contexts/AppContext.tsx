@@ -28,7 +28,7 @@ interface AppContextType {
   // User
   user: User | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => void;
   logout: () => void;
   switchRole: (role: UserRole) => void;
 }

@@ -1,9 +1,9 @@
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import { AppProvider } from './contexts/AppContext';
-import { Router } from './components/Router';
-import { ErrorBoundary } from './components/ErrorBoundary';
-import { PageLoader } from './components/LoadingSpinner';
+import { Router } from './routes/Router';
+import { ErrorBoundary } from './shared/components/ErrorBoundary';
+import { PageLoader } from './shared/components/LoadingSpinner';
 import { store, persistor } from './store';
 
 export default function App() {

@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Badge } from './ui/badge';
-import { Progress } from './ui/progress';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Badge } from '../components/ui/badge';
+import { Progress } from '../components/ui/progress';
 import { useApp } from '../contexts/AppContext';
 import { Clock, Gavel, Users, Eye, Heart, AlertCircle } from 'lucide-react';
-import { ImageWithFallback } from './figma/ImageWithFallback';
+import { ImageWithFallback } from '../shared/components/figma/ImageWithFallback';
 
 interface AuctionsPageProps {
   onNavigate: (path: string) => void;
