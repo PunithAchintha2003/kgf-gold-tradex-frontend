@@ -10,8 +10,8 @@ interface PricePredictorPageProps {
   onNavigate: (path: string) => void;
 }
 
-const PricePredictorPage: React.FC<PricePredictorPageProps> = ({ onNavigate }) => {
-  const { t } = useApp();
+const PricePredictorPage: React.FC<PricePredictorPageProps> = ({ onNavigate: _onNavigate }) => {
+  const { t: _t } = useApp();
   const { mode } = useTheme();
   const theme = createAppTheme(mode);
   const [currencyUnit, setCurrencyUnit] = useState<CurrencyUnit>('troy-ounce');

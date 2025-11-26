@@ -3,8 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Slider } from './ui/slider';
-import { useApp } from '../contexts/AppContext';
-import { Camera, RotateCcw, Download, Share2, X, Zap, Smartphone } from 'lucide-react';
+import { Camera, RotateCcw, Share2, X, Zap, Smartphone } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { Product } from '../types';
 
@@ -15,7 +14,6 @@ interface ARTryOnModalProps {
 }
 
 export const ARTryOnModal: React.FC<ARTryOnModalProps> = ({ isOpen, onClose, product }) => {
-  const { t } = useApp();
   const [isLoading, setIsLoading] = useState(true);
   const [scale, setScale] = useState([100]);
   const [rotation, setRotation] = useState([0]);
@@ -30,6 +28,7 @@ export const ARTryOnModal: React.FC<ARTryOnModalProps> = ({ isOpen, onClose, pro
       }, 2000);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [isOpen]);
 
   if (!product) return null;
@@ -97,14 +96,16 @@ export const ARTryOnModal: React.FC<ARTryOnModalProps> = ({ isOpen, onClose, pro
                     style={{
                       left: `${position.x}%`,
                       top: `${position.y}%`,
-                      transform: `translate(-50%, -50%) scale(${scale[0] / 100}) rotate(${rotation[0]}deg)`,
+                      transform: `translate(-50%, -50%) scale(${(scale[0] ?? 100) / 100}) rotate(${rotation[0] ?? 0}deg)`,
                     }}
                   >
-                    <ImageWithFallback
-                      src={product.image}
-                      alt={product.name}
-                      className="w-full h-full object-contain opacity-80 drop-shadow-lg"
-                    />
+                    {product.images[0] && (
+                      <ImageWithFallback
+                        src={product.images[0]}
+                        alt={product.name}
+                        className="w-full h-full object-contain opacity-80 drop-shadow-lg"
+                      />
+                    )}
                   </div>
                   
                   {/* AR Guidelines */}
@@ -153,7 +154,7 @@ export const ARTryOnModal: React.FC<ARTryOnModalProps> = ({ isOpen, onClose, pro
                 <h3 className="font-semibold text-lg mb-2">{product.name}</h3>
                 <div className="flex items-center space-x-2 mb-3">
                   <Badge className="kgf-gradient text-white">
-                    {product.purity}
+                    {product.karat}K
                   </Badge>
                   <Badge variant="outline">
                     {product.weight}

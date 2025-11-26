@@ -107,8 +107,8 @@ const AccuracyVisualizationChart: React.FC<AccuracyVisualizationChartProps> = ({
       }}
     >
       <Plot
-        data={plotData}
-        layout={layout}
+        data={plotData as Plotly.Data[]}
+        layout={layout as unknown as Plotly.Layout}
         config={{
           displayModeBar: true,
           displaylogo: false,

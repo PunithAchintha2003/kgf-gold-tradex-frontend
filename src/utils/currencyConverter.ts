@@ -80,7 +80,7 @@ export function convertPrice(price: number, unit: 'troy-ounce' | 'pawn', usdToLk
     return convertTroyOunceToPawn(price, usdToLkrRate);
   } else {
     return {
-      price: price,
+      price,
       currency: 'USD',
       unit: 'Troy Ounce',
       displayText: `$${price.toFixed(2)}`

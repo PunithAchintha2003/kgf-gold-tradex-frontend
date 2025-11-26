@@ -214,7 +214,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return translations[language][key as keyof typeof translations['en']] || key;
   }, [language]);
 
-  const login = useCallback(async (email: string, password: string) => {
+  const login = useCallback((email: string, _password: string) => {
     // Mock login - in real app this would call an API
     const mockUser: User = {
       id: '1',

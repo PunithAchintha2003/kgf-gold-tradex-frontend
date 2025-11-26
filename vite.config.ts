@@ -85,8 +85,9 @@ export default defineConfig(({ mode }: { mode: string }) => ({
       }
     },
     chunkSizeWarningLimit: 8000,
-    sourcemap: false,
-    reportCompressedSize: true
+    sourcemap: process.env.NODE_ENV === 'production' ? false : 'inline',
+    reportCompressedSize: true,
+    assetsInlineLimit: 4096
   },
   optimizeDeps: {
     include: [

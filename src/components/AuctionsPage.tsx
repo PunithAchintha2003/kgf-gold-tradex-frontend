@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
 import { useApp } from '../contexts/AppContext';
-import { Clock, Gavel, Users, TrendingUp, Eye, Heart, AlertCircle } from 'lucide-react';
+import { Clock, Gavel, Users, Eye, Heart, AlertCircle } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 
 interface AuctionsPageProps {
@@ -14,7 +14,6 @@ interface AuctionsPageProps {
 
 export const AuctionsPage: React.FC<AuctionsPageProps> = ({ onNavigate }) => {
   const { t, isAuthenticated } = useApp();
-  const [selectedAuction, setSelectedAuction] = useState<any>(null);
   const [bidAmount, setBidAmount] = useState('');
   const [auctions, setAuctions] = useState([
     {

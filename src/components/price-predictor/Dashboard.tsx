@@ -10,9 +10,8 @@ import {
   useGetPredictionHistoryQuery
 } from '../../store/api/goldApi';
 import { useTheme } from '../../hooks/useTheme';
-import type { CurrencyUnit } from './CurrencyDropdown';
+import CurrencyDropdown, { type CurrencyUnit } from './CurrencyDropdown';
 import { convertPrice, convertChartData } from '../../utils/currencyConverter';
-import CurrencyDropdown from './CurrencyDropdown';
 import Sidebar from './Sidebar';
 
 // Lazy load heavy components including Chart (Plotly is ~6-7MB)
@@ -83,11 +82,13 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
 
   // Fetch daily data with extended history (request last 90 days to get data before Oct 5)
   // Calculate date 90 days ago to ensure we get more historical data
-  const getDate90DaysAgo = () => {
+  const getDate90DaysAgo = (): string => {
     const date = new Date();
     date.setDate(date.getDate() - 90);
-    return date.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+    return date.toISOString().split('T')[0] as string; // Format as YYYY-MM-DD
   };
+
+  const startDate90DaysAgo = getDate90DaysAgo();
 
   const {
     data: dailyData,
@@ -95,7 +96,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
     isLoading: dailyLoading,
   } = useGetDailyDataQuery({ 
     days: 90, // Request 90 days to get more historical data
-    start_date: getDate90DaysAgo(), // Explicitly request from 90 days ago
+    start_date: startDate90DaysAgo, // Explicitly request from 90 days ago
   }, {
     pollingInterval: 10000, // Poll every 10 seconds
   });
@@ -117,7 +118,9 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
       const predictionsBeforeOct6 = predictionDates.filter(d => d < '2025-10-06');
       const dataBeforeOct6 = marketDates.filter(d => d < '2025-10-06');
       
-      console.log('📊 Chart Data (90-Day Extended):', {
+      // Debug logging in development
+      if (import.meta.env.DEV) {
+        console.warn('📊 Chart Data (90-Day Extended):', {
         totalDataPoints: marketDates.length,
         totalPredictions: predictionDates.length,
         dataWithPredictedPrice: dataWithPredictions,
@@ -127,7 +130,8 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
         predictionRange: predictionDates.length > 0 ? `${predictionDates[0]} to ${predictionDates[predictionDates.length - 1]}` : 'No predictions',
         fullDateRange: allDates.length > 0 ? `${allDates[0]} to ${allDates[allDates.length - 1]}` : 'No dates',
         note: 'Backend now includes predictions from Aug 7 and market data from July 23',
-      });
+        });
+      }
     }
   }, [dailyData]);
 
@@ -150,7 +154,6 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
   // Fetch accuracy visualization data (auto-refresh every 15 minutes as per guide)
   const {
     data: accuracyVisualizationData,
-    isLoading: accuracyVizLoading,
   } = useGetAccuracyVisualizationQuery(undefined, {
     pollingInterval: 900000, // 15 minutes
   });
@@ -190,10 +193,12 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
     if (realtimePrice && updatedData.length > 0) {
       // Update the last data point with real-time price (realtimePrice is always in USD)
       const lastDataPoint = updatedData[updatedData.length - 1];
-      updatedData[updatedData.length - 1] = {
-        ...lastDataPoint,
-        close: realtimePrice
-      };
+      if (lastDataPoint) {
+        updatedData[updatedData.length - 1] = {
+          ...lastDataPoint,
+          close: realtimePrice
+        };
+      }
     }
     
     // Convert data based on selected currency unit
@@ -507,7 +512,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
               <AccuracyStats
                 accuracyStats={displayData.accuracy_stats}
                 isDark={isDark}
-                newStats={accuracyVisualizationData?.statistics}
+                {...(accuracyVisualizationData?.statistics ? { newStats: accuracyVisualizationData.statistics } : {})}
               />
             </Suspense>
           </Box>
@@ -724,8 +729,8 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
             <Chart
                 key={`chart-${realtimePrice || displayData?.current_price || 0}-${currencyUnit}-${zoomLevel}`}
               data={chartData}
-              prediction={displayData.prediction}
-              historicalPredictions={displayData.historical_predictions}
+              {...(displayData.prediction ? { prediction: displayData.prediction } : {})}
+              {...(displayData.historical_predictions ? { historicalPredictions: displayData.historical_predictions } : {})}
               isDark={isDark}
                 height={chartHeight - (isMobile ? 50 : isTablet ? 60 : 70)}
               realtimePrice={realtimePrice || undefined}

@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown_menu';
 import { Badge } from './ui/badge';
 import { useApp } from '../contexts/AppContext';
-import { Sun, Moon, Globe, ShoppingCart, Gavel, User, Settings, LogOut, Menu, TrendingUp } from 'lucide-react';
+import { Sun, Moon, Globe, Gavel, User, Settings, LogOut, Menu, TrendingUp } from 'lucide-react';
 import { GiGoldBar } from 'react-icons/gi';
 import { useGetRealtimePriceQuery, useGetExchangeRateQuery } from '../store/api/goldApi';
 import { convertTroyOunceToPawn } from '../utils/currencyConverter';

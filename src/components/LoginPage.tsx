@@ -13,13 +13,13 @@ interface LoginPageProps {
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
-  const { t, login } = useApp();
+  const { login } = useApp();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const demoPassword = import.meta.env.VITE_DEMO_PASSWORD || '';
+  const demoPassword = import.meta.env['VITE_DEMO_PASSWORD'] || '';
   
   const demoAccounts = [
     {
@@ -76,7 +76,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
     try {
       await login(email, password);
       onNavigate('/');
-    } catch (error) {
+    } catch (_error) {
       alert('Login failed. Please check your credentials.');
     } finally {
       setIsLoading(false);
@@ -107,7 +107,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
         default:
           onNavigate('/');
       }
-    } catch (error) {
+    } catch (_error) {
       alert('Demo login failed.');
     } finally {
       setIsLoading(false);
