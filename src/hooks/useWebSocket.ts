@@ -22,7 +22,6 @@ export const useWebSocket = (url: string): UseWebSocketReturn => {
       ws.onopen = () => {
         setIsConnected(true);
         setError(null);
-        console.log('WebSocket connected');
       };
 
       ws.onmessage = (event) => {
@@ -37,11 +36,9 @@ export const useWebSocket = (url: string): UseWebSocketReturn => {
 
       ws.onclose = () => {
         setIsConnected(false);
-        console.log('WebSocket disconnected');
         
         // Attempt to reconnect after 3 seconds
-        reconnectTimeoutRef.current = setTimeout(() => {
-          console.log('Attempting to reconnect...');
+        reconnectTimeoutRef.current = window.setTimeout(() => {
           connect();
         }, 3000);
       };

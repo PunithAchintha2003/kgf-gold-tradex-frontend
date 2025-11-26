@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, useState } from 'react';
+import React, { useMemo, useCallback } from 'react';
 // Assuming these types are correctly defined elsewhere:
 import type { DailyDataPoint, HistoricalPrediction, Prediction } from '../../store/api/goldApi';
 import type { CurrencyUnit } from './CurrencyDropdown';
@@ -13,14 +13,14 @@ declare type PlotlyData = Plotly.Data;
 
 interface ChartProps {
   data: DailyDataPoint[];
-  prediction?: Prediction;
-  historicalPredictions?: HistoricalPrediction[];
+  prediction?: Prediction | undefined;
+  historicalPredictions?: HistoricalPrediction[] | undefined;
   isDark: boolean;
-  height?: number;
-  realtimePrice?: number;
+  height?: number | undefined;
+  realtimePrice?: number | undefined;
   currencyUnit: CurrencyUnit;
   usdToLkrRate: number;
-  zoomLevel?: number;
+  zoomLevel?: number | undefined;
 }
 
 const Chart: React.FC<ChartProps> = ({
@@ -45,8 +45,8 @@ const Chart: React.FC<ChartProps> = ({
       return currencyUnit === 'pawn' 
         ? convertPrice(realtimePrice, currencyUnit, usdToLkrRate).price 
         : realtimePrice;
-    } catch (error) {
-      console.error('Error converting realtime price:', error);
+    } catch (_error) {
+      console.error('Error converting realtime price:', _error);
       return null;
     }
   }, [realtimePrice, currencyUnit, usdToLkrRate]);
@@ -59,7 +59,7 @@ const Chart: React.FC<ChartProps> = ({
     }
     if (data && data.length > 0) {
       const lastDataPoint = data[data.length - 1];
-      if (lastDataPoint.close != null && !isNaN(lastDataPoint.close)) {
+      if (lastDataPoint?.close != null && !isNaN(lastDataPoint.close)) {
         return lastDataPoint.close;
       }
     }
@@ -103,16 +103,19 @@ const Chart: React.FC<ChartProps> = ({
       const dataWithPredictedPrice = sortedData.filter(d => d.predicted_price != null).length;
       const dataBeforeOct6 = sortedData.filter(d => d.date < '2025-10-06').length;
       
-      console.log('📈 Chart Plotting:', {
+      // Debug logging in development
+      if (import.meta.env.DEV) {
+        console.warn('📈 Chart Plotting:', {
         totalPoints: sortedData.length,
-        earliestDate: sortedData[0].date,
-        latestDate: sortedData[sortedData.length - 1].date,
-        dateRange: `${sortedData[0].date} to ${sortedData[sortedData.length - 1].date}`,
+        earliestDate: sortedData[0]?.date,
+        latestDate: sortedData[sortedData.length - 1]?.date,
+        dateRange: `${sortedData[0]?.date} to ${sortedData[sortedData.length - 1]?.date}`,
         pointsWithClose: dataWithClose,
         pointsWithPredictedPrice: dataWithPredictedPrice,
-        dataBeforeOct6: dataBeforeOct6,
+        dataBeforeOct6,
         note: 'Gold line uses close values, Accuracy line uses predicted_price values',
-      });
+        });
+      }
     }
 
     const traces: PlotlyData[] = [];
@@ -137,7 +140,7 @@ const Chart: React.FC<ChartProps> = ({
         
         return {
           date: d.date,
-          price: price,
+          price,
           isPrediction: d.close == null && d.predicted_price != null, // Mark if this is prediction-only data
         };
       })
@@ -253,13 +256,14 @@ const Chart: React.FC<ChartProps> = ({
 
     // Current price marker - use last available date from sorted data
     const lastDate = sortedData && sortedData.length > 0 
-      ? sortedData[sortedData.length - 1].date 
+      ? sortedData[sortedData.length - 1]?.date ?? new Date().toISOString().split('T')[0]
       : (historicalPredictions && historicalPredictions.length > 0
-          ? historicalPredictions[historicalPredictions.length - 1].date
+          ? historicalPredictions[historicalPredictions.length - 1]?.date ?? new Date().toISOString().split('T')[0]
           : new Date().toISOString().split('T')[0]);
 
+    const safeLastDate = lastDate ?? new Date().toISOString().split('T')[0];
     traces.push({
-      x: [lastDate],
+      x: [safeLastDate] as string[],
       y: [currentPrice],
       type: 'scatter',
       mode: 'markers',
@@ -273,7 +277,7 @@ const Chart: React.FC<ChartProps> = ({
 
     // Current price horizontal line
     traces.push({
-      x: [sortedData && sortedData.length > 0 ? sortedData[0].date : lastDate, lastDate],
+      x: [sortedData && sortedData.length > 0 ? sortedData[0]?.date ?? safeLastDate : safeLastDate, safeLastDate] as string[],
       y: [currentPrice, currentPrice],
       type: 'scatter',
       mode: 'lines',
@@ -291,7 +295,7 @@ const Chart: React.FC<ChartProps> = ({
     if (predDate && predPrice !== undefined) {
       // Prediction line
       traces.push({
-        x: [lastDate, predDate],
+        x: [safeLastDate, predDate] as string[],
         y: [currentPrice, predPrice],
         type: 'scatter',
         mode: 'lines+markers',
@@ -310,7 +314,7 @@ const Chart: React.FC<ChartProps> = ({
 
       // Prediction horizontal line
       traces.push({
-        x: [sortedData && sortedData.length > 0 ? sortedData[0].date : predDate, predDate],
+        x: [sortedData && sortedData.length > 0 ? sortedData[0]?.date ?? predDate : predDate, predDate],
         y: [predPrice, predPrice],
         type: 'scatter',
         mode: 'lines',
@@ -488,8 +492,12 @@ const Chart: React.FC<ChartProps> = ({
           
           if (allDates.length === 0) return undefined;
           
-          const earliestDate = new Date(allDates[0]);
-          const latestDate = new Date(allDates[allDates.length - 1]);
+          const firstDate = allDates[0];
+          const lastDate = allDates[allDates.length - 1];
+          if (!firstDate || !lastDate) return undefined;
+          
+          const earliestDate = new Date(firstDate);
+          const latestDate = new Date(lastDate);
           
           // Add 2 days padding on each side to ensure full visibility
           earliestDate.setDate(earliestDate.getDate() - 2);
@@ -500,14 +508,17 @@ const Chart: React.FC<ChartProps> = ({
           
           const predictionsBeforeOct6 = allDates.filter(d => d < '2025-10-06');
           
-          console.log('📅 Chart X-Axis Range:', {
+          // Debug logging in development
+          if (import.meta.env.DEV) {
+            console.warn('📅 Chart X-Axis Range:', {
             earliestDate: allDates[0],
             latestDate: allDates[allDates.length - 1],
             rangeStart,
             rangeEnd,
             predictionsBeforeOct6: predictionsBeforeOct6.length > 0 ? predictionsBeforeOct6 : 'None',
             marketDataStarts: dataDates.length > 0 ? dataDates[0] : 'No market data',
-          });
+            });
+          }
           
           return [rangeStart, rangeEnd];
         })(),
@@ -565,7 +576,7 @@ const Chart: React.FC<ChartProps> = ({
       annotations: [
         // Current price annotation aligned with prediction
         ...(dataToUse && dataToUse.length > 0 ? [{
-          x: prediction && prediction.predicted_price ? prediction.next_day : dataToUse[dataToUse.length - 1].date,
+          x: prediction && prediction.predicted_price ? prediction.next_day : dataToUse[dataToUse.length - 1]?.date ?? '',
           y: currentPrice,
           text: formatLKRValue(currentPrice || 0),
           showarrow: false,
@@ -634,13 +645,13 @@ const Chart: React.FC<ChartProps> = ({
     <div className="w-full relative">
       <Plot
         key={`plot-${currencyUnit}-${data?.length || 0}-${isDark}-${zoomLevel}`}
-        data={plotData || []}
-        layout={layout || {}}
+        data={plotData ?? []}
+        layout={layout as unknown as Plotly.Layout}
         config={config}
         style={{ width: '100%', height: `${height}px` }}
         useResizeHandler={true}
-        onError={(error) => {
-          console.error('Plotly error:', error);
+        onError={(_error) => {
+          console.error('Plotly error:', _error);
         }}
       />
     </div>

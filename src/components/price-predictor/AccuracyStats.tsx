@@ -20,7 +20,6 @@ const AccuracyStats: React.FC<AccuracyStatsProps> = ({
   
   // Use new stats if available, otherwise fall back to old stats
   const averageAccuracy = newStats?.average_accuracy ?? null;
-  const minAccuracy = newStats?.min_accuracy ?? null;
   const maxAccuracy = newStats?.max_accuracy ?? null;
 
   return (

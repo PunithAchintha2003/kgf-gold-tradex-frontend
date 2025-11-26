@@ -1,7 +1,8 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { Button } from './ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Component, ErrorInfo, ReactNode } from 'react';
+import { Button } from '../../components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
+import { errorLogger } from '../../utils/errorHandler';
 
 interface Props {
   children: ReactNode;
@@ -32,7 +33,18 @@ export class ErrorBoundary extends Component<Props, State> {
     };
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    // Log error to centralized error handler
+    if (typeof window !== 'undefined') {
+      errorLogger.logError({
+        message: error.message,
+        timestamp: new Date().toISOString(),
+        userAgent: navigator.userAgent,
+        url: window.location.href,
+        stack: error.stack ?? undefined,
+      });
+    }
+    
     console.error('ErrorBoundary caught an error:', error, errorInfo);
     this.setState({
       error,
@@ -52,7 +64,7 @@ export class ErrorBoundary extends Component<Props, State> {
     window.location.href = '/';
   };
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       if (this.props.fallback) {
         return this.props.fallback;
@@ -71,7 +83,7 @@ export class ErrorBoundary extends Component<Props, State> {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {process.env.NODE_ENV === 'development' && this.state.error && (
+              {import.meta.env.DEV && this.state.error && (
                 <div className="bg-muted p-4 rounded-lg">
                   <p className="text-sm font-mono text-destructive mb-2">
                     {this.state.error.toString()}

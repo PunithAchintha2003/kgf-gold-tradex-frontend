@@ -3,7 +3,7 @@ import { Button } from '../../ui/button';
 import { Card, CardContent } from '../../ui/card';
 import { Badge } from '../../ui/badge';
 import { Clock, TrendingUp, Eye } from 'lucide-react';
-import { ImageWithFallback } from '../../figma/ImageWithFallback';
+import { ImageWithFallback } from '../../../shared/components/figma/ImageWithFallback';
 import { formatPrice } from '../../../utils/dashboardUtils';
 
 interface AuctionsListProps {

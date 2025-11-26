@@ -1,4 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { env } from '../../utils/env';
 
 export interface DailyDataPoint {
   date: string;
@@ -124,10 +125,17 @@ export interface PredictionHistoryResponse {
   total: number;
 }
 
+const API_BASE_URL = env.API_BASE_URL;
+
 export const goldApi = createApi({
   reducerPath: 'goldApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: 'https://kgf-gold-price-predictor.onrender.com',
+    baseUrl: API_BASE_URL,
+    prepareHeaders: (headers) => {
+      // Add any default headers here
+      headers.set('Content-Type', 'application/json');
+      return headers;
+    },
   }),
   tagTypes: ['DailyData', 'RealtimePrice', 'PredictionExplanation', 'ExchangeRate', 'AccuracyVisualization', 'PredictionHistory'],
   endpoints: (builder) => ({

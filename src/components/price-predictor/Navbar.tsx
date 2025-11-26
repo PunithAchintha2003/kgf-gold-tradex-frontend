@@ -3,8 +3,7 @@ import { AppBar, Toolbar, Typography, Box, IconButton, Drawer, useMediaQuery, us
 import { Menu, Close } from '@mui/icons-material';
 import { useTheme } from '../../hooks/useTheme';
 import ThemeToggle from './ThemeToggle';
-import CurrencyDropdown from './CurrencyDropdown';
-import type { CurrencyUnit } from './CurrencyDropdown';
+import CurrencyDropdown, { type CurrencyUnit } from './CurrencyDropdown';
 
 interface NavbarProps {
   currencyUnit: CurrencyUnit;

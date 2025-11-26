@@ -1,74 +1,86 @@
-# KGF Gold Marketplace Platform
+# KGF Gold TradeX
 
-[![React](https://img.shields.io/badge/React-18.3.1-61DAFB?logo=react)](https://reactjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.8.3-3178C6?logo=typescript)](https://www.typescriptlang.org/)
-[![Material UI](https://img.shields.io/badge/Material%20UI-7.3.2-007FFF?logo=mui)](https://mui.com/)
-[![Vite](https://img.shields.io/badge/Vite-7.1.7-646CFF?logo=vite)](https://vitejs.dev/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+> A modern, full-featured gold trading platform built with React, TypeScript, and Vite.
 
-A comprehensive gold marketplace platform featuring product listings, live auctions, AI-powered price predictions, AR try-on functionality, and role-based dashboards for customers, sellers, pawnshops, investors, and administrators.
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue.svg)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-18.3-blue.svg)](https://react.dev/)
+[![Vite](https://img.shields.io/badge/Vite-7.1-purple.svg)](https://vitejs.dev/)
+[![License](https://img.shields.io/badge/License-Private-red.svg)](LICENSE)
+
+## 📋 Table of Contents
+
+- [Overview](#overview)
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Prerequisites](#prerequisites)
+- [Getting Started](#getting-started)
+- [Project Structure](#project-structure)
+- [Available Scripts](#available-scripts)
+- [Configuration](#configuration)
+- [Testing](#testing)
+- [Building for Production](#building-for-production)
+- [Code Style](#code-style)
+- [Security](#security)
+- [Browser Support](#browser-support)
+- [Contributing](#contributing)
+- [License](#license)
+
+## 🎯 Overview
+
+KGF Gold TradeX is a comprehensive gold marketplace platform that enables users to trade, invest, and manage gold assets. The platform features real-time price tracking, AI-powered price predictions, live auctions, and multi-role dashboards for different user types.
 
 ## ✨ Features
 
-### Marketplace
-- **Product Catalog**: Browse verified gold products with detailed information
-- **AR Try-On**: Virtual try-on experience for jewelry using AR technology
-- **Product Search & Filtering**: Advanced search and filter capabilities
-- **Wishlist Management**: Save favorite products for later
-
-### Auctions
-- **Live Auctions**: Real-time auction participation from verified pawnshops
-- **Bidding System**: Interactive bidding interface with live updates
-- **Auction History**: Track past and upcoming auctions
-
-### Price Predictor
-- **Real-time Price Updates**: Live gold price updates every 2 seconds
-- **AI Predictions**: Machine learning-powered next-day price assessments with accuracy tracking
-- **Multi-currency Support**: USD (troy ounce) and LKR (Sri Lankan Rupee) with live exchange rates
-- **Interactive Charts**: Plotly.js integration with zoom, pan, and hover features
-- **Prediction History**: Track historical predictions and accuracy
-
-### User Dashboards
-- **Customer Dashboard**: Order management, wishlist, and purchase history
-- **Seller Dashboard**: Product management, sales analytics, and inventory
-- **Pawnshop Dashboard**: Auction management and inventory tracking
-- **Investor Dashboard**: Digital gold investments and portfolio tracking
-- **Admin Dashboard**: Platform management, user administration, and analytics
-
-### Additional Features
-- **Authentication System**: Secure login and registration
-- **Chat Support**: Real-time chat functionality
-- **Dark/Light Theme**: Persistent theme preferences with smooth transitions
-- **Responsive Design**: Mobile-first approach optimized for all devices
-- **State Management**: Redux Toolkit with RTK Query for efficient data caching
+- **🏦 Gold Trading** - Real-time gold price tracking and trading
+- **💎 Digital Investment** - Digital gold investment platform
+- **🔨 Auctions** - Live auction system for gold products
+- **👓 AR Try-On** - Augmented reality jewelry try-on experience
+- **📊 Price Predictor** - AI-powered gold price prediction with accuracy visualization
+- **👥 Multi-Role Dashboards** - Separate dashboards for:
+  - Buyers/Customers
+  - Sellers
+  - Pawnshops
+  - Investors
+  - Administrators
+- **🌍 Internationalization** - Support for English and Sinhala
+- **🌙 Dark Mode** - Full dark mode support with theme persistence
+- **📱 Responsive Design** - Mobile-first, fully responsive UI
+- **⚡ Performance Optimized** - Code splitting, lazy loading, and bundle optimization
 
 ## 🛠️ Tech Stack
 
-### Frontend
-- **React 18.3** - UI framework
-- **TypeScript 5.8** - Type safety
-- **Vite 7.1** - Build tool and dev server
-- **Material UI 7.3** - Component library
-- **Tailwind CSS 4.1** - Utility-first styling
-- **Radix UI** - Accessible component primitives
-- **Redux Toolkit** - State management
-- **React Router 7.9** - Client-side routing
-- **Plotly.js** - Interactive charts
-- **Recharts** - Additional charting capabilities
-- **React Hook Form** - Form management
-- **Lucide React** - Icon library
+### Core
+- **Framework**: [React](https://react.dev/) 18.3 with [TypeScript](https://www.typescriptlang.org/) 5.8
+- **Build Tool**: [Vite](https://vitejs.dev/) 7.1
+- **State Management**: [Redux Toolkit](https://redux-toolkit.js.org/) with [RTK Query](https://redux-toolkit.js.org/rtk-query/overview)
+- **Routing**: Custom router implementation
 
-### Build & Development
-- **Vite** - Fast build tool and HMR
-- **ESLint** - Code linting
-- **TypeScript ESLint** - TypeScript-specific linting
-- **Terser** - Code minification
+### UI & Styling
+- **CSS Framework**: [Tailwind CSS](https://tailwindcss.com/) 4.1
+- **UI Components**: [Radix UI](https://www.radix-ui.com/) + [shadcn/ui](https://ui.shadcn.com/)
+- **Icons**: [Lucide React](https://lucide.dev/) + [React Icons](https://react-icons.github.io/react-icons/)
+- **Theme**: [next-themes](https://github.com/pacocoursey/next-themes)
+
+### Data Visualization
+- **Charts**: [Plotly.js](https://plotly.com/javascript/) + [Recharts](https://recharts.org/)
+
+### Testing
+- **Test Framework**: [Vitest](https://vitest.dev/) 2.1
+- **Testing Library**: [React Testing Library](https://testing-library.com/react/)
+- **Test Environment**: jsdom
+
+### Code Quality
+- **Linting**: [ESLint](https://eslint.org/) with TypeScript support
+- **Formatting**: [Prettier](https://prettier.io/)
+- **Type Checking**: TypeScript strict mode
 
 ## 📋 Prerequisites
 
-- **Node.js**: 22.x or higher
-- **npm**: 9.0 or higher
-- **Modern Browser**: Chrome, Firefox, Safari, or Edge (latest versions)
+Before you begin, ensure you have the following installed:
+
+- **Node.js** 20.0 or higher
+- **npm** 9.0 or higher (or yarn/pnpm)
+- **Git** (for version control)
 
 ## 🚀 Getting Started
 
@@ -76,7 +88,7 @@ A comprehensive gold marketplace platform featuring product listings, live aucti
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/your-username/kgf-gold-tradex-frontend.git
+   git clone <repository-url>
    cd kgf-gold-tradex-frontend
    ```
 
@@ -85,204 +97,309 @@ A comprehensive gold marketplace platform featuring product listings, live aucti
    npm install
    ```
 
-3. **Start development server**
+### Environment Setup
+
+1. **Create environment file**
    ```bash
-   npm run dev
+   cp .env.example .env
    ```
 
-4. **Open your browser**
-   The application will automatically open at `http://localhost:5173`
+2. **Configure environment variables**
+   
+   Edit `.env` with your configuration:
+   ```env
+   # API Configuration
+   VITE_API_BASE_URL=https://kgf-gold-price-predictor.onrender.com
+   
+   # Application Configuration
+   VITE_APP_ENV=development
+   VITE_APP_NAME=KGF Gold TradeX
+   VITE_APP_VERSION=0.1.0
+   
+   # Optional: Error Logging
+   VITE_ENABLE_ERROR_LOGGING=false
+   
+   # Optional: Demo Password
+   VITE_DEMO_PASSWORD=your-demo-password
+   ```
 
-### Build for Production
+### Development
+
+Start the development server:
 
 ```bash
-# Build the application
-npm run build
-
-# Build with bundle analysis
-npm run build:analyze
-
-# Production build with optimizations
-npm run build:prod
-
-# Preview production build locally
-npm run preview
+npm run dev
 ```
+
+The application will be available at `http://localhost:5173`
 
 ## 📁 Project Structure
 
 ```
-kgf-gold-tradex-frontend/
-├── src/
-│   ├── components/              # React components
-│   │   ├── dashboards/          # Role-based dashboards
-│   │   │   ├── AdminDashboard.tsx
-│   │   │   ├── CustomerDashboard.tsx
-│   │   │   ├── SellerDashboard.tsx
-│   │   │   ├── PawnshopDashboard.tsx
-│   │   │   ├── InvestorDashboard.tsx
-│   │   │   └── components/      # Shared dashboard components
-│   │   ├── price-predictor/     # Price prediction features
-│   │   │   ├── PricePredictorPage.tsx
-│   │   │   ├── Dashboard.tsx
-│   │   │   ├── Chart.tsx
-│   │   │   └── ...
-│   │   ├── ui/                  # Reusable UI components (shadcn/ui)
-│   │   ├── Header.tsx
-│   │   ├── HomePage.tsx
-│   │   ├── ProductsPage.tsx
-│   │   ├── AuctionsPage.tsx
-│   │   ├── LoginPage.tsx
-│   │   ├── RegisterPage.tsx
-│   │   ├── Router.tsx
-│   │   ├── ARTryOnModal.tsx
-│   │   └── ChatModal.tsx
-│   ├── contexts/                # React contexts
-│   │   └── AppContext.tsx
-│   ├── store/                   # Redux store
-│   │   ├── index.ts
-│   │   ├── api/                 # RTK Query APIs
-│   │   │   └── goldApi.ts
-│   │   └── slices/              # Redux slices
-│   │       └── themeSlice.ts
-│   ├── hooks/                   # Custom React hooks
-│   │   ├── useTheme.ts
-│   │   └── useWebSocket.ts
-│   ├── utils/                   # Utility functions
-│   │   ├── currencyConverter.ts
-│   │   └── dashboardUtils.ts
-│   ├── theme/                   # Theme configuration
-│   │   └── theme.ts
-│   ├── styles/                  # Global styles
-│   │   └── globals.css
-│   ├── constants/               # Constants and mock data
-│   │   └── mockData.ts
-│   ├── App.tsx                  # Root component
-│   ├── main.tsx                 # Entry point
-│   └── index.css                # Base styles
-├── public/                      # Static assets
-├── build/                       # Production build output
-├── vite.config.ts               # Vite configuration
-├── package.json
-└── README.md
+src/
+├── app/                    # App-level configuration
+├── assets/                 # Static assets (images, fonts, etc.)
+├── components/             # Feature-specific components
+│   ├── dashboards/        # Dashboard feature components
+│   │   └── components/    # Dashboard sub-components
+│   ├── price-predictor/   # Price predictor feature components
+│   └── ui/                # Base UI components (shadcn/ui)
+├── constants/             # Application constants
+├── contexts/              # React Context providers
+├── hooks/                 # Custom React hooks
+├── layouts/               # Layout components (Header, Footer, etc.)
+├── lib/                   # Library configurations and utilities
+├── pages/                 # Page-level components
+├── routes/                # Routing configuration
+├── shared/                # Shared components and utilities
+│   ├── components/        # Reusable shared components
+│   ├── hooks/            # Shared hooks
+│   └── utils/            # Shared utilities
+├── store/                 # Redux store configuration
+│   ├── api/              # RTK Query API definitions
+│   └── slices/           # Redux slices
+├── styles/                # Global styles
+├── test/                  # Test setup and utilities
+├── theme/                 # Theme configuration
+├── types/                 # TypeScript type definitions
+└── utils/                 # Utility functions
 ```
 
-## 🔧 Available Scripts
+For detailed structure documentation, see [PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md).
 
+## 📜 Available Scripts
+
+### Development
 ```bash
-npm run dev          # Start development server (port 5173)
-npm run build        # Build for production
-npm run build:analyze # Build with bundle analysis
-npm run build:prod   # Production build with optimizations
-npm run preview      # Preview production build locally
-npm run lint         # Run ESLint
-npm run lint:fix     # Fix linting errors automatically
-npm run type-check   # TypeScript type checking without emitting
-npm run clean        # Clean build artifacts and cache
+npm run dev              # Start development server
+npm run preview          # Preview production build locally
 ```
 
-## 🎨 Key Components
+### Building
+```bash
+npm run build            # Production build
+npm run build:analyze    # Production build with bundle analysis
+npm run build:prod       # Production build with NODE_ENV=production
+```
 
-### Router
-Main routing component handling navigation and route protection based on authentication and user roles.
+### Code Quality
+```bash
+npm run lint             # Run ESLint
+npm run lint:fix         # Fix ESLint issues automatically
+npm run type-check       # Run TypeScript type checking
+```
 
-### Dashboards
-- **CustomerDashboard**: Order management, wishlist, purchase history
-- **SellerDashboard**: Product management, sales analytics
-- **PawnshopDashboard**: Auction management, inventory
-- **InvestorDashboard**: Digital gold portfolio, investments
-- **AdminDashboard**: Platform administration, user management
+### Testing
+```bash
+npm test                 # Run tests in watch mode
+npm run test:ci          # Run tests once (CI mode)
+npm run test:coverage    # Run tests with coverage report
+npm run test:ui          # Run tests with Vitest UI
+```
 
-### Price Predictor
-- **PricePredictorPage**: Main price prediction interface
-- **Chart**: Interactive Plotly.js charts with historical data
-- **AccuracyStats**: Model performance metrics
-- **PredictionExplanation**: AI prediction breakdown
+### Maintenance
+```bash
+npm run clean            # Clean build artifacts and cache
+```
 
-### Marketplace
-- **ProductsPage**: Product catalog with search and filters
-- **AuctionsPage**: Live auction interface
-- **ARTryOnModal**: AR try-on experience for jewelry
-- **ChatModal**: Real-time chat support
+## ⚙️ Configuration
 
-## 🌐 API Integration
+### TypeScript
 
-The frontend connects to backend APIs for:
-- User authentication and authorization
-- Product catalog and management
-- Auction data and bidding
-- Gold price data and predictions
-- Real-time chat functionality
-- Order and transaction management
+The project uses strict TypeScript configuration. Key settings:
 
-## 🎯 Development Guidelines
+- **Strict mode**: Enabled with all strict checks
+- **Path aliases**: Configured for cleaner imports (`@/components`, `@/utils`, etc.)
+- **Module resolution**: Bundler mode for Vite compatibility
 
-### Code Style
-- Follow TypeScript best practices
-- Use functional components with hooks
-- Implement proper error handling
-- Write reusable components
-- Follow the existing component structure
+See `tsconfig.json` for full configuration.
 
-### State Management
-- Use Redux Toolkit for global state
-- Use React Context for app-level state
-- Use local state for component-specific data
-- Leverage RTK Query for API calls
+### ESLint
 
-### Styling
-- Use Tailwind CSS for utility-first styling
-- Use Radix UI components for accessible primitives
-- Follow Material UI design principles where applicable
-- Maintain consistent spacing and typography
+ESLint is configured with industry-standard rules:
 
-## 🚢 Deployment
+- TypeScript ESLint rules
+- React hooks rules
+- Code quality rules (no console.log, prefer const, etc.)
 
-### Build Configuration
-- Build output directory: `build/`
-- Development server port: `5173`
-- Production optimizations: Enabled (minification, tree-shaking)
-- Source maps: Disabled in production
+See `eslint.config.js` for full configuration.
+
+### Vite
+
+Vite configuration includes:
+
+- **Code splitting**: Route-based and vendor-based chunking
+- **Tree shaking**: Automatic dead code elimination
+- **Asset optimization**: Image and asset optimization
+- **Source maps**: Generated in development only
+- **Minification**: Terser with aggressive optimizations
+
+See `vite.config.ts` for full configuration.
 
 ### Environment Variables
-Create a `.env` file in the root directory for environment-specific configuration:
-```env
-VITE_API_BASE_URL=your_api_url
-VITE_WS_URL=your_websocket_url
+
+Environment variables are type-safe and validated. See `src/utils/env.ts` for available variables.
+
+## 🧪 Testing
+
+### Test Setup
+
+Tests are configured using Vitest and React Testing Library:
+
+- **Test files**: `*.test.ts` or `*.test.tsx`
+- **Test environment**: jsdom (browser-like environment)
+- **Coverage**: v8 provider
+
+### Writing Tests
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import { HomePage } from '@/pages';
+
+describe('HomePage', () => {
+  it('renders correctly', () => {
+    render(<HomePage onNavigate={() => {}} />);
+    expect(screen.getByText('Welcome')).toBeInTheDocument();
+  });
+});
 ```
+
+### Test Coverage
+
+Run tests with coverage:
+
+```bash
+npm run test:coverage
+```
+
+Coverage reports are generated in the `coverage/` directory.
+
+## 🏗️ Building for Production
+
+### Production Build
+
+```bash
+npm run build
+```
+
+This will:
+1. Run TypeScript type checking
+2. Build the application with optimizations
+3. Generate production-ready assets in the `build/` directory
+
+### Build Analysis
+
+Analyze bundle size and composition:
+
+```bash
+npm run build:analyze
+```
+
+This generates a visual bundle analysis report.
+
+### Preview Production Build
+
+Preview the production build locally:
+
+```bash
+npm run build
+npm run preview
+```
+
+## 📝 Code Style
+
+### Formatting
+
+The project uses Prettier for consistent code formatting. Format code automatically:
+
+```bash
+npm run lint:fix
+```
+
+### Editor Configuration
+
+The project includes `.editorconfig` for consistent editor settings across different IDEs.
+
+### Import Organization
+
+Use path aliases for cleaner imports:
+
+```typescript
+// ✅ Good
+import { Button } from '@/components/ui/button';
+import { HomePage } from '@/pages';
+import { convertPrice } from '@/utils/currencyConverter';
+
+// ❌ Avoid
+import { Button } from '../../../components/ui/button';
+```
+
+### Naming Conventions
+
+- **Components**: `PascalCase.tsx` (e.g., `HomePage.tsx`)
+- **Utilities**: `camelCase.ts` (e.g., `currencyConverter.ts`)
+- **Types**: `camelCase.ts` or `index.ts`
+- **Constants**: `camelCase.ts` or `UPPER_SNAKE_CASE.ts`
+
+## 🔒 Security
+
+### Security Features
+
+- **Environment Variables**: Sensitive data stored in environment variables
+- **Security Headers**: X-Content-Type-Options, X-Frame-Options, etc.
+- **Content Security Policy**: Ready for CSP implementation
+- **Input Validation**: Form validation and sanitization
+- **Error Handling**: Centralized error logging (ready for Sentry/LogRocket)
+
+### Security Best Practices
+
+- Never commit `.env` files
+- Use environment variables for API keys and secrets
+- Validate and sanitize user inputs
+- Keep dependencies up to date
+
+## 🌐 Browser Support
+
+The application supports modern browsers:
+
+- **Chrome** (latest)
+- **Firefox** (latest)
+- **Safari** (latest)
+- **Edge** (latest)
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+This is a private project. When contributing:
 
-### Areas for Contribution
-- UI/UX improvements
-- Additional features and functionality
-- Performance optimizations
-- Accessibility enhancements
-- Test coverage
-- Documentation improvements
-- Bug fixes
+1. Follow the coding standards
+2. Write tests for new features
+3. Update documentation as needed
+4. Submit PRs for review
+5. Ensure all checks pass (lint, type-check, tests)
 
 ### Development Workflow
-1. Create a feature branch from `main`
+
+1. Create a feature branch
 2. Make your changes
-3. Run linting and type checking
-4. Test your changes
+3. Run `npm run lint` and `npm run type-check`
+4. Write/update tests
 5. Submit a pull request
 
-## 📝 License
+## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## ⚠️ Disclaimer
-
-This application is for educational and research purposes only. The AI predictions and market data should not be considered as financial advice or used for actual trading decisions. Always consult with qualified financial professionals before making investment decisions.
+Private - All rights reserved
 
 ## 📞 Support
 
-For issues, questions, or contributions, please open an issue on the GitHub repository.
+For support, please contact the development team.
+
+## 📚 Additional Documentation
+
+- [PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md) - Detailed project structure
+- [OPTIMIZATION_SUMMARY.md](./OPTIMIZATION_SUMMARY.md) - Optimization details
+- [STRUCTURE_ANALYSIS.md](./STRUCTURE_ANALYSIS.md) - Structure analysis
 
 ---
 
-**Built with ❤️ using React, TypeScript, Vite, and Material UI**
+**Built with ❤️ by the KGF Development Team**

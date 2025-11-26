@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Card, CardContent } from './ui/card';
-import { Badge } from './ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Card, CardContent } from '../components/ui/card';
+import { Badge } from '../components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { useApp } from '../contexts/AppContext';
 import { Search, Filter, Star, Shield, Smartphone, Heart, ShoppingCart } from 'lucide-react';
-import { ImageWithFallback } from './figma/ImageWithFallback';
+import { ImageWithFallback } from '../shared/components/figma/ImageWithFallback';
 import { Product } from '../types';
 
 interface ProductsPageProps {
@@ -14,7 +14,7 @@ interface ProductsPageProps {
   onTryAR: (product: Product) => void;
 }
 
-export const ProductsPage: React.FC<ProductsPageProps> = ({ onNavigate, onTryAR }) => {
+export const ProductsPage: React.FC<ProductsPageProps> = ({ onNavigate: _onNavigate, onTryAR }) => {
   const { t } = useApp();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -263,7 +263,29 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ onNavigate, onTryAR 
                       size="sm" 
                       variant="secondary" 
                       className="w-10 h-10 p-0"
-                      onClick={() => onTryAR(product)}
+                      onClick={() => {
+                        // Convert mock product to Product type
+                        const productForAR: Product = {
+                          id: product.id.toString(),
+                          name: product.name,
+                          description: '',
+                          price: product.price,
+                          currency: 'LKR',
+                          category: product.category as Product['category'],
+                          images: [product.image],
+                          karat: parseInt(product.purity) || 18,
+                          weight: parseFloat(product.weight) || 0,
+                          seller: {
+                            id: '1',
+                            name: product.seller,
+                            verified: product.isVerified,
+                            rating: product.rating,
+                          },
+                          inStock: true,
+                          featured: product.isOnSale,
+                        };
+                        onTryAR(productForAR);
+                      }}
                     >
                       <Smartphone className="h-4 w-4" />
                     </Button>
@@ -314,7 +336,29 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ onNavigate, onTryAR 
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={() => onTryAR(product)}
+                        onClick={() => {
+                          // Convert mock product to Product type
+                          const productForAR: Product = {
+                            id: product.id.toString(),
+                            name: product.name,
+                            description: '',
+                            price: product.price,
+                            currency: 'LKR',
+                            category: product.category as Product['category'],
+                            images: [product.image],
+                            karat: parseInt(product.purity) || 18,
+                            weight: parseFloat(product.weight) || 0,
+                            seller: {
+                              id: '1',
+                              name: product.seller,
+                              verified: product.isVerified,
+                              rating: product.rating,
+                            },
+                            inStock: true,
+                            featured: product.isOnSale,
+                          };
+                          onTryAR(productForAR);
+                        }}
                       >
                         <Smartphone className="h-4 w-4" />
                       </Button>

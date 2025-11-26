@@ -2,7 +2,7 @@ import React from 'react';
 import { Button } from '../../ui/button';
 import { Card, CardContent } from '../../ui/card';
 import { Heart } from 'lucide-react';
-import { ImageWithFallback } from '../../figma/ImageWithFallback';
+import { ImageWithFallback } from '../../../shared/components/figma/ImageWithFallback';
 import { formatPrice } from '../../../utils/dashboardUtils';
 
 interface WishlistGridProps {

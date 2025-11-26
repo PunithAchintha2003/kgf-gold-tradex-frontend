@@ -28,7 +28,7 @@ interface AppContextType {
   // User
   user: User | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => void;
   logout: () => void;
   switchRole: (role: UserRole) => void;
 }
@@ -214,7 +214,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return translations[language][key as keyof typeof translations['en']] || key;
   }, [language]);
 
-  const login = useCallback(async (email: string, password: string) => {
+  const login = useCallback((email: string, _password: string) => {
     // Mock login - in real app this would call an API
     const mockUser: User = {
       id: '1',
