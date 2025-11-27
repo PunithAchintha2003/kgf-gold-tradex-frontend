@@ -9,3 +9,4 @@ export { RegisterPage } from './RegisterPage';
 export { ProductsPage } from './ProductsPage';
 export { AuctionsPage } from './AuctionsPage';
 
+
