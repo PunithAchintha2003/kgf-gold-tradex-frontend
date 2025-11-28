@@ -16,6 +16,14 @@ export interface ConvertedPrice {
  * @returns Converted price in LKR per 1 Pawn
  */
 export function convertTroyOunceToPawn(usdPerTroyOunce: number, usdToLkrRate: number): ConvertedPrice {
+  // Validate inputs
+  if (!isFinite(usdPerTroyOunce) || usdPerTroyOunce <= 0) {
+    throw new Error(`Invalid USD price: ${usdPerTroyOunce}`);
+  }
+  if (!isFinite(usdToLkrRate) || usdToLkrRate <= 0) {
+    throw new Error(`Invalid exchange rate: ${usdToLkrRate}`);
+  }
+  
   // Convert USD per Troy Ounce to USD per gram
   const usdPerGram = usdPerTroyOunce / TROY_OUNCE_GRAMS;
   
@@ -100,15 +108,47 @@ export function convertChartData(
   unit: 'troy-ounce' | 'pawn',
   usdToLkrRate: number
 ) {
+  if (!Array.isArray(data)) {
+    console.warn('convertChartData: Invalid data array');
+    return [];
+  }
+  
   if (unit === 'troy-ounce') {
     return data;
   }
   
-  return data.map(point => ({
-    ...point,
-    open: convertTroyOunceToPawn(point.open, usdToLkrRate).price,
-    high: convertTroyOunceToPawn(point.high, usdToLkrRate).price,
-    low: convertTroyOunceToPawn(point.low, usdToLkrRate).price,
-    close: convertTroyOunceToPawn(point.close, usdToLkrRate).price,
-  }));
+  // Validate exchange rate
+  if (!isFinite(usdToLkrRate) || usdToLkrRate <= 0) {
+    console.warn('convertChartData: Invalid exchange rate, returning original data');
+    return data;
+  }
+  
+  return data.map(point => {
+    try {
+      // Validate point data
+      if (!point || typeof point !== 'object') {
+        console.warn('convertChartData: Invalid point data', point);
+        return point;
+      }
+      
+      const { open, high, low, close } = point;
+      
+      // Validate all price values are valid numbers
+      if (!isFinite(open) || !isFinite(high) || !isFinite(low) || !isFinite(close)) {
+        console.warn('convertChartData: Invalid price values in point', point);
+        return point;
+      }
+      
+      return {
+        ...point,
+        open: convertTroyOunceToPawn(open, usdToLkrRate).price,
+        high: convertTroyOunceToPawn(high, usdToLkrRate).price,
+        low: convertTroyOunceToPawn(low, usdToLkrRate).price,
+        close: convertTroyOunceToPawn(close, usdToLkrRate).price,
+      };
+    } catch (error) {
+      console.error('convertChartData: Error converting point', point, error);
+      return point; // Return original point if conversion fails
+    }
+  });
 }

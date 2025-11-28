@@ -91,11 +91,19 @@ const Chart: React.FC<ChartProps> = ({
     const dataToUse = data && data.length > 0 ? data : [];
 
     // Sort data by date to ensure proper chronological order
-    const sortedData = [...dataToUse].sort((a, b) => {
-      const dateA = new Date(a.date).getTime();
-      const dateB = new Date(b.date).getTime();
-      return dateA - dateB;
-    });
+    const sortedData = [...dataToUse]
+      .filter(d => d && d.date) // Filter out invalid entries
+      .sort((a, b) => {
+        try {
+          const dateA = new Date(a.date).getTime();
+          const dateB = new Date(b.date).getTime();
+          if (isNaN(dateA) || isNaN(dateB)) return 0;
+          return dateA - dateB;
+        } catch (error) {
+          console.error('Error sorting data by date:', error);
+          return 0;
+        }
+      });
 
     // Debug: Log what data we're plotting
     if (sortedData.length > 0) {
@@ -130,12 +138,22 @@ const Chart: React.FC<ChartProps> = ({
         // Data is already converted by convertChartData in Dashboard, so use directly
         let price: number | null = null;
         
-        if (d.close != null) {
+        if (d.close != null && typeof d.close === 'number' && isFinite(d.close)) {
           // close is already in the target currency (converted by convertChartData)
           price = d.close;
-        } else if (d.predicted_price != null) {
+        } else if (d.predicted_price != null && typeof d.predicted_price === 'number' && isFinite(d.predicted_price)) {
           // predicted_price is still in USD/troy-ounce, so convert it
-          price = convertPrice(d.predicted_price, currencyUnit, usdToLkrRate).price;
+          try {
+            if (usdToLkrRate && usdToLkrRate > 0 && isFinite(usdToLkrRate)) {
+              price = convertPrice(d.predicted_price, currencyUnit, usdToLkrRate).price;
+            } else {
+              console.warn('Invalid exchange rate for predicted_price conversion');
+              price = d.predicted_price; // Use unconverted price as fallback
+            }
+          } catch (error) {
+            console.error('Error converting predicted_price:', error);
+            price = d.predicted_price; // Use unconverted price as fallback
+          }
         }
         
         return {
@@ -169,7 +187,7 @@ const Chart: React.FC<ChartProps> = ({
     // Add predictions from data array (includes predictions before Oct 6 that backend added)
     if (sortedData && sortedData.length > 0) {
       sortedData.forEach(d => {
-        if (d.predicted_price != null) {
+        if (d.predicted_price != null && typeof d.predicted_price === 'number' && isFinite(d.predicted_price) && d.date) {
           // Check if this date already exists to avoid duplicates
           const exists = allPredictions.some(p => p.date === d.date);
           if (!exists) {
@@ -185,7 +203,7 @@ const Chart: React.FC<ChartProps> = ({
     // Add all historical predictions (including future ones)
     if (historicalPredictions && historicalPredictions.length > 0) {
       historicalPredictions.forEach(p => {
-        if (p.predicted_price != null) {
+        if (p && p.predicted_price != null && typeof p.predicted_price === 'number' && isFinite(p.predicted_price) && p.date) {
           // Check if this date already exists to avoid duplicates
           const exists = allPredictions.some(existing => existing.date === p.date);
           if (!exists) {
@@ -199,7 +217,11 @@ const Chart: React.FC<ChartProps> = ({
     }
     
     // Add the main prediction if it exists and isn't already in historical predictions
-    if (prediction && prediction.predicted_price && prediction.next_day) {
+    if (prediction && 
+        prediction.predicted_price != null && 
+        typeof prediction.predicted_price === 'number' && 
+        isFinite(prediction.predicted_price) && 
+        prediction.next_day) {
       const predictionDate = prediction.next_day;
       const alreadyIncluded = allPredictions.some(p => p.date === predictionDate);
       if (!alreadyIncluded) {
@@ -212,17 +234,49 @@ const Chart: React.FC<ChartProps> = ({
     
     // Sort predictions by date to ensure proper line drawing (ascending order)
     allPredictions.sort((a, b) => {
-      const dateA = new Date(a.date).getTime();
-      const dateB = new Date(b.date).getTime();
-      return dateA - dateB;
+      try {
+        if (!a || !a.date || !b || !b.date) return 0;
+        const dateA = new Date(a.date).getTime();
+        const dateB = new Date(b.date).getTime();
+        if (isNaN(dateA) || isNaN(dateB)) return 0;
+        return dateA - dateB;
+      } catch (error) {
+        console.error('Error sorting allPredictions:', error);
+        return 0;
+      }
     });
 
     if (allPredictions.length > 0) {
       // Convert predictions to current currency unit
-      const convertedGhostData = allPredictions.map(p => ({
-        ...p,
-        predicted_price: convertPrice(p.predicted_price, currencyUnit, usdToLkrRate).price
-      }));
+      const convertedGhostData = allPredictions
+        .filter(p => p && p.predicted_price != null && typeof p.predicted_price === 'number' && isFinite(p.predicted_price) && p.date)
+        .map(p => {
+          try {
+            if (usdToLkrRate && usdToLkrRate > 0 && isFinite(usdToLkrRate)) {
+              return {
+                ...p,
+                predicted_price: convertPrice(p.predicted_price, currencyUnit, usdToLkrRate).price
+              };
+            } else {
+              console.warn('Invalid exchange rate for prediction conversion');
+              return p; // Return unconverted prediction
+            }
+          } catch (error) {
+            console.error('Error converting prediction price:', error);
+            return p; // Return unconverted prediction
+          }
+        })
+        .sort((a, b) => {
+          try {
+            const dateA = new Date(a.date).getTime();
+            const dateB = new Date(b.date).getTime();
+            if (isNaN(dateA) || isNaN(dateB)) return 0;
+            return dateA - dateB;
+          } catch (error) {
+            console.error('Error sorting converted predictions:', error);
+            return 0;
+          }
+        });
 
       traces.push({
         x: convertedGhostData.map(p => p.date),
@@ -249,9 +303,19 @@ const Chart: React.FC<ChartProps> = ({
     let predDate: string | undefined;
     let predPrice: number | undefined;
 
-    if (prediction && prediction.predicted_price) {
+    if (prediction && prediction.predicted_price != null && typeof prediction.predicted_price === 'number' && isFinite(prediction.predicted_price)) {
       predDate = prediction.next_day;
-      predPrice = convertPrice(prediction.predicted_price, currencyUnit, usdToLkrRate).price;
+      try {
+        if (usdToLkrRate && usdToLkrRate > 0 && isFinite(usdToLkrRate)) {
+          predPrice = convertPrice(prediction.predicted_price, currencyUnit, usdToLkrRate).price;
+        } else {
+          console.warn('Invalid exchange rate for prediction price conversion');
+          predPrice = prediction.predicted_price; // Use unconverted price as fallback
+        }
+      } catch (error) {
+        console.error('Error converting prediction price:', error);
+        predPrice = prediction.predicted_price; // Use unconverted price as fallback
+      }
     }
 
     // Current price marker - use last available date from sorted data
@@ -359,13 +423,31 @@ const Chart: React.FC<ChartProps> = ({
       const allPrices = dataToUse.filter(d => d.close != null).map(d => d.close!);
       // Also include predicted_price values for y-axis range (convert from USD)
       dataToUse.forEach(d => {
-        if (d.predicted_price != null && d.close == null) {
-          allPrices.push(convertPrice(d.predicted_price, currencyUnit, usdToLkrRate).price);
+        if (d.predicted_price != null && typeof d.predicted_price === 'number' && isFinite(d.predicted_price) && d.close == null) {
+          try {
+            if (usdToLkrRate && usdToLkrRate > 0 && isFinite(usdToLkrRate)) {
+              allPrices.push(convertPrice(d.predicted_price, currencyUnit, usdToLkrRate).price);
+            } else {
+              allPrices.push(d.predicted_price); // Use unconverted price
+            }
+          } catch (error) {
+            console.error('Error converting predicted_price for y-axis:', error);
+            allPrices.push(d.predicted_price); // Use unconverted price
+          }
         }
       });
-      if (currentPrice > 0) allPrices.push(currentPrice);
-      if (prediction && prediction.predicted_price) {
-        allPrices.push(convertPrice(prediction.predicted_price, currencyUnit, usdToLkrRate).price);
+      if (currentPrice > 0 && isFinite(currentPrice)) allPrices.push(currentPrice);
+      if (prediction && prediction.predicted_price != null && typeof prediction.predicted_price === 'number' && isFinite(prediction.predicted_price)) {
+        try {
+          if (usdToLkrRate && usdToLkrRate > 0 && isFinite(usdToLkrRate)) {
+            allPrices.push(convertPrice(prediction.predicted_price, currencyUnit, usdToLkrRate).price);
+          } else {
+            allPrices.push(prediction.predicted_price); // Use unconverted price
+          }
+        } catch (error) {
+          console.error('Error converting prediction price for y-axis:', error);
+          allPrices.push(prediction.predicted_price); // Use unconverted price
+        }
       }
       
       if (allPrices.length === 0) return [0];
@@ -413,28 +495,63 @@ const Chart: React.FC<ChartProps> = ({
       return levels.filter(val => val > 0); // Filter out zero if it appears
     };
 
-    const predPriceConverted = prediction && prediction.predicted_price 
-        ? convertPrice(prediction.predicted_price, currencyUnit, usdToLkrRate).price 
+    const predPriceConverted = prediction && 
+        prediction.predicted_price != null && 
+        typeof prediction.predicted_price === 'number' && 
+        isFinite(prediction.predicted_price)
+        ? (() => {
+            try {
+              if (usdToLkrRate && usdToLkrRate > 0 && isFinite(usdToLkrRate)) {
+                return convertPrice(prediction.predicted_price, currencyUnit, usdToLkrRate).price;
+              } else {
+                console.warn('Invalid exchange rate for predPriceConverted');
+                return prediction.predicted_price;
+              }
+            } catch (error) {
+              console.error('Error converting predPriceConverted:', error);
+              return prediction.predicted_price;
+            }
+          })()
         : undefined;
 
     // Calculate y-axis range with padding for zoom out effect
     const getAllPrices = () => {
       // Include close prices from data (already converted by convertChartData)
-      const prices = dataToUse.filter(d => d.close != null).map(d => d.close!);
+      const prices = dataToUse
+        .filter(d => d.close != null && typeof d.close === 'number' && isFinite(d.close))
+        .map(d => d.close!);
       // Also include predicted_price as fallback for dates without close values
       // Note: predicted_price is still in USD, so convert it
       dataToUse.forEach(d => {
-        if (d.predicted_price != null && d.close == null) {
-          prices.push(convertPrice(d.predicted_price, currencyUnit, usdToLkrRate).price);
+        if (d.predicted_price != null && typeof d.predicted_price === 'number' && isFinite(d.predicted_price) && d.close == null) {
+          try {
+            if (usdToLkrRate && usdToLkrRate > 0 && isFinite(usdToLkrRate)) {
+              prices.push(convertPrice(d.predicted_price, currencyUnit, usdToLkrRate).price);
+            } else {
+              prices.push(d.predicted_price); // Use unconverted price
+            }
+          } catch (error) {
+            console.error('Error converting predicted_price in getAllPrices:', error);
+            prices.push(d.predicted_price); // Use unconverted price
+          }
         }
       });
-      if (currentPrice > 0) prices.push(currentPrice);
-      if (predPriceConverted !== undefined) prices.push(predPriceConverted);
+      if (currentPrice > 0 && isFinite(currentPrice)) prices.push(currentPrice);
+      if (predPriceConverted !== undefined && isFinite(predPriceConverted)) prices.push(predPriceConverted);
       // Include all prediction prices from historical_predictions (convert from USD)
       if (historicalPredictions && historicalPredictions.length > 0) {
         historicalPredictions.forEach(p => {
-          if (p.predicted_price) {
-            prices.push(convertPrice(p.predicted_price, currencyUnit, usdToLkrRate).price);
+          if (p.predicted_price != null && typeof p.predicted_price === 'number' && isFinite(p.predicted_price)) {
+            try {
+              if (usdToLkrRate && usdToLkrRate > 0 && isFinite(usdToLkrRate)) {
+                prices.push(convertPrice(p.predicted_price, currencyUnit, usdToLkrRate).price);
+              } else {
+                prices.push(p.predicted_price); // Use unconverted price
+              }
+            } catch (error) {
+              console.error('Error converting historical prediction price:', error);
+              prices.push(p.predicted_price); // Use unconverted price
+            }
           }
         });
       }
