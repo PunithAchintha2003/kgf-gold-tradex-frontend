@@ -396,9 +396,7 @@ For support, please contact the development team.
 
 ## 📚 Additional Documentation
 
-- [PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md) - Detailed project structure
-- [OPTIMIZATION_SUMMARY.md](./OPTIMIZATION_SUMMARY.md) - Optimization details
-- [STRUCTURE_ANALYSIS.md](./STRUCTURE_ANALYSIS.md) - Structure analysis
+For detailed project structure and organization, refer to the inline code comments and the structure outlined in this README.
 
 ---
 

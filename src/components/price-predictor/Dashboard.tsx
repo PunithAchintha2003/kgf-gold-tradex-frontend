@@ -103,35 +103,41 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
 
   // Debug: Log data to see what dates we're receiving
   useEffect(() => {
-    if (dailyData) {
-      const marketDates = dailyData.data ? dailyData.data.map(d => d.date).sort() : [];
-      const predictionDates = dailyData.historical_predictions 
-        ? dailyData.historical_predictions.map(p => p.date).sort() 
-        : [];
-      
-      // Count data points with predicted_price (from backend enhancement)
-      const dataWithPredictions = dailyData.data 
-        ? dailyData.data.filter(d => d.predicted_price != null).length 
-        : 0;
-      
-      const allDates = [...new Set([...marketDates, ...predictionDates])].sort();
-      const predictionsBeforeOct6 = predictionDates.filter(d => d < '2025-10-06');
-      const dataBeforeOct6 = marketDates.filter(d => d < '2025-10-06');
-      
-      // Debug logging in development
-      if (import.meta.env.DEV) {
-        console.warn('📊 Chart Data (90-Day Extended):', {
-        totalDataPoints: marketDates.length,
-        totalPredictions: predictionDates.length,
-        dataWithPredictedPrice: dataWithPredictions,
-        dataBeforeOct6: dataBeforeOct6.length,
-        predictionsBeforeOct6: predictionsBeforeOct6.length,
-        marketDataRange: marketDates.length > 0 ? `${marketDates[0]} to ${marketDates[marketDates.length - 1]}` : 'No market data',
-        predictionRange: predictionDates.length > 0 ? `${predictionDates[0]} to ${predictionDates[predictionDates.length - 1]}` : 'No predictions',
-        fullDateRange: allDates.length > 0 ? `${allDates[0]} to ${allDates[allDates.length - 1]}` : 'No dates',
-        note: 'Backend now includes predictions from Aug 7 and market data from July 23',
-        });
+    try {
+      if (dailyData) {
+        const marketDates = dailyData.data && Array.isArray(dailyData.data) 
+          ? dailyData.data.map(d => d?.date).filter(Boolean).sort() 
+          : [];
+        const predictionDates = dailyData.historical_predictions && Array.isArray(dailyData.historical_predictions)
+          ? dailyData.historical_predictions.map(p => p?.date).filter(Boolean).sort() 
+          : [];
+        
+        // Count data points with predicted_price (from backend enhancement)
+        const dataWithPredictions = dailyData.data && Array.isArray(dailyData.data)
+          ? dailyData.data.filter(d => d && d.predicted_price != null).length 
+          : 0;
+        
+        const allDates = [...new Set([...marketDates, ...predictionDates])].sort();
+        const predictionsBeforeOct6 = predictionDates.filter(d => d && d < '2025-10-06');
+        const dataBeforeOct6 = marketDates.filter(d => d && d < '2025-10-06');
+        
+        // Debug logging in development
+        if (import.meta.env.DEV) {
+          console.warn('📊 Chart Data (90-Day Extended):', {
+            totalDataPoints: marketDates.length,
+            totalPredictions: predictionDates.length,
+            dataWithPredictedPrice: dataWithPredictions,
+            dataBeforeOct6: dataBeforeOct6.length,
+            predictionsBeforeOct6: predictionsBeforeOct6.length,
+            marketDataRange: marketDates.length > 0 ? `${marketDates[0]} to ${marketDates[marketDates.length - 1]}` : 'No market data',
+            predictionRange: predictionDates.length > 0 ? `${predictionDates[0]} to ${predictionDates[predictionDates.length - 1]}` : 'No predictions',
+            fullDateRange: allDates.length > 0 ? `${allDates[0]} to ${allDates[allDates.length - 1]}` : 'No dates',
+            note: 'Backend now includes predictions from Aug 7 and market data from July 23',
+          });
+        }
       }
+    } catch (error) {
+      console.error('Error in debug logging:', error);
     }
   }, [dailyData]);
 
@@ -158,12 +164,14 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
     pollingInterval: 900000, // 15 minutes
   });
 
-  // Fetch prediction history
+  // Fetch prediction history (skip if endpoint doesn't exist to prevent 404 errors)
   const {
     data: predictionHistoryData,
     isLoading: predictionHistoryLoading,
+    error: predictionHistoryError,
   } = useGetPredictionHistoryQuery({ days: 30 }, {
     pollingInterval: 900000, // 15 minutes
+    skip: false, // Keep enabled, but handle errors gracefully
   });
 
   // Use WebSocket data if available, otherwise fall back to REST API
@@ -174,12 +182,19 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
   // Use real-time price if available, otherwise fall back to daily data
   const currentPrice = realtimePrice || displayData?.current_price || 0;
   
-  // Get exchange rate for conversion
-  const usdToLkrRate = exchangeRateData?.exchange_rate || 300; // Fallback to 300 if API fails
+  // Get exchange rate for conversion with safety check
+  const usdToLkrRate = useMemo(() => {
+    const rate = exchangeRateData?.exchange_rate;
+    // Ensure rate is a valid positive number
+    if (typeof rate === 'number' && rate > 0 && isFinite(rate)) {
+      return rate;
+    }
+    return 300; // Fallback to 300 if API fails or returns invalid data
+  }, [exchangeRateData?.exchange_rate]);
 
   // Update real-time price when data changes
   useEffect(() => {
-    if (realtimeData?.current_price) {
+    if (realtimeData?.current_price && typeof realtimeData.current_price === 'number' && isFinite(realtimeData.current_price)) {
       setRealtimePrice(realtimeData.current_price);
     }
   }, [realtimeData]);
@@ -187,34 +202,91 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
 
   // Update chart data with real-time price and convert based on currency unit
   const chartData = useMemo(() => {
-    if (!displayData?.data) return [];
-    
-    const updatedData = [...displayData.data];
-    if (realtimePrice && updatedData.length > 0) {
-      // Update the last data point with real-time price (realtimePrice is always in USD)
-      const lastDataPoint = updatedData[updatedData.length - 1];
-      if (lastDataPoint) {
-        updatedData[updatedData.length - 1] = {
-          ...lastDataPoint,
-          close: realtimePrice
-        };
+    try {
+      if (!displayData || !displayData.data || !Array.isArray(displayData.data)) return [];
+      
+      const updatedData = [...displayData.data];
+      if (realtimePrice && typeof realtimePrice === 'number' && isFinite(realtimePrice) && updatedData.length > 0) {
+        // Update the last data point with real-time price (realtimePrice is always in USD)
+        const lastDataPoint = updatedData[updatedData.length - 1];
+        if (lastDataPoint && typeof lastDataPoint === 'object') {
+          updatedData[updatedData.length - 1] = {
+            ...lastDataPoint,
+            close: realtimePrice
+          };
+        }
       }
+      
+      // Convert data based on selected currency unit
+      if (!usdToLkrRate || usdToLkrRate <= 0) {
+        console.warn('Invalid exchange rate, using fallback');
+        return updatedData;
+      }
+      
+      return convertChartData(updatedData, currencyUnit, usdToLkrRate);
+    } catch (error) {
+      console.error('Error processing chart data:', error);
+      return [];
     }
-    
-    // Convert data based on selected currency unit
-    return convertChartData(updatedData, currencyUnit, usdToLkrRate);
-  }, [displayData?.data, realtimePrice, currencyUnit, usdToLkrRate]);
+  }, [displayData, displayData?.data, realtimePrice, currencyUnit, usdToLkrRate]);
 
   // Convert current price for display
   const convertedCurrentPrice = useMemo(() => {
-    return convertPrice(currentPrice, currencyUnit, usdToLkrRate);
+    try {
+      if (!currentPrice || typeof currentPrice !== 'number' || !isFinite(currentPrice)) {
+        return {
+          price: 0,
+          currency: currencyUnit === 'pawn' ? 'LKR' : 'USD',
+          unit: currencyUnit === 'pawn' ? '1 Pawn' : 'Troy Ounce',
+          displayText: currencyUnit === 'pawn' ? 'LKR 0' : '$0.00'
+        };
+      }
+      if (!usdToLkrRate || usdToLkrRate <= 0) {
+        console.warn('Invalid exchange rate for price conversion');
+        return {
+          price: currentPrice,
+          currency: 'USD',
+          unit: 'Troy Ounce',
+          displayText: `$${currentPrice.toFixed(2)}`
+        };
+      }
+      return convertPrice(currentPrice, currencyUnit, usdToLkrRate);
+    } catch (error) {
+      console.error('Error converting current price:', error);
+      return {
+        price: 0,
+        currency: currencyUnit === 'pawn' ? 'LKR' : 'USD',
+        unit: currencyUnit === 'pawn' ? '1 Pawn' : 'Troy Ounce',
+        displayText: currencyUnit === 'pawn' ? 'LKR 0' : '$0.00'
+      };
+    }
   }, [currentPrice, currencyUnit, usdToLkrRate]);
 
   // Convert prediction price for display
   const convertedPredictionPrice = useMemo(() => {
-    if (!displayData?.prediction?.predicted_price) return null;
-    return convertPrice(displayData.prediction.predicted_price, currencyUnit, usdToLkrRate);
-  }, [displayData?.prediction?.predicted_price, currencyUnit, usdToLkrRate]);
+    try {
+      if (!displayData || !displayData.prediction) {
+        return null;
+      }
+      const predictedPrice = displayData.prediction.predicted_price;
+      if (predictedPrice == null || typeof predictedPrice !== 'number' || !isFinite(predictedPrice)) {
+        return null;
+      }
+      if (!usdToLkrRate || usdToLkrRate <= 0) {
+        console.warn('Invalid exchange rate for prediction price conversion');
+        return {
+          price: predictedPrice,
+          currency: 'USD',
+          unit: 'Troy Ounce',
+          displayText: `$${predictedPrice.toFixed(2)}`
+        };
+      }
+      return convertPrice(predictedPrice, currencyUnit, usdToLkrRate);
+    } catch (error) {
+      console.error('Error converting prediction price:', error);
+      return null;
+    }
+  }, [displayData, displayData?.prediction?.predicted_price, currencyUnit, usdToLkrRate]);
 
   if (displayLoading) {
     return (
@@ -234,7 +306,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
     );
   }
 
-  if (!displayData || displayData.status !== 'success') {
+  if (!displayData || (displayData.status && displayData.status !== 'success')) {
     return (
       <Box className="p-4">
         <Alert severity="warning">
@@ -365,7 +437,10 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
             </Box>
 
             {/* Prediction Card */}
-            {displayData.prediction && displayData.prediction.predicted_price && (
+            {displayData?.prediction && 
+             displayData.prediction.predicted_price != null && 
+             typeof displayData.prediction.predicted_price === 'number' && 
+             isFinite(displayData.prediction.predicted_price) && (
               <>
                 <Box 
                   sx={{ 
@@ -402,7 +477,12 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
                     }}
                     className="font-bold"
                   >
-                    {convertedPredictionPrice?.displayText || `$${displayData.prediction.predicted_price.toFixed(2)}`}
+                    {convertedPredictionPrice?.displayText || 
+                      (displayData.prediction?.predicted_price != null && 
+                       typeof displayData.prediction.predicted_price === 'number' && 
+                       isFinite(displayData.prediction.predicted_price)
+                        ? `$${displayData.prediction.predicted_price.toFixed(2)}`
+                        : 'N/A')}
                   </Typography>
                 </Box>
 
@@ -535,7 +615,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
           )}
 
           {/* Prediction History Table */}
-          {predictionHistoryData && predictionHistoryData.predictions && (
+          {predictionHistoryData && predictionHistoryData.predictions && !predictionHistoryError && (
             <Box sx={{ flexShrink: 0, marginTop: { xs: 1.5, sm: 2 } }}>
               <Suspense fallback={
                 <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
@@ -729,8 +809,17 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
             <Chart
                 key={`chart-${realtimePrice || displayData?.current_price || 0}-${currencyUnit}-${zoomLevel}`}
               data={chartData}
-              {...(displayData.prediction ? { prediction: displayData.prediction } : {})}
-              {...(displayData.historical_predictions ? { historicalPredictions: displayData.historical_predictions } : {})}
+              {...(displayData?.prediction && 
+                   displayData.prediction.predicted_price != null && 
+                   typeof displayData.prediction.predicted_price === 'number' && 
+                   isFinite(displayData.prediction.predicted_price)
+                   ? { prediction: displayData.prediction } 
+                   : {})}
+              {...(displayData?.historical_predictions && 
+                   Array.isArray(displayData.historical_predictions) && 
+                   displayData.historical_predictions.length > 0
+                   ? { historicalPredictions: displayData.historical_predictions } 
+                   : {})}
               isDark={isDark}
                 height={chartHeight - (isMobile ? 50 : isTablet ? 60 : 70)}
               realtimePrice={realtimePrice || undefined}

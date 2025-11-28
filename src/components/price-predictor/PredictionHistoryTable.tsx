@@ -176,7 +176,11 @@ const PredictionHistoryTable: React.FC<PredictionHistoryTableProps> = ({
                     borderBottom: `1px solid ${isDark ? '#333333' : '#E0E0E0'}`,
                   }}
                 >
-                  ${pred.predicted_price.toFixed(2)}
+                  {pred.predicted_price != null && 
+                   typeof pred.predicted_price === 'number' && 
+                   isFinite(pred.predicted_price)
+                    ? `$${pred.predicted_price.toFixed(2)}`
+                    : 'N/A'}
                 </TableCell>
                 <TableCell
                   align="right"
@@ -185,7 +189,11 @@ const PredictionHistoryTable: React.FC<PredictionHistoryTableProps> = ({
                     borderBottom: `1px solid ${isDark ? '#333333' : '#E0E0E0'}`,
                   }}
                 >
-                  {pred.actual_price ? `$${pred.actual_price.toFixed(2)}` : 'Pending'}
+                  {pred.actual_price != null && 
+                   typeof pred.actual_price === 'number' && 
+                   isFinite(pred.actual_price)
+                    ? `$${pred.actual_price.toFixed(2)}`
+                    : 'Pending'}
                 </TableCell>
                 <TableCell
                   align="right"
@@ -194,7 +202,9 @@ const PredictionHistoryTable: React.FC<PredictionHistoryTableProps> = ({
                     borderBottom: `1px solid ${isDark ? '#333333' : '#E0E0E0'}`,
                   }}
                 >
-                  {pred.accuracy_percentage
+                  {pred.accuracy_percentage != null && 
+                   typeof pred.accuracy_percentage === 'number' && 
+                   isFinite(pred.accuracy_percentage)
                     ? `${pred.accuracy_percentage.toFixed(2)}%`
                     : '-'}
                 </TableCell>
