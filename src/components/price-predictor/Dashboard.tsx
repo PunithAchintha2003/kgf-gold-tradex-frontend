@@ -338,31 +338,13 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
             },
             maxHeight: { 
               xs: 'none', 
-              lg: 'calc(100vh - 240px)' 
+              lg: chartHeight 
             },
-            overflowY: { xs: 'visible', lg: 'auto' },
+            overflowY: 'hidden',
             overflowX: 'hidden',
             pr: { xs: 0, lg: 2 },
             pb: 0,
             backgroundColor: isDark ? '#121212' : 'var(--background)',
-            WebkitOverflowScrolling: 'touch',
-            scrollBehavior: 'smooth',
-            '&::-webkit-scrollbar': {
-              width: '10px',
-            },
-            '&::-webkit-scrollbar-track': {
-              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
-              borderRadius: '5px',
-              marginY: '8px',
-            },
-            '&::-webkit-scrollbar-thumb': {
-              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.3)',
-              borderRadius: '5px',
-              border: `2px solid ${isDark ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)'}`,
-            },
-            '&::-webkit-scrollbar-thumb:hover': {
-              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)',
-            },
           }}
         >
           {/* Price Information Cards */}
@@ -566,7 +548,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
       </Box>
 
           {/* Accuracy Stats */}
-          <Box sx={{ flexShrink: 0, mt: { xs: 0, lg: 0 } }}>
+          <Box sx={{ flexShrink: 0, mt: { xs: -1, sm: -1.3, lg: -1.3 } }}>
             <Suspense fallback={
               <Box display="flex" justifyContent="center" alignItems="center" minHeight="120px">
                 <CircularProgress size={24} />
