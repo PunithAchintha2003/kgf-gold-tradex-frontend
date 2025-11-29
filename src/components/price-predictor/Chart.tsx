@@ -107,23 +107,7 @@ const Chart: React.FC<ChartProps> = ({
 
     // Debug: Log what data we're plotting
     if (sortedData.length > 0) {
-      const dataWithClose = sortedData.filter(d => d.close != null).length;
-      const dataWithPredictedPrice = sortedData.filter(d => d.predicted_price != null).length;
-      const dataBeforeOct6 = sortedData.filter(d => d.date < '2025-10-06').length;
-      
-      // Debug logging in development
-      if (import.meta.env.DEV) {
-        console.warn('📈 Chart Plotting:', {
-        totalPoints: sortedData.length,
-        earliestDate: sortedData[0]?.date,
-        latestDate: sortedData[sortedData.length - 1]?.date,
-        dateRange: `${sortedData[0]?.date} to ${sortedData[sortedData.length - 1]?.date}`,
-        pointsWithClose: dataWithClose,
-        pointsWithPredictedPrice: dataWithPredictedPrice,
-        dataBeforeOct6,
-        note: 'Gold line uses close values, Accuracy line uses predicted_price values',
-        });
-      }
+      // Debug logging removed to prevent console warnings
     }
 
     const traces: PlotlyData[] = [];
@@ -167,7 +151,13 @@ const Chart: React.FC<ChartProps> = ({
     if (goldLineData.length > 0) {
       traces.push({
         x: goldLineData.map(d => d.date),
-        y: goldLineData.map(d => d.price!),
+        y: goldLineData.map(d => {
+          const price = d.price;
+          if (price == null || typeof price !== 'number' || !isFinite(price)) {
+            return 0;
+          }
+          return price;
+        }),
         type: 'scatter',
         mode: 'lines',
         name: 'Gold Price Line',
@@ -420,7 +410,9 @@ const Chart: React.FC<ChartProps> = ({
     // Dynamic LKR tick calculation for clean chart
     const getLKRTickVals = () => {
       // close values are already converted by convertChartData
-      const allPrices = dataToUse.filter(d => d.close != null).map(d => d.close!);
+      const allPrices = dataToUse
+        .filter(d => d.close != null && typeof d.close === 'number' && isFinite(d.close))
+        .map(d => d.close as number);
       // Also include predicted_price values for y-axis range (convert from USD)
       dataToUse.forEach(d => {
         if (d.predicted_price != null && typeof d.predicted_price === 'number' && isFinite(d.predicted_price) && d.close == null) {
@@ -519,7 +511,7 @@ const Chart: React.FC<ChartProps> = ({
       // Include close prices from data (already converted by convertChartData)
       const prices = dataToUse
         .filter(d => d.close != null && typeof d.close === 'number' && isFinite(d.close))
-        .map(d => d.close!);
+        .map(d => d.close as number);
       // Also include predicted_price as fallback for dates without close values
       // Note: predicted_price is still in USD, so convert it
       dataToUse.forEach(d => {
@@ -623,19 +615,7 @@ const Chart: React.FC<ChartProps> = ({
           const rangeStart = earliestDate.toISOString();
           const rangeEnd = latestDate.toISOString();
           
-          const predictionsBeforeOct6 = allDates.filter(d => d < '2025-10-06');
-          
-          // Debug logging in development
-          if (import.meta.env.DEV) {
-            console.warn('📅 Chart X-Axis Range:', {
-            earliestDate: allDates[0],
-            latestDate: allDates[allDates.length - 1],
-            rangeStart,
-            rangeEnd,
-            predictionsBeforeOct6: predictionsBeforeOct6.length > 0 ? predictionsBeforeOct6 : 'None',
-            marketDataStarts: dataDates.length > 0 ? dataDates[0] : 'No market data',
-            });
-          }
+          // Debug logging removed to prevent console warnings
           
           return [rangeStart, rangeEnd];
         })(),
