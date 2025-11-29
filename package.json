@@ -91,7 +91,7 @@
     "vitest": "^2.1.9"
   },
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --port 4000 --strictPort",
     "build": "tsc -b --force && vite build",
     "build:analyze": "tsc -b --force && vite build --mode analyze",
     "build:prod": "NODE_ENV=production tsc -b --force && vite build --mode production",

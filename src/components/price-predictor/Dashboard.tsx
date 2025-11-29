@@ -80,66 +80,28 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
   const wsConnected = false;
   const wsError = null;
 
-  // Fetch daily data with extended history (request last 90 days to get data before Oct 5)
-  // Calculate date 90 days ago to ensure we get more historical data
-  const getDate90DaysAgo = (): string => {
+  // Fetch daily data for the last 60 days (2 months)
+  // Calculate date 60 days ago
+  const getDate60DaysAgo = (): string => {
     const date = new Date();
-    date.setDate(date.getDate() - 90);
+    date.setDate(date.getDate() - 60);
     return date.toISOString().split('T')[0] as string; // Format as YYYY-MM-DD
   };
 
-  const startDate90DaysAgo = getDate90DaysAgo();
+  const startDate60DaysAgo = getDate60DaysAgo();
 
   const {
     data: dailyData,
     error: dailyError,
     isLoading: dailyLoading,
   } = useGetDailyDataQuery({ 
-    days: 90, // Request 90 days to get more historical data
-    start_date: startDate90DaysAgo, // Explicitly request from 90 days ago
+    days: 60, // Request 60 days (2 months) of data
+    start_date: startDate60DaysAgo, // Explicitly request from 60 days ago
   }, {
     pollingInterval: 10000, // Poll every 10 seconds
   });
 
-  // Debug: Log data to see what dates we're receiving
-  useEffect(() => {
-    try {
-      if (dailyData) {
-        const marketDates = dailyData.data && Array.isArray(dailyData.data) 
-          ? dailyData.data.map(d => d?.date).filter(Boolean).sort() 
-          : [];
-        const predictionDates = dailyData.historical_predictions && Array.isArray(dailyData.historical_predictions)
-          ? dailyData.historical_predictions.map(p => p?.date).filter(Boolean).sort() 
-          : [];
-        
-        // Count data points with predicted_price (from backend enhancement)
-        const dataWithPredictions = dailyData.data && Array.isArray(dailyData.data)
-          ? dailyData.data.filter(d => d && d.predicted_price != null).length 
-          : 0;
-        
-        const allDates = [...new Set([...marketDates, ...predictionDates])].sort();
-        const predictionsBeforeOct6 = predictionDates.filter(d => d && d < '2025-10-06');
-        const dataBeforeOct6 = marketDates.filter(d => d && d < '2025-10-06');
-        
-        // Debug logging in development
-        if (import.meta.env.DEV) {
-          console.warn('📊 Chart Data (90-Day Extended):', {
-            totalDataPoints: marketDates.length,
-            totalPredictions: predictionDates.length,
-            dataWithPredictedPrice: dataWithPredictions,
-            dataBeforeOct6: dataBeforeOct6.length,
-            predictionsBeforeOct6: predictionsBeforeOct6.length,
-            marketDataRange: marketDates.length > 0 ? `${marketDates[0]} to ${marketDates[marketDates.length - 1]}` : 'No market data',
-            predictionRange: predictionDates.length > 0 ? `${predictionDates[0]} to ${predictionDates[predictionDates.length - 1]}` : 'No predictions',
-            fullDateRange: allDates.length > 0 ? `${allDates[0]} to ${allDates[allDates.length - 1]}` : 'No dates',
-            note: 'Backend now includes predictions from Aug 7 and market data from July 23',
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Error in debug logging:', error);
-    }
-  }, [dailyData]);
+  // Debug logging removed to prevent console warnings
 
   // Fetch real-time price (fallback)
   const {
@@ -205,7 +167,28 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
     try {
       if (!displayData || !displayData.data || !Array.isArray(displayData.data)) return [];
       
-      const updatedData = [...displayData.data];
+      // Filter to show only last 60 days (2 months)
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Set to start of day for accurate comparison
+      const sixtyDaysAgo = new Date(today);
+      sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+      const cutoffDate: string = sixtyDaysAgo.toISOString().split('T')[0] || '';
+      
+      if (!cutoffDate) {
+        console.error('Failed to calculate cutoff date for chart data');
+        return [];
+      }
+      
+      // Filter data to only include last 60 days (inclusive of cutoff date)
+      const filteredData = displayData.data.filter(d => {
+        if (!d || !d.date) return false;
+        // Compare dates as strings (YYYY-MM-DD format)
+        return d.date >= cutoffDate;
+      });
+      
+      // Debug logging removed to prevent console warnings
+      
+      const updatedData = [...filteredData];
       if (realtimePrice && typeof realtimePrice === 'number' && isFinite(realtimePrice) && updatedData.length > 0) {
         // Update the last data point with real-time price (realtimePrice is always in USD)
         const lastDataPoint = updatedData[updatedData.length - 1];
@@ -228,7 +211,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
       console.error('Error processing chart data:', error);
       return [];
     }
-  }, [displayData, displayData?.data, realtimePrice, currencyUnit, usdToLkrRate]);
+  }, [displayData, realtimePrice, currencyUnit, usdToLkrRate]);
 
   // Convert current price for display
   const convertedCurrentPrice = useMemo(() => {
@@ -286,7 +269,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
       console.error('Error converting prediction price:', error);
       return null;
     }
-  }, [displayData, displayData?.prediction?.predicted_price, currencyUnit, usdToLkrRate]);
+  }, [displayData, currencyUnit, usdToLkrRate]);
 
   if (displayLoading) {
     return (
@@ -818,7 +801,21 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
               {...(displayData?.historical_predictions && 
                    Array.isArray(displayData.historical_predictions) && 
                    displayData.historical_predictions.length > 0
-                   ? { historicalPredictions: displayData.historical_predictions } 
+                   ? { 
+                       historicalPredictions: (() => {
+                         // Filter to show only last 60 days (2 months)
+                         const sixtyDaysAgo = new Date();
+                         sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+                         const cutoffDate: string = sixtyDaysAgo.toISOString().split('T')[0] || '';
+                         if (!cutoffDate) {
+                           console.error('Failed to calculate cutoff date for historical predictions');
+                           return [];
+                         }
+                         return displayData.historical_predictions.filter(p => 
+                           p && p.date && p.date >= cutoffDate
+                         );
+                       })()
+                     } 
                    : {})}
               isDark={isDark}
                 height={chartHeight - (isMobile ? 50 : isTablet ? 60 : 70)}
