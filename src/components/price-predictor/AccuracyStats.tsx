@@ -24,11 +24,9 @@ const AccuracyStats: React.FC<AccuracyStatsProps> = ({
 
   return (
     <Box 
+      className="bg-card text-card-foreground border rounded-xl"
       sx={{ 
-        backgroundColor: isDark ? '#111111' : '#FFFFFF',
-        border: `1px solid ${isDark ? '#1f1f1f' : '#E0E0E0'}`,
-        borderRadius: '10px',
-        padding: { xs: '1rem', sm: '1.25rem', lg: '1.5rem' },
+        padding: { xs: '1.25rem', sm: '1.5rem', lg: '1.75rem' },
       }}
     >
       {/* Grid layout for accuracy stats cards - 2 columns on left sidebar */}
@@ -41,9 +39,10 @@ const AccuracyStats: React.FC<AccuracyStatsProps> = ({
       >
           {/* Average Accuracy Card (new) or R² Score (old) */}
           <Box 
+            className="bg-muted rounded-lg"
             sx={{ 
-              backgroundColor: isDark ? '#1a1a1a' : '#F5F5F5',
-              borderRadius: '10px',
+              backgroundColor: 'var(--muted)',
+              borderRadius: 'var(--radius)',
               padding: { xs: '1rem', sm: '1.25rem' },
               minHeight: { xs: '100px', lg: '110px' },
               display: 'flex',
@@ -101,9 +100,10 @@ const AccuracyStats: React.FC<AccuracyStatsProps> = ({
           {/* Best Accuracy Card (new stats only) */}
           {maxAccuracy !== null && (
             <Box 
+              className="bg-muted rounded-lg"
               sx={{ 
-                backgroundColor: isDark ? '#1a1a1a' : '#F5F5F5',
-                borderRadius: '10px',
+                backgroundColor: 'var(--muted)',
+                borderRadius: 'var(--radius)',
                 padding: { xs: '1rem', sm: '1.25rem' },
                 minHeight: { xs: '100px', lg: '110px' },
                 display: 'flex',
@@ -142,9 +142,10 @@ const AccuracyStats: React.FC<AccuracyStatsProps> = ({
 
           {/* Total Predictions Card */}
           <Box 
+            className="bg-muted rounded-lg"
             sx={{ 
-              backgroundColor: isDark ? '#1a1a1a' : '#F5F5F5',
-              borderRadius: '10px',
+              backgroundColor: 'var(--muted)',
+              borderRadius: 'var(--radius)',
               padding: { xs: '1rem', sm: '1.25rem' },
               minHeight: { xs: '100px', lg: '110px' },
               display: 'flex',
@@ -181,9 +182,10 @@ const AccuracyStats: React.FC<AccuracyStatsProps> = ({
 
           {/* Evaluated Card */}
           <Box 
+            className="bg-muted rounded-lg"
             sx={{ 
-              backgroundColor: isDark ? '#1a1a1a' : '#F5F5F5',
-              borderRadius: '10px',
+              backgroundColor: 'var(--muted)',
+              borderRadius: 'var(--radius)',
               padding: { xs: '1rem', sm: '1.25rem' },
               minHeight: { xs: '100px', lg: '110px' },
               display: 'flex',
@@ -220,9 +222,10 @@ const AccuracyStats: React.FC<AccuracyStatsProps> = ({
 
           {/* Pending Card */}
           <Box 
+            className="bg-muted rounded-lg"
             sx={{ 
-              backgroundColor: isDark ? '#1a1a1a' : '#F5F5F5',
-              borderRadius: '10px',
+              backgroundColor: 'var(--muted)',
+              borderRadius: 'var(--radius)',
               padding: { xs: '1rem', sm: '1.25rem' },
               minHeight: { xs: '100px', lg: '110px' },
               display: 'flex',
