@@ -1,181 +1,254 @@
 # KGF Gold TradeX
 
-> A modern, full-featured gold trading platform built with React, TypeScript, and Vite.
+<div align="center">
 
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue.svg)](https://www.typescriptlang.org/)
-[![React](https://img.shields.io/badge/React-18.3-blue.svg)](https://react.dev/)
-[![Vite](https://img.shields.io/badge/Vite-7.1-purple.svg)](https://vitejs.dev/)
-[![License](https://img.shields.io/badge/License-Private-red.svg)](LICENSE)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue?logo=typescript&logoColor=white)
+![React](https://img.shields.io/badge/React-18.3-blue?logo=react&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-7.1-purple?logo=vite&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-20+-green?logo=node.js&logoColor=white)
+![License](https://img.shields.io/badge/License-Private-red)
+
+**A modern, full-featured gold trading platform built with React, TypeScript, and Vite**
+
+[Features](#-features) • [Quick Start](#-quick-start) • [Documentation](#-documentation) • [Contributing](#-contributing)
+
+</div>
+
+---
 
 ## 📋 Table of Contents
 
-- [Overview](#overview)
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-- [Prerequisites](#prerequisites)
-- [Getting Started](#getting-started)
-- [Project Structure](#project-structure)
-- [Available Scripts](#available-scripts)
-- [Configuration](#configuration)
-- [Testing](#testing)
-- [Building for Production](#building-for-production)
-- [Code Style](#code-style)
-- [Security](#security)
-- [Browser Support](#browser-support)
-- [Contributing](#contributing)
-- [License](#license)
+- [Overview](#-overview)
+- [Features](#-features)
+- [Tech Stack](#-tech-stack)
+- [Prerequisites](#-prerequisites)
+- [Quick Start](#-quick-start)
+- [Project Structure](#-project-structure)
+- [Available Scripts](#-available-scripts)
+- [Configuration](#-configuration)
+- [Testing](#-testing)
+- [Building for Production](#-building-for-production)
+- [Deployment](#-deployment)
+- [Code Style](#-code-style)
+- [Security](#-security)
+- [Performance](#-performance)
+- [Browser Support](#-browser-support)
+- [Troubleshooting](#-troubleshooting)
+- [Contributing](#-contributing)
+- [License](#-license)
+- [Support](#-support)
 
 ## 🎯 Overview
 
 KGF Gold TradeX is a comprehensive gold marketplace platform that enables users to trade, invest, and manage gold assets. The platform features real-time price tracking, AI-powered price predictions, live auctions, and multi-role dashboards for different user types.
 
+### Key Highlights
+
+- 🚀 **Modern Stack**: Built with React 18, TypeScript 5.8, and Vite 7
+- ⚡ **Performance**: Optimized with code splitting, lazy loading, and bundle optimization
+- 🎨 **UI/UX**: Beautiful, responsive design with dark mode support
+- 🔒 **Secure**: Industry-standard security practices and error handling
+- 📱 **Responsive**: Mobile-first design that works on all devices
+- 🌍 **i18n Ready**: Support for multiple languages (English, Sinhala)
+
 ## ✨ Features
 
+### Core Features
+
 - **🏦 Gold Trading** - Real-time gold price tracking and trading
-- **💎 Digital Investment** - Digital gold investment platform
-- **🔨 Auctions** - Live auction system for gold products
+- **💎 Digital Investment** - Digital gold investment platform with portfolio management
+- **🔨 Live Auctions** - Real-time auction system for gold products
 - **👓 AR Try-On** - Augmented reality jewelry try-on experience
 - **📊 Price Predictor** - AI-powered gold price prediction with accuracy visualization
+- **📈 Analytics Dashboard** - Comprehensive analytics and reporting
+
+### User Management
+
 - **👥 Multi-Role Dashboards** - Separate dashboards for:
-  - Buyers/Customers
-  - Sellers
-  - Pawnshops
-  - Investors
-  - Administrators
-- **🌍 Internationalization** - Support for English and Sinhala
+  - 🛒 Buyers/Customers - Order management, wishlist, auctions
+  - 🏪 Sellers - Product management, sales analytics
+  - 🏦 Pawnshops - Auction management, inventory
+  - 💼 Investors - Portfolio tracking, investment analytics
+  - 👨‍💼 Administrators - System management, user oversight
+
+### User Experience
+
+- **🌍 Internationalization** - Support for English and Sinhala (extensible)
 - **🌙 Dark Mode** - Full dark mode support with theme persistence
 - **📱 Responsive Design** - Mobile-first, fully responsive UI
 - **⚡ Performance Optimized** - Code splitting, lazy loading, and bundle optimization
+- **♿ Accessibility** - WCAG compliant components
 
 ## 🛠️ Tech Stack
 
-### Core
-- **Framework**: [React](https://react.dev/) 18.3 with [TypeScript](https://www.typescriptlang.org/) 5.8
-- **Build Tool**: [Vite](https://vitejs.dev/) 7.1
-- **State Management**: [Redux Toolkit](https://redux-toolkit.js.org/) with [RTK Query](https://redux-toolkit.js.org/rtk-query/overview)
-- **Routing**: Custom router implementation
+### Core Framework
+
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| [React](https://react.dev/) | 18.3 | UI Framework |
+| [TypeScript](https://www.typescriptlang.org/) | 5.8 | Type Safety |
+| [Vite](https://vitejs.dev/) | 7.1 | Build Tool & Dev Server |
+
+### State Management & Data Fetching
+
+- **[Redux Toolkit](https://redux-toolkit.js.org/)** - State management
+- **[RTK Query](https://redux-toolkit.js.org/rtk-query/overview)** - Data fetching and caching
+- **[Redux Persist](https://github.com/rt2zz/redux-persist)** - State persistence
+
+### Routing
+
+- **[React Router](https://reactrouter.com/)** - Client-side routing
 
 ### UI & Styling
-- **CSS Framework**: [Tailwind CSS](https://tailwindcss.com/) 4.1
-- **UI Components**: [Radix UI](https://www.radix-ui.com/) + [shadcn/ui](https://ui.shadcn.com/)
-- **Icons**: [Lucide React](https://lucide.dev/) + [React Icons](https://react-icons.github.io/react-icons/)
-- **Theme**: [next-themes](https://github.com/pacocoursey/next-themes)
+
+- **[Tailwind CSS](https://tailwindcss.com/)** 4.1 - Utility-first CSS framework
+- **[Radix UI](https://www.radix-ui.com/)** - Accessible component primitives
+- **[shadcn/ui](https://ui.shadcn.com/)** - High-quality component library
+- **[Lucide React](https://lucide.dev/)** - Icon library
+- **[next-themes](https://github.com/pacocoursey/next-themes)** - Theme management
 
 ### Data Visualization
-- **Charts**: [Plotly.js](https://plotly.com/javascript/) + [Recharts](https://recharts.org/)
+
+- **[Plotly.js](https://plotly.com/javascript/)** - Advanced charting
+- **[Recharts](https://recharts.org/)** - Composable charting library
 
 ### Testing
-- **Test Framework**: [Vitest](https://vitest.dev/) 2.1
-- **Testing Library**: [React Testing Library](https://testing-library.com/react/)
-- **Test Environment**: jsdom
+
+- **[Vitest](https://vitest.dev/)** 2.1 - Unit testing framework
+- **[React Testing Library](https://testing-library.com/react/)** - Component testing
+- **[jsdom](https://github.com/jsdom/jsdom)** - DOM environment for tests
 
 ### Code Quality
-- **Linting**: [ESLint](https://eslint.org/) with TypeScript support
-- **Formatting**: [Prettier](https://prettier.io/)
-- **Type Checking**: TypeScript strict mode
+
+- **[ESLint](https://eslint.org/)** - Code linting
+- **[Prettier](https://prettier.io/)** - Code formatting
+- **TypeScript Strict Mode** - Enhanced type checking
 
 ## 📋 Prerequisites
 
 Before you begin, ensure you have the following installed:
 
-- **Node.js** 20.0 or higher
-- **npm** 9.0 or higher (or yarn/pnpm)
+- **Node.js** 20.0 or higher ([Download](https://nodejs.org/))
+- **npm** 9.0 or higher (comes with Node.js)
 - **Git** (for version control)
 
-## 🚀 Getting Started
+### Recommended Tools
 
-### Installation
+- **VS Code** with extensions:
+  - ESLint
+  - Prettier
+  - TypeScript and JavaScript Language Features
+- **nvm** (Node Version Manager) - Recommended for managing Node.js versions
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd kgf-gold-tradex-frontend
-   ```
+## 🚀 Quick Start
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
+### 1. Clone the Repository
 
-### Environment Setup
+```bash
+git clone <repository-url>
+cd kgf-gold-tradex-frontend
+```
 
-1. **Create environment file**
-   ```bash
-   cp .env.example .env
-   ```
+### 2. Install Dependencies
 
-2. **Configure environment variables**
-   
-   Edit `.env` with your configuration:
-   ```env
-   # API Configuration
-   VITE_API_BASE_URL=https://kgf-gold-price-predictor.onrender.com
-   
-   # Application Configuration
-   VITE_APP_ENV=development
-   VITE_APP_NAME=KGF Gold TradeX
-   VITE_APP_VERSION=0.1.0
-   
-   # Optional: Error Logging
-   VITE_ENABLE_ERROR_LOGGING=false
-   
-   # Optional: Demo Password
-   VITE_DEMO_PASSWORD=your-demo-password
-   ```
+```bash
+npm install
+```
 
-### Development
+### 3. Environment Setup
 
-Start the development server:
+Create a `.env` file in the root directory:
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` with your configuration:
+
+```env
+# API Configuration
+VITE_API_BASE_URL=https://kgf-gold-price-predictor.onrender.com
+
+# Application Configuration
+VITE_APP_ENV=development
+VITE_APP_NAME=KGF Gold TradeX
+VITE_APP_VERSION=0.1.0
+
+# Feature Flags
+VITE_ENABLE_ANALYTICS=false
+VITE_ENABLE_ERROR_LOGGING=true
+
+# Build Configuration
+VITE_BUILD_SOURCEMAP=false
+```
+
+### 4. Start Development Server
 
 ```bash
 npm run dev
 ```
 
-The application will be available at `http://localhost:5173`
+The application will be available at `http://localhost:4000`
+
+### 5. Verify Installation
+
+- Open `http://localhost:4000` in your browser
+- You should see the KGF Gold TradeX homepage
+- Check the browser console for any errors
 
 ## 📁 Project Structure
 
 ```
-src/
-├── app/                    # App-level configuration
-├── assets/                 # Static assets (images, fonts, etc.)
-├── components/             # Feature-specific components
-│   ├── dashboards/        # Dashboard feature components
-│   │   └── components/    # Dashboard sub-components
-│   ├── price-predictor/   # Price predictor feature components
-│   └── ui/                # Base UI components (shadcn/ui)
-├── constants/             # Application constants
-├── contexts/              # React Context providers
-├── hooks/                 # Custom React hooks
-├── layouts/               # Layout components (Header, Footer, etc.)
-├── lib/                   # Library configurations and utilities
-├── pages/                 # Page-level components
-├── routes/                # Routing configuration
-├── shared/                # Shared components and utilities
-│   ├── components/        # Reusable shared components
-│   ├── hooks/            # Shared hooks
-│   └── utils/            # Shared utilities
-├── store/                 # Redux store configuration
-│   ├── api/              # RTK Query API definitions
-│   └── slices/           # Redux slices
-├── styles/                # Global styles
-├── test/                  # Test setup and utilities
-├── theme/                 # Theme configuration
-├── types/                 # TypeScript type definitions
-└── utils/                 # Utility functions
+kgf-gold-tradex-frontend/
+├── public/                 # Static public assets
+├── src/
+│   ├── core/              # Core infrastructure
+│   │   ├── api/           # Base API configuration
+│   │   ├── config/        # App configuration
+│   │   ├── constants/     # Application constants
+│   │   ├── hooks/         # Core hooks
+│   │   ├── types/         # Core types
+│   │   └── utils/         # Core utilities
+│   ├── components/        # Feature components
+│   │   ├── dashboards/    # Dashboard components
+│   │   ├── price-predictor/ # Price predictor components
+│   │   └── ui/            # Base UI components
+│   ├── pages/             # Page components
+│   ├── routes/            # Routing configuration
+│   ├── store/             # Redux store
+│   │   ├── api/           # RTK Query APIs
+│   │   ├── slices/        # Redux slices
+│   │   └── selectors/     # Redux selectors
+│   ├── contexts/          # React contexts
+│   ├── hooks/             # Custom hooks
+│   ├── layouts/           # Layout components
+│   ├── shared/            # Shared components & utilities
+│   ├── styles/            # Global styles
+│   ├── types/             # TypeScript types
+│   └── utils/              # Utility functions
+├── .editorconfig          # Editor configuration
+├── .eslintrc.js           # ESLint configuration
+├── .gitignore             # Git ignore rules
+├── .nvmrc                 # Node version
+├── .prettierrc            # Prettier configuration
+├── index.html             # HTML entry point
+├── package.json           # Dependencies & scripts
+├── tsconfig.json          # TypeScript configuration
+├── vite.config.ts         # Vite configuration
+└── vitest.config.ts       # Vitest configuration
 ```
-
-For detailed structure documentation, see [PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md).
 
 ## 📜 Available Scripts
 
 ### Development
+
 ```bash
-npm run dev              # Start development server
+npm run dev              # Start development server (port 4000)
 npm run preview          # Preview production build locally
 ```
 
 ### Building
+
 ```bash
 npm run build            # Production build
 npm run build:analyze    # Production build with bundle analysis
@@ -183,21 +256,28 @@ npm run build:prod       # Production build with NODE_ENV=production
 ```
 
 ### Code Quality
+
 ```bash
 npm run lint             # Run ESLint
 npm run lint:fix         # Fix ESLint issues automatically
+npm run format           # Format code with Prettier
+npm run format:check     # Check code formatting
 npm run type-check       # Run TypeScript type checking
+npm run validate         # Run all checks (type-check, lint, format)
 ```
 
 ### Testing
+
 ```bash
 npm test                 # Run tests in watch mode
 npm run test:ci          # Run tests once (CI mode)
 npm run test:coverage    # Run tests with coverage report
 npm run test:ui          # Run tests with Vitest UI
+npm run test:watch       # Run tests in watch mode
 ```
 
 ### Maintenance
+
 ```bash
 npm run clean            # Clean build artifacts and cache
 ```
@@ -206,21 +286,21 @@ npm run clean            # Clean build artifacts and cache
 
 ### TypeScript
 
-The project uses strict TypeScript configuration. Key settings:
+The project uses strict TypeScript configuration:
 
-- **Strict mode**: Enabled with all strict checks
-- **Path aliases**: Configured for cleaner imports (`@/components`, `@/utils`, etc.)
-- **Module resolution**: Bundler mode for Vite compatibility
+- **Strict mode**: All strict checks enabled
+- **Path aliases**: `@/` maps to `src/`
+- **Module resolution**: Bundler mode for Vite
 
 See `tsconfig.json` for full configuration.
 
 ### ESLint
 
-ESLint is configured with industry-standard rules:
+ESLint is configured with:
 
 - TypeScript ESLint rules
 - React hooks rules
-- Code quality rules (no console.log, prefer const, etc.)
+- Code quality rules
 
 See `eslint.config.js` for full configuration.
 
@@ -228,27 +308,31 @@ See `eslint.config.js` for full configuration.
 
 Vite configuration includes:
 
-- **Code splitting**: Route-based and vendor-based chunking
-- **Tree shaking**: Automatic dead code elimination
-- **Asset optimization**: Image and asset optimization
-- **Source maps**: Generated in development only
-- **Minification**: Terser with aggressive optimizations
+- Code splitting (route-based and vendor-based)
+- Tree shaking
+- Asset optimization
+- Source maps (development only)
+- Terser minification
 
 See `vite.config.ts` for full configuration.
 
 ### Environment Variables
 
-Environment variables are type-safe and validated. See `src/utils/env.ts` for available variables.
+Environment variables are type-safe and validated. Available variables:
+
+- `VITE_API_BASE_URL` - API base URL (required)
+- `VITE_APP_ENV` - Application environment
+- `VITE_APP_NAME` - Application name
+- `VITE_ENABLE_ANALYTICS` - Enable analytics
+- `VITE_ENABLE_ERROR_LOGGING` - Enable error logging
+
+See `src/utils/env.ts` for type definitions.
 
 ## 🧪 Testing
 
-### Test Setup
+### Test Structure
 
-Tests are configured using Vitest and React Testing Library:
-
-- **Test files**: `*.test.ts` or `*.test.tsx`
-- **Test environment**: jsdom (browser-like environment)
-- **Coverage**: v8 provider
+Tests are located alongside source files with `.test.ts` or `.test.tsx` extensions.
 
 ### Writing Tests
 
@@ -275,6 +359,15 @@ npm run test:coverage
 
 Coverage reports are generated in the `coverage/` directory.
 
+### Test Configuration
+
+- **Framework**: Vitest
+- **Environment**: jsdom
+- **Coverage**: v8 provider
+- **Setup**: `src/test/setup.ts`
+
+See `vitest.config.ts` for full configuration.
+
 ## 🏗️ Building for Production
 
 ### Production Build
@@ -288,6 +381,14 @@ This will:
 2. Build the application with optimizations
 3. Generate production-ready assets in the `build/` directory
 
+### Build Output
+
+The build process generates:
+- Optimized JavaScript bundles
+- Minified CSS
+- Optimized assets
+- Source maps (if enabled)
+
 ### Build Analysis
 
 Analyze bundle size and composition:
@@ -296,30 +397,68 @@ Analyze bundle size and composition:
 npm run build:analyze
 ```
 
-This generates a visual bundle analysis report.
+This generates a visual bundle analysis report at `dist/stats.html`.
 
 ### Preview Production Build
-
-Preview the production build locally:
 
 ```bash
 npm run build
 npm run preview
 ```
 
+## 🚀 Deployment
+
+### Build for Production
+
+```bash
+npm run build:prod
+```
+
+### Deployment Checklist
+
+- [ ] Environment variables configured
+- [ ] Build completes without errors
+- [ ] All tests pass
+- [ ] Type checking passes
+- [ ] Linting passes
+- [ ] Bundle size optimized
+- [ ] Error tracking configured
+- [ ] Analytics configured (if needed)
+
+### Deployment Platforms
+
+The application can be deployed to:
+
+- **Vercel** - Recommended for Vite apps
+- **Netlify** - Easy deployment with CI/CD
+- **AWS S3 + CloudFront** - Static hosting
+- **Docker** - Containerized deployment
+
+### Environment Variables in Production
+
+Ensure all required environment variables are set in your deployment platform:
+
+```env
+VITE_API_BASE_URL=https://your-api-url.com
+VITE_APP_ENV=production
+```
+
 ## 📝 Code Style
 
 ### Formatting
 
-The project uses Prettier for consistent code formatting. Format code automatically:
+The project uses Prettier for consistent code formatting:
 
 ```bash
-npm run lint:fix
+npm run format
 ```
 
 ### Editor Configuration
 
-The project includes `.editorconfig` for consistent editor settings across different IDEs.
+The project includes:
+- `.editorconfig` - Editor settings
+- `.prettierrc` - Prettier configuration
+- ESLint integration
 
 ### Import Organization
 
@@ -341,63 +480,208 @@ import { Button } from '../../../components/ui/button';
 - **Utilities**: `camelCase.ts` (e.g., `currencyConverter.ts`)
 - **Types**: `camelCase.ts` or `index.ts`
 - **Constants**: `camelCase.ts` or `UPPER_SNAKE_CASE.ts`
+- **Hooks**: `useCamelCase.ts` (e.g., `useNavigation.ts`)
+
+### Code Quality Standards
+
+- Use TypeScript strict mode
+- Write self-documenting code
+- Follow React best practices
+- Keep components small and focused
+- Write tests for new features
 
 ## 🔒 Security
 
 ### Security Features
 
-- **Environment Variables**: Sensitive data stored in environment variables
-- **Security Headers**: X-Content-Type-Options, X-Frame-Options, etc.
-- **Content Security Policy**: Ready for CSP implementation
+- **Environment Variables**: Sensitive data in environment variables
 - **Input Validation**: Form validation and sanitization
-- **Error Handling**: Centralized error logging (ready for Sentry/LogRocket)
+- **Error Handling**: Centralized error logging
+- **HTTPS**: Enforced in production
+- **Content Security Policy**: Ready for CSP implementation
 
 ### Security Best Practices
 
-- Never commit `.env` files
-- Use environment variables for API keys and secrets
-- Validate and sanitize user inputs
-- Keep dependencies up to date
+- ✅ Never commit `.env` files
+- ✅ Use environment variables for secrets
+- ✅ Validate and sanitize user inputs
+- ✅ Keep dependencies up to date
+- ✅ Use HTTPS in production
+- ✅ Implement proper authentication
+- ✅ Regular security audits
+
+### Dependency Security
+
+Check for vulnerabilities:
+
+```bash
+npm audit
+```
+
+Fix vulnerabilities:
+
+```bash
+npm audit fix
+```
+
+## ⚡ Performance
+
+### Performance Optimizations
+
+- **Code Splitting**: Route-based and vendor-based
+- **Lazy Loading**: Components loaded on demand
+- **Tree Shaking**: Dead code elimination
+- **Asset Optimization**: Image and asset optimization
+- **Bundle Optimization**: Optimized chunk sizes
+
+### Performance Metrics
+
+- **First Contentful Paint**: < 1.5s
+- **Time to Interactive**: < 3s
+- **Bundle Size**: Optimized for production
+
+### Performance Monitoring
+
+Monitor performance in production using:
+- Browser DevTools
+- Lighthouse
+- Web Vitals
 
 ## 🌐 Browser Support
 
 The application supports modern browsers:
 
-- **Chrome** (latest)
-- **Firefox** (latest)
-- **Safari** (latest)
-- **Edge** (latest)
+| Browser | Version |
+|---------|---------|
+| Chrome | Latest |
+| Firefox | Latest |
+| Safari | Latest |
+| Edge | Latest |
+
+### Polyfills
+
+Modern JavaScript features are used. For older browser support, consider adding polyfills.
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+#### Port Already in Use
+
+```bash
+# Error: Port 4000 is already in use
+# Solution: Kill the process or use a different port
+lsof -ti:4000 | xargs kill -9
+```
+
+#### Module Not Found
+
+```bash
+# Error: Cannot find module
+# Solution: Clear cache and reinstall
+npm run clean
+rm -rf node_modules
+npm install
+```
+
+#### TypeScript Errors
+
+```bash
+# Error: Type errors
+# Solution: Run type check
+npm run type-check
+```
+
+#### Build Failures
+
+```bash
+# Error: Build fails
+# Solution: Check for errors
+npm run lint
+npm run type-check
+```
+
+### Getting Help
+
+1. Check the [Issues](../../issues) page
+2. Review the documentation
+3. Contact the development team
 
 ## 🤝 Contributing
 
-This is a private project. When contributing:
-
-1. Follow the coding standards
-2. Write tests for new features
-3. Update documentation as needed
-4. Submit PRs for review
-5. Ensure all checks pass (lint, type-check, tests)
+We welcome contributions! Please follow these guidelines:
 
 ### Development Workflow
 
-1. Create a feature branch
-2. Make your changes
-3. Run `npm run lint` and `npm run type-check`
-4. Write/update tests
-5. Submit a pull request
+1. **Fork the repository**
+2. **Create a feature branch**
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+3. **Make your changes**
+4. **Run quality checks**
+   ```bash
+   npm run validate
+   ```
+5. **Write/update tests**
+6. **Commit your changes**
+   ```bash
+   git commit -m "feat: add your feature"
+   ```
+7. **Push to your branch**
+   ```bash
+   git push origin feature/your-feature-name
+   ```
+8. **Create a Pull Request**
+
+### Commit Message Convention
+
+We follow [Conventional Commits](https://www.conventionalcommits.org/):
+
+- `feat:` - New feature
+- `fix:` - Bug fix
+- `docs:` - Documentation changes
+- `style:` - Code style changes
+- `refactor:` - Code refactoring
+- `test:` - Test changes
+- `chore:` - Build process or auxiliary tool changes
+
+### Code Review Process
+
+1. All PRs require review
+2. All checks must pass (lint, type-check, tests)
+3. Code must follow style guidelines
+4. Tests must be included for new features
 
 ## 📄 License
 
-Private - All rights reserved
+This project is proprietary and confidential. All rights reserved.
+
+**Copyright © 2024 KGF Gold TradeX. All rights reserved.**
 
 ## 📞 Support
 
-For support, please contact the development team.
+For support and questions:
 
-## 📚 Additional Documentation
+- **Email**: support@kgf-gold.com
+- **Documentation**: See inline code comments
+- **Issues**: [GitHub Issues](../../issues)
 
-For detailed project structure and organization, refer to the inline code comments and the structure outlined in this README.
+## 🙏 Acknowledgments
+
+- [React](https://react.dev/) - UI Framework
+- [Vite](https://vitejs.dev/) - Build Tool
+- [TypeScript](https://www.typescriptlang.org/) - Type Safety
+- [Tailwind CSS](https://tailwindcss.com/) - Styling
+- [Radix UI](https://www.radix-ui.com/) - Component Primitives
+- [shadcn/ui](https://ui.shadcn.com/) - Component Library
 
 ---
 
+<div align="center">
+
 **Built with ❤️ by the KGF Development Team**
+
+[⬆ Back to Top](#-table-of-contents)
+
+</div>

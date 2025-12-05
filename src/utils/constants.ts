@@ -1,19 +1,22 @@
 /**
  * Application-wide constants
+ * @deprecated Use @/core/constants instead for new code
+ * This file is kept for backward compatibility
  */
 
-export const APP_CONFIG = {
-  NAME: 'KGF Gold TradeX',
-  VERSION: '0.1.0',
-  SUPPORT_EMAIL: 'support@kgf-gold.com',
-} as const;
+// Re-export from core for backward compatibility
+export {
+  APP_CONFIG,
+  API_CONFIG,
+  STORAGE_KEYS,
+  USER_ROLES,
+  PRODUCT_CATEGORIES,
+  CURRENCIES,
+  LANGUAGES,
+  THEMES,
+} from '../core/constants';
 
-export const API_CONFIG = {
-  TIMEOUT: 30000, // 30 seconds
-  RETRY_ATTEMPTS: 3,
-  RETRY_DELAY: 1000, // 1 second
-} as const;
-
+// Legacy exports - prefer using core/constants
 export const ROUTES = {
   HOME: '/',
   PRODUCTS: '/products',
@@ -28,12 +31,6 @@ export const ROUTES = {
     INVESTOR: '/dashboard/investor',
     ADMIN: '/dashboard/admin',
   },
-} as const;
-
-export const STORAGE_KEYS = {
-  THEME: 'kgf-theme',
-  LANGUAGE: 'kgf-language',
-  USER_PREFERENCES: 'kgf-user-preferences',
 } as const;
 
 export const POLLING_INTERVALS = {
