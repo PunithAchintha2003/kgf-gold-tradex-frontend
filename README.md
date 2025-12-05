@@ -429,19 +429,87 @@ npm run build:prod
 
 The application can be deployed to:
 
-- **Vercel** - Recommended for Vite apps
+- **Vercel** - Recommended for Vite apps (configured with GitHub Actions)
 - **Netlify** - Easy deployment with CI/CD
 - **AWS S3 + CloudFront** - Static hosting
 - **Docker** - Containerized deployment
+
+### Deploying to Vercel with GitHub Actions
+
+This project is configured for automatic deployment to Vercel via GitHub Actions.
+
+#### Prerequisites
+
+1. **Vercel Account**: Sign up at [vercel.com](https://vercel.com) if you haven't already
+2. **Vercel Project**: Create a new project in Vercel dashboard
+3. **GitHub Repository**: Ensure your code is pushed to GitHub
+
+#### Setup Steps
+
+1. **Get Vercel Credentials**:
+   - Go to [Vercel Settings > Tokens](https://vercel.com/account/tokens)
+   - Create a new token and copy it
+   - In your Vercel project dashboard, go to Settings > General
+   - Copy your **Organization ID** and **Project ID**
+   - **Root Directory**: Since this project is at the repository root, leave the root directory as `.` (default) in Vercel project settings. If your project is in a subdirectory, set it accordingly.
+
+2. **Configure GitHub Secrets**:
+   - Go to your GitHub repository
+   - Navigate to **Settings > Secrets and variables > Actions**
+   - Add the following secrets:
+     - `VERCEL_TOKEN`: Your Vercel token
+     - `VERCEL_ORG_ID`: Your Vercel organization ID
+     - `VERCEL_PROJECT_ID`: Your Vercel project ID
+
+3. **Configure Environment Variables in Vercel**:
+   - Go to your Vercel project dashboard
+   - Navigate to **Settings > Environment Variables**
+   - Add all required environment variables (see below)
+
+4. **Deploy**:
+   - Push to `main` or `master` branch to trigger automatic deployment
+   - Or manually trigger the workflow from **Actions** tab in GitHub
+
+#### Workflow Features
+
+- ✅ Automatic deployment on push to main/master branches
+- ✅ Type checking before deployment
+- ✅ Linting (non-blocking)
+- ✅ Production build with optimizations
+- ✅ Preview deployments for pull requests
+
+#### Manual Deployment
+
+You can also deploy manually using Vercel CLI:
+
+```bash
+# Install Vercel CLI
+npm i -g vercel
+
+# Deploy
+vercel --prod
+```
 
 ### Environment Variables in Production
 
 Ensure all required environment variables are set in your deployment platform:
 
+**Required Variables:**
 ```env
 VITE_API_BASE_URL=https://your-api-url.com
 VITE_APP_ENV=production
 ```
+
+**Optional Variables:**
+```env
+VITE_APP_NAME=KGF Gold TradeX
+VITE_APP_VERSION=0.1.0
+VITE_ENABLE_ANALYTICS=true
+VITE_ENABLE_ERROR_LOGGING=true
+VITE_BUILD_SOURCEMAP=false
+```
+
+**Note**: In Vercel, add these in the project settings under Environment Variables. They will be automatically available during build time.
 
 ## 📝 Code Style
 

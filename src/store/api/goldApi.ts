@@ -1,6 +1,5 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 import { baseQueryWithReauth } from '@/core/api/baseApi';
-import { env } from '../../utils/env';
 
 export interface DailyDataPoint {
   date: string;

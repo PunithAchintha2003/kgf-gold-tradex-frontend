@@ -7,7 +7,7 @@ import { createSelector } from '@reduxjs/toolkit';
 import type { RootState } from '../index';
 
 // Theme selectors
-export const selectTheme = (state: RootState) => state.theme.theme;
+export const selectTheme = (state: RootState) => state.theme.mode;
 
 // Gold API selectors
 export const selectGoldApiState = (state: RootState) => state.goldApi;

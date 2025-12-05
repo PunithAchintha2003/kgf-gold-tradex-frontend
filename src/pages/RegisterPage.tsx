@@ -13,9 +13,21 @@ interface RegisterPageProps {
   onNavigate: (path: string) => void;
 }
 
+interface FormData {
+  name: string;
+  email: string;
+  phone: string;
+  password: string;
+  confirmPassword: string;
+  role: string;
+  address: string;
+  agreeTerms: boolean;
+  agreeMarketing: boolean;
+}
+
 export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
   const { t: _t } = useApp();
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     name: '',
     email: '',
     phone: '',
@@ -30,7 +42,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const handleInputChange = (field: string, value: any) => {
+  const handleInputChange = <K extends keyof FormData>(field: K, value: FormData[K]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
     if (errors[field]) {
@@ -75,14 +87,14 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
       newErrors.password = 'Password must be at least 8 characters long';
     }
 
-    if (!formData.confirmPassword) {
-      newErrors.confirmPassword = 'Please confirm your password';
-    } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+    if (!formData['confirmPassword']) {
+      newErrors['confirmPassword'] = 'Please confirm your password';
+    } else if (formData['password'] !== formData['confirmPassword']) {
+      newErrors['confirmPassword'] = 'Passwords do not match';
     }
 
-    if (!formData.agreeTerms) {
-      newErrors.agreeTerms = 'You must agree to the terms and conditions';
+    if (!formData['agreeTerms']) {
+      newErrors['agreeTerms'] = 'You must agree to the terms and conditions';
     }
 
     setErrors(newErrors);
@@ -155,14 +167,14 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                       <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                       <Input
                         placeholder="Enter your full name"
-                        value={formData.name}
+                        value={formData['name']}
                         onChange={(e) => handleInputChange('name', e.target.value)}
-                        className={`pl-10 ${errors.name ? 'border-destructive' : ''}`}
+                        className={`pl-10 ${errors['name'] ? 'border-destructive' : ''}`}
                         required
                       />
                     </div>
-                    {errors.name && (
-                      <p className="text-sm text-destructive mt-1">{errors.name}</p>
+                    {errors['name'] && (
+                      <p className="text-sm text-destructive mt-1">{errors['name']}</p>
                     )}
                   </div>
 
@@ -172,14 +184,14 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                       <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                       <Input
                         placeholder="+94 XX XXX XXXX"
-                        value={formData.phone}
+                        value={formData['phone']}
                         onChange={(e) => handleInputChange('phone', e.target.value)}
-                        className={`pl-10 ${errors.phone ? 'border-destructive' : ''}`}
+                        className={`pl-10 ${errors['phone'] ? 'border-destructive' : ''}`}
                         required
                       />
                     </div>
-                    {errors.phone && (
-                      <p className="text-sm text-destructive mt-1">{errors.phone}</p>
+                    {errors['phone'] && (
+                      <p className="text-sm text-destructive mt-1">{errors['phone']}</p>
                     )}
                   </div>
                 </div>
@@ -191,14 +203,14 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                     <Input
                       type="email"
                       placeholder="Enter your email address"
-                      value={formData.email}
+                      value={formData['email']}
                       onChange={(e) => handleInputChange('email', e.target.value)}
-                      className={`pl-10 ${errors.email ? 'border-destructive' : ''}`}
+                      className={`pl-10 ${errors['email'] ? 'border-destructive' : ''}`}
                       required
                     />
                   </div>
-                  {errors.email && (
-                    <p className="text-sm text-destructive mt-1">{errors.email}</p>
+                  {errors['email'] && (
+                    <p className="text-sm text-destructive mt-1">{errors['email']}</p>
                   )}
                 </div>
 
@@ -208,14 +220,14 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                     <MapPin className="absolute left-3 top-3 text-muted-foreground h-4 w-4" />
                     <Input
                       placeholder="Enter your full address"
-                      value={formData.address}
+                      value={formData['address']}
                       onChange={(e) => handleInputChange('address', e.target.value)}
-                      className={`pl-10 ${errors.address ? 'border-destructive' : ''}`}
+                      className={`pl-10 ${errors['address'] ? 'border-destructive' : ''}`}
                       required
                     />
                   </div>
-                  {errors.address && (
-                    <p className="text-sm text-destructive mt-1">{errors.address}</p>
+                  {errors['address'] && (
+                    <p className="text-sm text-destructive mt-1">{errors['address']}</p>
                   )}
                 </div>
               </div>
@@ -227,7 +239,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                 <div>
                   <label className="block text-sm font-medium mb-2">I want to:</label>
                   <Select value={formData.role} onValueChange={(value) => handleInputChange('role', value)}>
-                    <SelectTrigger className={errors.role ? 'border-destructive' : ''}>
+                    <SelectTrigger className={errors['role'] ? 'border-destructive' : ''}>
                       <SelectValue placeholder="Select your account type" />
                     </SelectTrigger>
                     <SelectContent>
@@ -238,8 +250,8 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                       ))}
                     </SelectContent>
                   </Select>
-                  {errors.role && (
-                    <p className="text-sm text-destructive mt-1">{errors.role}</p>
+                  {errors['role'] && (
+                    <p className="text-sm text-destructive mt-1">{errors['role']}</p>
                   )}
                 </div>
               </div>
@@ -258,7 +270,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                         placeholder="Create a strong password (min. 8 characters)"
                         value={formData.password}
                         onChange={(e) => handleInputChange('password', e.target.value)}
-                        className={`pl-10 pr-10 ${errors.password ? 'border-destructive' : ''}`}
+                        className={`pl-10 pr-10 ${errors['password'] ? 'border-destructive' : ''}`}
                         required
                       />
                       <button
@@ -270,8 +282,8 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                         {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
                     </div>
-                    {errors.password && (
-                      <p className="text-sm text-destructive mt-1">{errors.password}</p>
+                    {errors['password'] && (
+                      <p className="text-sm text-destructive mt-1">{errors['password']}</p>
                     )}
                   </div>
 
@@ -284,12 +296,12 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                         placeholder="Confirm your password"
                         value={formData.confirmPassword}
                         onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                        className={`pl-10 ${errors.confirmPassword ? 'border-destructive' : ''}`}
+                        className={`pl-10 ${errors['confirmPassword'] ? 'border-destructive' : ''}`}
                         required
                       />
                     </div>
-                    {errors.confirmPassword && (
-                      <p className="text-sm text-destructive mt-1">{errors.confirmPassword}</p>
+                    {errors['confirmPassword'] && (
+                      <p className="text-sm text-destructive mt-1">{errors['confirmPassword']}</p>
                     )}
                   </div>
                 </div>
@@ -302,7 +314,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                     id="terms"
                     checked={formData.agreeTerms}
                     onCheckedChange={(checked) => handleInputChange('agreeTerms', checked)}
-                    className={errors.agreeTerms ? 'border-destructive' : ''}
+                    className={errors['agreeTerms'] ? 'border-destructive' : ''}
                   />
                   <label htmlFor="terms" className="text-sm leading-5">
                     I agree to the{' '}
@@ -311,8 +323,8 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                     <a href="#" className="text-primary hover:underline">Privacy Policy</a>
                   </label>
                 </div>
-                {errors.agreeTerms && (
-                  <p className="text-sm text-destructive mt-1 ml-6">{errors.agreeTerms}</p>
+                {errors['agreeTerms'] && (
+                  <p className="text-sm text-destructive mt-1 ml-6">{errors['agreeTerms']}</p>
                 )}
 
                 <div className="flex items-start space-x-2">
