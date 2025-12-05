@@ -42,7 +42,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const handleInputChange = (field: string, value: any) => {
+  const handleInputChange = <K extends keyof FormData>(field: K, value: FormData[K]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
     if (errors[field]) {
@@ -87,14 +87,14 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
       newErrors.password = 'Password must be at least 8 characters long';
     }
 
-    if (!formData.confirmPassword) {
-      newErrors.confirmPassword = 'Please confirm your password';
-    } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+    if (!formData['confirmPassword']) {
+      newErrors['confirmPassword'] = 'Please confirm your password';
+    } else if (formData['password'] !== formData['confirmPassword']) {
+      newErrors['confirmPassword'] = 'Passwords do not match';
     }
 
-    if (!formData.agreeTerms) {
-      newErrors.agreeTerms = 'You must agree to the terms and conditions';
+    if (!formData['agreeTerms']) {
+      newErrors['agreeTerms'] = 'You must agree to the terms and conditions';
     }
 
     setErrors(newErrors);
@@ -167,14 +167,14 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                       <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                       <Input
                         placeholder="Enter your full name"
-                        value={formData.name}
+                        value={formData['name']}
                         onChange={(e) => handleInputChange('name', e.target.value)}
-                        className={`pl-10 ${errors.name ? 'border-destructive' : ''}`}
+                        className={`pl-10 ${errors['name'] ? 'border-destructive' : ''}`}
                         required
                       />
                     </div>
-                    {errors.name && (
-                      <p className="text-sm text-destructive mt-1">{errors.name}</p>
+                    {errors['name'] && (
+                      <p className="text-sm text-destructive mt-1">{errors['name']}</p>
                     )}
                   </div>
 
@@ -184,14 +184,14 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                       <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                       <Input
                         placeholder="+94 XX XXX XXXX"
-                        value={formData.phone}
+                        value={formData['phone']}
                         onChange={(e) => handleInputChange('phone', e.target.value)}
-                        className={`pl-10 ${errors.phone ? 'border-destructive' : ''}`}
+                        className={`pl-10 ${errors['phone'] ? 'border-destructive' : ''}`}
                         required
                       />
                     </div>
-                    {errors.phone && (
-                      <p className="text-sm text-destructive mt-1">{errors.phone}</p>
+                    {errors['phone'] && (
+                      <p className="text-sm text-destructive mt-1">{errors['phone']}</p>
                     )}
                   </div>
                 </div>
@@ -203,14 +203,14 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                     <Input
                       type="email"
                       placeholder="Enter your email address"
-                      value={formData.email}
+                      value={formData['email']}
                       onChange={(e) => handleInputChange('email', e.target.value)}
-                      className={`pl-10 ${errors.email ? 'border-destructive' : ''}`}
+                      className={`pl-10 ${errors['email'] ? 'border-destructive' : ''}`}
                       required
                     />
                   </div>
-                  {errors.email && (
-                    <p className="text-sm text-destructive mt-1">{errors.email}</p>
+                  {errors['email'] && (
+                    <p className="text-sm text-destructive mt-1">{errors['email']}</p>
                   )}
                 </div>
 
@@ -220,14 +220,14 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                     <MapPin className="absolute left-3 top-3 text-muted-foreground h-4 w-4" />
                     <Input
                       placeholder="Enter your full address"
-                      value={formData.address}
+                      value={formData['address']}
                       onChange={(e) => handleInputChange('address', e.target.value)}
-                      className={`pl-10 ${errors.address ? 'border-destructive' : ''}`}
+                      className={`pl-10 ${errors['address'] ? 'border-destructive' : ''}`}
                       required
                     />
                   </div>
-                  {errors.address && (
-                    <p className="text-sm text-destructive mt-1">{errors.address}</p>
+                  {errors['address'] && (
+                    <p className="text-sm text-destructive mt-1">{errors['address']}</p>
                   )}
                 </div>
               </div>
