@@ -1,4 +1,3 @@
-
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react-swc';
 import { visualizer } from 'rollup-plugin-visualizer';
@@ -90,7 +89,7 @@ export default defineConfig(({ mode }: { mode: string }) => ({
       }
     },
     chunkSizeWarningLimit: 8000,
-    sourcemap: process.env.NODE_ENV === 'production' ? false : 'inline',
+    sourcemap: (mode === 'production' ? false : 'inline') as boolean | 'inline' | 'hidden' | undefined,
     reportCompressedSize: true,
     assetsInlineLimit: 4096
   },

@@ -2,6 +2,7 @@ import React, { useMemo, useCallback } from 'react';
 import { Button } from '../components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '../components/ui/dropdown_menu';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip';
 import { Badge } from '../components/ui/badge';
 import { useApp } from '../contexts/AppContext';
 import { Sun, Moon, Globe, Gavel, User, Settings, LogOut, Menu, TrendingUp } from 'lucide-react';
@@ -127,114 +128,164 @@ export const Header: React.FC<HeaderProps> = React.memo(({ onNavigate, currentPa
           </nav>
 
           {/* User Actions */}
-          <div className="flex items-center space-x-6">
-            {/* Gold Price Display */}
-            <div className="flex items-center space-x-3 px-3 py-1.5 rounded-md bg-primary/10 text-primary font-semibold">
-              {/* 24K with Gold Icon */}
-              <div className="flex items-center space-x-1.5">
-                <GiGoldBar 
-                  style={{ 
-                    color: '#F5D300',  
-                  }} 
-                />
-                <span className="text-sm font-bold">{goldPriceData.karat}</span>
-              </div>
-              {/* Separator */}
-              <span className="text-primary/50">|</span>
-              {/* LKR Price */}
-              <span className="text-sm whitespace-nowrap">{goldPriceData.price || 'LKR 310K'}</span>
-            </div>
+          <TooltipProvider>
+            <div className="flex items-center space-x-6">
+              {/* Gold Price Display */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div 
+                    className="flex items-center space-x-3 px-3 py-1.5 rounded-md bg-primary/10 text-primary font-semibold cursor-help"
+                    role="status"
+                    aria-label={`Current ${goldPriceData.karat} gold price: ${goldPriceData.price}`}
+                  >
+                    {/* 24K with Gold Icon */}
+                    <div className="flex items-center space-x-1.5">
+                      <GiGoldBar 
+                        style={{ 
+                          color: '#F5D300',  
+                        }}
+                        aria-hidden="true"
+                      />
+                      <span className="text-sm font-bold">{goldPriceData.karat}</span>
+                    </div>
+                    {/* Separator */}
+                    <span className="text-primary/50" aria-hidden="true">|</span>
+                    {/* LKR Price */}
+                    <span className="text-sm whitespace-nowrap">{goldPriceData.price || 'LKR 310K'}</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Live gold price per 1 Pawn (24K)</p>
+                  <p className="text-xs text-muted-foreground mt-1">Updates every 10 seconds</p>
+                </TooltipContent>
+              </Tooltip>
 
-            {/* Language Switcher */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm">
-                  <Globe className="h-4 w-4" />
-                  <span className="ml-2 hidden sm:inline">{language.toUpperCase()}</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => handleLanguageChange('en')}>
-                  English
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleLanguageChange('si')}>
-                  සිංහල
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            {/* Theme Toggle */}
-            <Button variant="ghost" size="sm" onClick={toggleTheme}>
-              {theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-            </Button>
-
-            {/* User Menu */}
-            {isAuthenticated && user ? (
+              {/* Language Switcher */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={user.avatar} alt={user.name} />
-                      <AvatarFallback>{user.name.slice(0, 2).toUpperCase()}</AvatarFallback>
-                    </Avatar>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    aria-label={`Current language: ${language === 'en' ? 'English' : 'Sinhala'}. Click to change language.`}
+                    title="Change language"
+                  >
+                    <Globe className="h-4 w-4" />
+                    <span className="ml-2 hidden sm:inline">{language.toUpperCase()}</span>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="end">
-                  <div className="flex flex-col space-y-1 p-2">
-                    <p className="text-sm font-medium">{user.name}</p>
-                    <p className="text-xs text-muted-foreground">{user.email}</p>
-                    <Badge className={`text-xs w-fit ${roleColors[user.role]}`}>
-                      {user.role}
-                    </Badge>
-                  </div>
-                  <DropdownMenuSeparator />
-                  {roleBasedDashboard && (
-                    <>
-                      <DropdownMenuItem onClick={() => onNavigate(roleBasedDashboard.path)}>
-                        <Settings className="mr-2 h-4 w-4" />
-                        {roleBasedDashboard.label}
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                    </>
-                  )}
-                  <DropdownMenuItem onClick={() => onNavigate('/profile')}>
-                    <User className="mr-2 h-4 w-4" />
-                    {t('nav.profile')}
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={() => handleLanguageChange('en')}>
+                    English
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={logout}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    {t('nav.logout')}
+                  <DropdownMenuItem onClick={() => handleLanguageChange('si')}>
+                    සිංහල
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-            ) : (
-              <div className="flex items-center space-x-2">
-                <Button variant="ghost" onClick={() => onNavigate('/login')}>
-                  {t('nav.login')}
-                </Button>
-                <Button onClick={() => onNavigate('/register')}>
-                  {t('nav.register')}
-                </Button>
-              </div>
-            )}
 
-            {/* Mobile Menu */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild className="md:hidden">
-                <Button variant="ghost" size="sm">
-                  <Menu className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="end">
-                {publicNavItems.map((item) => (
-                  <DropdownMenuItem key={item.path} onClick={() => onNavigate(item.path)}>
-                    {item.icon && <item.icon className="mr-2 h-4 w-4" />}
-                    {item.label}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+              {/* Theme Toggle */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={toggleTheme}
+                    aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+                  >
+                    {theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Switch to {theme === 'light' ? 'dark' : 'light'} mode</p>
+                </TooltipContent>
+              </Tooltip>
+
+              {/* User Menu */}
+              {isAuthenticated && user ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      className="relative h-10 w-10 rounded-full"
+                      aria-label={`User menu for ${user.name}`}
+                      title={`${user.name} (${user.role})`}
+                    >
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={user.avatar} alt={user.name} />
+                        <AvatarFallback>{user.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+                      </Avatar>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56" align="end">
+                    <div className="flex flex-col space-y-1 p-2">
+                      <p className="text-sm font-medium">{user.name}</p>
+                      <p className="text-xs text-muted-foreground">{user.email}</p>
+                      <Badge className={`text-xs w-fit ${roleColors[user.role]}`}>
+                        {user.role}
+                      </Badge>
+                    </div>
+                    <DropdownMenuSeparator />
+                    {roleBasedDashboard && (
+                      <>
+                        <DropdownMenuItem onClick={() => onNavigate(roleBasedDashboard.path)}>
+                          <Settings className="mr-2 h-4 w-4" />
+                          {roleBasedDashboard.label}
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                      </>
+                    )}
+                    <DropdownMenuItem onClick={() => onNavigate('/profile')}>
+                      <User className="mr-2 h-4 w-4" />
+                      {t('nav.profile')}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={logout}>
+                      <LogOut className="mr-2 h-4 w-4" />
+                      {t('nav.logout')}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <div className="flex items-center space-x-2">
+                  <Button 
+                    variant="ghost" 
+                    onClick={() => onNavigate('/login')}
+                    aria-label="Sign in to your account"
+                  >
+                    {t('nav.login')}
+                  </Button>
+                  <Button 
+                    onClick={() => onNavigate('/register')}
+                    aria-label="Create a new account"
+                  >
+                    {t('nav.register')}
+                  </Button>
+                </div>
+              )}
+
+              {/* Mobile Menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild className="md:hidden">
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    aria-label="Open navigation menu"
+                    title="Navigation menu"
+                    className="mr-0"
+                  >
+                    <Menu className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end">
+                  {publicNavItems.map((item) => (
+                    <DropdownMenuItem key={item.path} onClick={() => onNavigate(item.path)}>
+                      {item.icon && <item.icon className="mr-2 h-4 w-4" />}
+                      {item.label}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </TooltipProvider>
         </div>
       </div>
     </header>

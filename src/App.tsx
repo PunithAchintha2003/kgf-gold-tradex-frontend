@@ -4,6 +4,7 @@ import { AppProvider } from './contexts/AppContext';
 import { Router } from './routes/Router';
 import { ErrorBoundary } from './shared/components/ErrorBoundary';
 import { PageLoader } from './shared/components/LoadingSpinner';
+import { Toaster } from './components/ui/sonner';
 import { store, persistor } from './store';
 
 export default function App() {
@@ -13,6 +14,7 @@ export default function App() {
         <PersistGate loading={<PageLoader />} persistor={persistor}>
           <AppProvider>
             <Router />
+            <Toaster />
           </AppProvider>
         </PersistGate>
       </Provider>

@@ -20,6 +20,11 @@ export default defineConfig(function (_a) {
                 '@': path.resolve(__dirname, './src'),
             },
         },
+        server: {
+            port: 4000,
+            strictPort: true,
+            open: true,
+        },
         build: {
             target: 'esnext',
             outDir: 'build',
@@ -112,10 +117,6 @@ export default defineConfig(function (_a) {
         },
         esbuild: {
             logOverride: { 'this-is-undefined-in-esm': 'silent' }
-        },
-        server: {
-            port: 5173,
-            open: true,
         },
     });
 });

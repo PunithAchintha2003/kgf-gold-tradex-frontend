@@ -1,16 +1,19 @@
 "use client";
 
-import { useTheme } from "next-themes";
 import { Toaster as Sonner, ToasterProps } from "sonner";
+import { useApp } from "../../contexts/AppContext";
 
 const Toaster = ({ theme: propTheme, ...props }: ToasterProps) => {
-  const { theme: contextTheme } = useTheme();
-  const resolvedTheme = (propTheme ?? contextTheme ?? "system") as "light" | "dark" | "system";
+  const { theme: contextTheme } = useApp();
+  const resolvedTheme = (propTheme ?? contextTheme ?? "light") as "light" | "dark";
 
   return (
     <Sonner
       theme={resolvedTheme}
       className="toaster group"
+      position="top-right"
+      richColors
+      closeButton
       style={
         {
           "--normal-bg": "var(--popover)",
