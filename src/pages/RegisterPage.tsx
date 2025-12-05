@@ -13,9 +13,21 @@ interface RegisterPageProps {
   onNavigate: (path: string) => void;
 }
 
+interface FormData {
+  name: string;
+  email: string;
+  phone: string;
+  password: string;
+  confirmPassword: string;
+  role: string;
+  address: string;
+  agreeTerms: boolean;
+  agreeMarketing: boolean;
+}
+
 export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
   const { t: _t } = useApp();
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     name: '',
     email: '',
     phone: '',
