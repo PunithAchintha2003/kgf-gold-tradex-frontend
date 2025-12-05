@@ -1,4 +1,5 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { createApi } from '@reduxjs/toolkit/query/react';
+import { baseQueryWithReauth } from '@/core/api/baseApi';
 import { env } from '../../utils/env';
 
 export interface DailyDataPoint {
@@ -125,18 +126,9 @@ export interface PredictionHistoryResponse {
   total: number;
 }
 
-const API_BASE_URL = env.API_BASE_URL;
-
 export const goldApi = createApi({
   reducerPath: 'goldApi',
-  baseQuery: fetchBaseQuery({
-    baseUrl: API_BASE_URL,
-    prepareHeaders: (headers) => {
-      // Add any default headers here
-      headers.set('Content-Type', 'application/json');
-      return headers;
-    },
-  }),
+  baseQuery: baseQueryWithReauth,
   tagTypes: ['DailyData', 'RealtimePrice', 'PredictionExplanation', 'ExchangeRate', 'AccuracyVisualization', 'PredictionHistory'],
   endpoints: (builder) => ({
     getDailyData: builder.query<DailyDataResponse, { days?: number; start_date?: string; end_date?: string } | void>({

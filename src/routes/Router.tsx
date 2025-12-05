@@ -1,8 +1,11 @@
-import React, { useState, Suspense, lazy, useMemo, useCallback } from 'react';
+import React, { Suspense, lazy, useState, useCallback } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
 import { Header } from '../layouts/Header';
 import { ErrorBoundary } from '../shared/components/ErrorBoundary';
 import { PageLoader } from '../shared/components/LoadingSpinner';
+import { ProtectedRoute } from '../shared/components/ProtectedRoute';
+import { ROUTES, ROUTE_CONFIG } from '../core/config/routes.config';
 import { Product } from '../types';
 
 // Lazy load heavy components for code splitting
@@ -20,16 +23,16 @@ const ARTryOnModal = lazy(() => import('../shared/components/ARTryOnModal').then
 const ChatModal = lazy(() => import('../shared/components/ChatModal').then(module => ({ default: module.ChatModal })));
 const PricePredictorPage = lazy(() => import('../components/price-predictor/PricePredictorPage'));
 
-export const Router: React.FC = () => {
-  const [currentPath, setCurrentPath] = useState('/');
+/**
+ * App routes component
+ */
+const AppRoutes: React.FC = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { user } = useApp();
   const [isARModalOpen, setIsARModalOpen] = useState(false);
   const [isChatModalOpen, setIsChatModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const { user, isAuthenticated } = useApp();
-
-  const navigate = useCallback((path: string) => {
-    setCurrentPath(path);
-  }, []);
 
   const openARModal = useCallback((product: Product) => {
     setSelectedProduct(product);
@@ -49,48 +52,93 @@ export const Router: React.FC = () => {
     setIsChatModalOpen(false);
   }, []);
 
-  const renderPage = useMemo(() => {
-    // Protect dashboard routes
-    if (currentPath.startsWith('/dashboard') && !isAuthenticated) {
-      return <LoginPage onNavigate={navigate} />;
-    }
-
-    switch (currentPath) {
-      case '/':
-        return <HomePage onNavigate={navigate} />;
-      case '/products':
-        return <ProductsPage onNavigate={navigate} onTryAR={openARModal} />;
-      case '/auctions':
-        return <AuctionsPage onNavigate={navigate} />;
-      case '/price-predictor':
-      case '/predictor':
-        return <PricePredictorPage onNavigate={navigate} />;
-      case '/login':
-        return <LoginPage onNavigate={navigate} />;
-      case '/register':
-        return <RegisterPage onNavigate={navigate} />;
-      case '/dashboard/customer':
-        return user?.role === 'buyer' ? <CustomerDashboard onNavigate={navigate} onOpenChat={openChat} /> : <HomePage onNavigate={navigate} />;
-      case '/dashboard/seller':
-        return user?.role === 'seller' ? <SellerDashboard onNavigate={navigate} /> : <HomePage onNavigate={navigate} />;
-      case '/dashboard/pawnshop':
-        return user?.role === 'pawnshop' ? <PawnshopDashboard onNavigate={navigate} /> : <HomePage onNavigate={navigate} />;
-      case '/dashboard/investor':
-        return user?.role === 'investor' ? <InvestorDashboard onNavigate={navigate} /> : <HomePage onNavigate={navigate} />;
-      case '/dashboard/admin':
-        return user?.role === 'admin' ? <AdminDashboard onNavigate={navigate} /> : <HomePage onNavigate={navigate} />;
-      default:
-        return <HomePage onNavigate={navigate} />;
-    }
-  }, [currentPath, isAuthenticated, user?.role, navigate, openARModal, openChat]);
+  // Create navigation wrapper that works with React Router
+  const handleNavigate = useCallback((path: string) => {
+    navigate(path);
+  }, [navigate]);
 
   return (
     <ErrorBoundary>
       <div className="min-h-screen bg-background">
-        <Header onNavigate={navigate} currentPath={currentPath} />
+        <Header onNavigate={handleNavigate} currentPath={location.pathname} />
         <main>
           <Suspense fallback={<PageLoader />}>
-            {renderPage}
+            <Routes>
+              <Route path={ROUTES.HOME} element={<HomePage onNavigate={handleNavigate} />} />
+              <Route 
+                path={ROUTES.PRODUCTS} 
+                element={<ProductsPage onNavigate={handleNavigate} onTryAR={openARModal} />} 
+              />
+              <Route path={ROUTES.AUCTIONS} element={<AuctionsPage onNavigate={handleNavigate} />} />
+              <Route path={ROUTES.PRICE_PREDICTOR} element={<PricePredictorPage onNavigate={handleNavigate} />} />
+              <Route path={ROUTES.LOGIN} element={<LoginPage onNavigate={handleNavigate} />} />
+              <Route path={ROUTES.REGISTER} element={<RegisterPage onNavigate={handleNavigate} />} />
+              
+              {/* Protected Dashboard Routes */}
+              <Route
+                path={ROUTES.DASHBOARD.CUSTOMER}
+                element={
+                  <ProtectedRoute requiredRole="buyer" onNavigate={handleNavigate}>
+                    {user?.role === 'buyer' ? (
+                      <CustomerDashboard onNavigate={handleNavigate} onOpenChat={openChat} />
+                    ) : (
+                      <Navigate to={ROUTES.HOME} replace />
+                    )}
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path={ROUTES.DASHBOARD.SELLER}
+                element={
+                  <ProtectedRoute requiredRole="seller" onNavigate={handleNavigate}>
+                    {user?.role === 'seller' ? (
+                      <SellerDashboard onNavigate={handleNavigate} />
+                    ) : (
+                      <Navigate to={ROUTES.HOME} replace />
+                    )}
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path={ROUTES.DASHBOARD.PAWNSHOP}
+                element={
+                  <ProtectedRoute requiredRole="pawnshop" onNavigate={handleNavigate}>
+                    {user?.role === 'pawnshop' ? (
+                      <PawnshopDashboard onNavigate={handleNavigate} />
+                    ) : (
+                      <Navigate to={ROUTES.HOME} replace />
+                    )}
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path={ROUTES.DASHBOARD.INVESTOR}
+                element={
+                  <ProtectedRoute requiredRole="investor" onNavigate={handleNavigate}>
+                    {user?.role === 'investor' ? (
+                      <InvestorDashboard onNavigate={handleNavigate} />
+                    ) : (
+                      <Navigate to={ROUTES.HOME} replace />
+                    )}
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path={ROUTES.DASHBOARD.ADMIN}
+                element={
+                  <ProtectedRoute requiredRole="admin" onNavigate={handleNavigate}>
+                    {user?.role === 'admin' ? (
+                      <AdminDashboard onNavigate={handleNavigate} />
+                    ) : (
+                      <Navigate to={ROUTES.HOME} replace />
+                    )}
+                  </ProtectedRoute>
+                }
+              />
+              
+              {/* Catch all - redirect to home */}
+              <Route path="*" element={<Navigate to={ROUTES.HOME} replace />} />
+            </Routes>
           </Suspense>
         </main>
         
@@ -112,5 +160,16 @@ export const Router: React.FC = () => {
         </Suspense>
       </div>
     </ErrorBoundary>
+  );
+};
+
+/**
+ * Main Router component using React Router
+ */
+export const Router: React.FC = () => {
+  return (
+    <BrowserRouter>
+      <AppRoutes />
+    </BrowserRouter>
   );
 };
