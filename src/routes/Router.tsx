@@ -5,7 +5,7 @@ import { Header } from '../layouts/Header';
 import { ErrorBoundary } from '../shared/components/ErrorBoundary';
 import { PageLoader } from '../shared/components/LoadingSpinner';
 import { ProtectedRoute } from '../shared/components/ProtectedRoute';
-import { ROUTES, ROUTE_CONFIG } from '../core/config/routes.config';
+import { ROUTES } from '../core/config/routes.config';
 import { Product } from '../types';
 
 // Lazy load heavy components for code splitting

@@ -227,7 +227,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                 <div>
                   <label className="block text-sm font-medium mb-2">I want to:</label>
                   <Select value={formData.role} onValueChange={(value) => handleInputChange('role', value)}>
-                    <SelectTrigger className={errors.role ? 'border-destructive' : ''}>
+                    <SelectTrigger className={errors['role'] ? 'border-destructive' : ''}>
                       <SelectValue placeholder="Select your account type" />
                     </SelectTrigger>
                     <SelectContent>
@@ -238,8 +238,8 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                       ))}
                     </SelectContent>
                   </Select>
-                  {errors.role && (
-                    <p className="text-sm text-destructive mt-1">{errors.role}</p>
+                  {errors['role'] && (
+                    <p className="text-sm text-destructive mt-1">{errors['role']}</p>
                   )}
                 </div>
               </div>
@@ -258,7 +258,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                         placeholder="Create a strong password (min. 8 characters)"
                         value={formData.password}
                         onChange={(e) => handleInputChange('password', e.target.value)}
-                        className={`pl-10 pr-10 ${errors.password ? 'border-destructive' : ''}`}
+                        className={`pl-10 pr-10 ${errors['password'] ? 'border-destructive' : ''}`}
                         required
                       />
                       <button
@@ -270,8 +270,8 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                         {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
                     </div>
-                    {errors.password && (
-                      <p className="text-sm text-destructive mt-1">{errors.password}</p>
+                    {errors['password'] && (
+                      <p className="text-sm text-destructive mt-1">{errors['password']}</p>
                     )}
                   </div>
 
@@ -284,12 +284,12 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                         placeholder="Confirm your password"
                         value={formData.confirmPassword}
                         onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                        className={`pl-10 ${errors.confirmPassword ? 'border-destructive' : ''}`}
+                        className={`pl-10 ${errors['confirmPassword'] ? 'border-destructive' : ''}`}
                         required
                       />
                     </div>
-                    {errors.confirmPassword && (
-                      <p className="text-sm text-destructive mt-1">{errors.confirmPassword}</p>
+                    {errors['confirmPassword'] && (
+                      <p className="text-sm text-destructive mt-1">{errors['confirmPassword']}</p>
                     )}
                   </div>
                 </div>
@@ -302,7 +302,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                     id="terms"
                     checked={formData.agreeTerms}
                     onCheckedChange={(checked) => handleInputChange('agreeTerms', checked)}
-                    className={errors.agreeTerms ? 'border-destructive' : ''}
+                    className={errors['agreeTerms'] ? 'border-destructive' : ''}
                   />
                   <label htmlFor="terms" className="text-sm leading-5">
                     I agree to the{' '}
@@ -311,8 +311,8 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                     <a href="#" className="text-primary hover:underline">Privacy Policy</a>
                   </label>
                 </div>
-                {errors.agreeTerms && (
-                  <p className="text-sm text-destructive mt-1 ml-6">{errors.agreeTerms}</p>
+                {errors['agreeTerms'] && (
+                  <p className="text-sm text-destructive mt-1 ml-6">{errors['agreeTerms']}</p>
                 )}
 
                 <div className="flex items-start space-x-2">
