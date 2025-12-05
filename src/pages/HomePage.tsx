@@ -2,8 +2,10 @@ import React from 'react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip';
 import { useApp } from '../contexts/AppContext';
 import { ArrowRight, Shield, Smartphone, Gavel, TrendingUp, Star, Users, Award, Clock } from 'lucide-react';
+import { toast } from 'sonner';
 import { ImageWithFallback } from '../shared/components/figma/ImageWithFallback';
 
 interface HomePageProps {
@@ -233,7 +235,14 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
                     <Shield className="h-4 w-4 mr-1 text-green-600" />
                     {product.seller}
                   </div>
-                  <Button className="w-full mt-4 kgf-gradient text-white">
+                  <Button 
+                    className="w-full mt-4 kgf-gradient text-white"
+                    onClick={() => {
+                      toast.info('Product details', {
+                        description: `Viewing details for ${product.name}.`,
+                      });
+                    }}
+                  >
                     View Details
                   </Button>
                 </CardContent>
@@ -286,7 +295,14 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
                     <span className="text-sm text-muted-foreground">
                       {auction.bidders} bidders
                     </span>
-                    <Button className="kgf-gradient text-white">
+                    <Button 
+                      className="kgf-gradient text-white"
+                      onClick={() => {
+                        toast.info('Place a bid', {
+                          description: `Opening bid form for ${auction.title}.`,
+                        });
+                      }}
+                    >
                       Place Bid
                     </Button>
                   </div>

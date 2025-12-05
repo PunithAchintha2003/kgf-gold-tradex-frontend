@@ -6,6 +6,7 @@ import { Badge } from '../components/ui/badge';
 import { Separator } from '../components/ui/separator';
 import { useApp, UserRole } from '../contexts/AppContext';
 import { Mail, Lock, Eye, EyeOff, Shield, User, Store, Gavel, TrendingUp, Settings } from 'lucide-react';
+import { toast } from 'sonner';
 import logoImage from '../assets/28A9A4B0-D00A-4539-82A6-89A2130B5FAF.PNG';
 
 interface LoginPageProps {
@@ -71,13 +72,27 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Basic validation
+    if (!email || !password) {
+      toast.error('Please fill in all fields', {
+        description: 'Email and password are required to sign in.',
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
       await login(email, password);
+      toast.success('Welcome back!', {
+        description: 'You have successfully signed in.',
+      });
       onNavigate('/');
     } catch (_error) {
-      alert('Login failed. Please check your credentials.');
+      toast.error('Login failed', {
+        description: 'Please check your credentials and try again.',
+      });
     } finally {
       setIsLoading(false);
     }
@@ -87,6 +102,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
     setIsLoading(true);
     try {
       await login(account.email, account.password);
+      toast.success(`Welcome, ${account.name}!`, {
+        description: `You're now logged in as ${account.role}.`,
+      });
       // Navigate to appropriate dashboard
       switch (account.role) {
         case 'buyer':
@@ -108,7 +126,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
           onNavigate('/');
       }
     } catch (_error) {
-      alert('Demo login failed.');
+      toast.error('Demo login failed', {
+        description: 'Please try again or contact support if the issue persists.',
+      });
     } finally {
       setIsLoading(false);
     }

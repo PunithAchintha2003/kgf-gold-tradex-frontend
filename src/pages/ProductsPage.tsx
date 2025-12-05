@@ -4,9 +4,11 @@ import { Input } from '../components/ui/input';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip';
 import { useApp } from '../contexts/AppContext';
-import { Search, Filter, Star, Shield, Smartphone, Heart, ShoppingCart } from 'lucide-react';
+import { Search, Filter, Star, Shield, Smartphone, Heart, ShoppingCart, Package } from 'lucide-react';
 import { ImageWithFallback } from '../shared/components/figma/ImageWithFallback';
+import { toast } from 'sonner';
 import { Product } from '../types';
 
 interface ProductsPageProps {
@@ -254,43 +256,68 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ onNavigate: _onNavig
                 </div>
 
                 {/* Action Buttons */}
-                <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity space-y-2">
-                  <Button size="sm" variant="secondary" className="w-10 h-10 p-0">
-                    <Heart className="h-4 w-4" />
-                  </Button>
-                  {product.arAvailable && (
-                    <Button 
-                      size="sm" 
-                      variant="secondary" 
-                      className="w-10 h-10 p-0"
-                      onClick={() => {
-                        // Convert mock product to Product type
-                        const productForAR: Product = {
-                          id: product.id.toString(),
-                          name: product.name,
-                          description: '',
-                          price: product.price,
-                          currency: 'LKR',
-                          category: product.category as Product['category'],
-                          images: [product.image],
-                          karat: parseInt(product.purity) || 18,
-                          weight: parseFloat(product.weight) || 0,
-                          seller: {
-                            id: '1',
-                            name: product.seller,
-                            verified: product.isVerified,
-                            rating: product.rating,
-                          },
-                          inStock: true,
-                          featured: product.isOnSale,
-                        };
-                        onTryAR(productForAR);
-                      }}
-                    >
-                      <Smartphone className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
+                <TooltipProvider>
+                  <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity space-y-2">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button 
+                          size="sm" 
+                          variant="secondary" 
+                          className="w-10 h-10 p-0"
+                          onClick={() => {
+                            toast.success('Added to wishlist', {
+                              description: `${product.name} has been saved to your wishlist.`,
+                            });
+                          }}
+                        >
+                          <Heart className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Add to wishlist</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    {product.arAvailable && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button 
+                            size="sm" 
+                            variant="secondary" 
+                            className="w-10 h-10 p-0"
+                            onClick={() => {
+                              // Convert mock product to Product type
+                              const productForAR: Product = {
+                                id: product.id.toString(),
+                                name: product.name,
+                                description: '',
+                                price: product.price,
+                                currency: 'LKR',
+                                category: product.category as Product['category'],
+                                images: [product.image],
+                                karat: parseInt(product.purity) || 18,
+                                weight: parseFloat(product.weight) || 0,
+                                seller: {
+                                  id: '1',
+                                  name: product.seller,
+                                  verified: product.isVerified,
+                                  rating: product.rating,
+                                },
+                                inStock: true,
+                                featured: product.isOnSale,
+                              };
+                              onTryAR(productForAR);
+                            }}
+                          >
+                            <Smartphone className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Try with AR</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
+                  </div>
+                </TooltipProvider>
               </div>
 
               <CardContent className="p-4">
@@ -327,43 +354,59 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ onNavigate: _onNavig
                   </div>
 
                   {/* Actions */}
-                  <div className="flex space-x-2">
-                    <Button className="flex-1 kgf-gradient text-white">
-                      <ShoppingCart className="h-4 w-4 mr-2" />
-                      Add to Cart
-                    </Button>
-                    {product.arAvailable && (
+                  <TooltipProvider>
+                    <div className="flex space-x-2">
                       <Button 
-                        variant="outline" 
-                        size="sm"
+                        className="flex-1 kgf-gradient text-white"
                         onClick={() => {
-                          // Convert mock product to Product type
-                          const productForAR: Product = {
-                            id: product.id.toString(),
-                            name: product.name,
-                            description: '',
-                            price: product.price,
-                            currency: 'LKR',
-                            category: product.category as Product['category'],
-                            images: [product.image],
-                            karat: parseInt(product.purity) || 18,
-                            weight: parseFloat(product.weight) || 0,
-                            seller: {
-                              id: '1',
-                              name: product.seller,
-                              verified: product.isVerified,
-                              rating: product.rating,
-                            },
-                            inStock: true,
-                            featured: product.isOnSale,
-                          };
-                          onTryAR(productForAR);
+                          toast.success('Added to cart', {
+                            description: `${product.name} has been added to your shopping cart.`,
+                          });
                         }}
                       >
-                        <Smartphone className="h-4 w-4" />
+                        <ShoppingCart className="h-4 w-4 mr-2" />
+                        Add to Cart
                       </Button>
-                    )}
-                  </div>
+                      {product.arAvailable && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                // Convert mock product to Product type
+                                const productForAR: Product = {
+                                  id: product.id.toString(),
+                                  name: product.name,
+                                  description: '',
+                                  price: product.price,
+                                  currency: 'LKR',
+                                  category: product.category as Product['category'],
+                                  images: [product.image],
+                                  karat: parseInt(product.purity) || 18,
+                                  weight: parseFloat(product.weight) || 0,
+                                  seller: {
+                                    id: '1',
+                                    name: product.seller,
+                                    verified: product.isVerified,
+                                    rating: product.rating,
+                                  },
+                                  inStock: true,
+                                  featured: product.isOnSale,
+                                };
+                                onTryAR(productForAR);
+                              }}
+                            >
+                              <Smartphone className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Try on with AR</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
+                    </div>
+                  </TooltipProvider>
                 </div>
               </CardContent>
             </Card>
@@ -381,18 +424,40 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ onNavigate: _onNavig
 
         {/* No Results */}
         {sortedProducts.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-xl text-muted-foreground mb-4">No products found</p>
-            <p className="text-muted-foreground mb-6">
-              Try adjusting your search criteria or browse all categories
+          <div className="text-center py-16">
+            <div className="flex justify-center mb-4">
+              <div className="p-4 rounded-full bg-muted">
+                <Package className="h-12 w-12 text-muted-foreground" />
+              </div>
+            </div>
+            <h3 className="text-xl font-semibold mb-2">No products found</h3>
+            <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+              We couldn't find any products matching your search criteria. Try adjusting your filters or browse all categories.
             </p>
-            <Button onClick={() => {
-              setSearchQuery('');
-              setSelectedCategory('all');
-              setPriceRange('all');
-            }}>
-              Clear Filters
-            </Button>
+            <div className="flex gap-3 justify-center">
+              <Button 
+                variant="outline"
+                onClick={() => {
+                  setSearchQuery('');
+                  setSelectedCategory('all');
+                  setPriceRange('all');
+                  setSortBy('featured');
+                  toast.info('Filters cleared', {
+                    description: 'All filters have been reset.',
+                  });
+                }}
+              >
+                Clear All Filters
+              </Button>
+              <Button onClick={() => {
+                setSearchQuery('');
+                setSelectedCategory('all');
+                setPriceRange('all');
+                setSortBy('featured');
+              }}>
+                Browse All Products
+              </Button>
+            </div>
           </div>
         )}
       </div>
