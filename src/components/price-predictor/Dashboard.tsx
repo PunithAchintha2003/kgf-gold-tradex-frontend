@@ -122,8 +122,12 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
   // Fetch accuracy visualization data (auto-refresh every 15 minutes as per guide)
   const {
     data: accuracyVisualizationData,
+    error: accuracyVisualizationError,
+    isLoading: _accuracyVisualizationLoading,
   } = useGetAccuracyVisualizationQuery(undefined, {
     pollingInterval: 900000, // 15 minutes
+    // Skip polling if we get a 404 error (endpoint doesn't exist)
+    skip: false,
   });
 
   // Fetch prediction history (skip if endpoint doesn't exist to prevent 404 errors)
@@ -563,7 +567,10 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
           </Box>
 
           {/* Accuracy Visualization Chart */}
-          {accuracyVisualizationData && accuracyVisualizationData.data && accuracyVisualizationData.data.length > 0 && (
+          {accuracyVisualizationData && 
+           accuracyVisualizationData.data && 
+           accuracyVisualizationData.data.length > 0 && 
+           !accuracyVisualizationError && (
             <Box sx={{ flexShrink: 0, marginTop: { xs: 1.5, sm: 2 } }}>
               <Suspense fallback={
                 <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
