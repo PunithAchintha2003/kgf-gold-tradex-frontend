@@ -634,7 +634,17 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
 
           {/* Prediction History Table */}
           {predictionHistoryData && predictionHistoryData.predictions && !predictionHistoryError && (
-            <Box sx={{ flexShrink: 0, marginTop: { xs: 1.5, sm: 2 } }}>
+            <Box 
+              sx={{ 
+                flexShrink: 0, 
+                marginTop: { xs: 1.5, sm: 2 },
+                backgroundColor: isDark ? '#1a1a1a' : '#f9fafb',
+                border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : '#e5e7eb'}`,
+                borderRadius: '12px',
+                padding: { xs: '1rem', sm: '1.25rem' },
+              }}
+              className="bg-card border rounded-xl"
+            >
               <Suspense fallback={
                 <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
                   <CircularProgress size={24} />
