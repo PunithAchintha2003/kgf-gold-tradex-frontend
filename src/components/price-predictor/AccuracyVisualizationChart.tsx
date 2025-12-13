@@ -28,52 +28,84 @@ const AccuracyVisualizationChart: React.FC<AccuracyVisualizationChartProps> = ({
         y: predictedPrices,
         type: 'scatter',
         mode: 'lines+markers',
-        name: 'Predicted Price',
-        line: { color: 'rgb(75, 192, 192)', width: 2 },
-        marker: { size: 6 },
+        name: 'Predicted',
+        line: { color: '#26d4b4', width: 2.5 },
+        marker: { size: 5, color: '#26d4b4' },
+        hovertemplate: '<span style="color: #26d4b4; margin-right: 6px;">●</span><b>Predicted:</b> <span style="font-family: monospace; margin-left: 8px;">$%{y:,.2f}</span><extra></extra>',
       },
       {
         x: dates,
         y: actualPrices,
         type: 'scatter',
         mode: 'lines+markers',
-        name: 'Actual Price',
-        line: { color: 'rgb(255, 99, 132)', width: 2 },
-        marker: { size: 6 },
+        name: 'Actual',
+        line: { color: isDark ? '#60a5fa' : '#3b82f6', width: 2.5 },
+        marker: { size: 5, color: isDark ? '#60a5fa' : '#3b82f6' },
+        hovertemplate: `<span style="color: ${isDark ? '#60a5fa' : '#3b82f6'}; margin-right: 6px;">●</span><b>Actual:</b> <span style="font-family: monospace; margin-left: 24px;">$%{y:,.2f}</span><extra></extra>`,
       },
     ];
-  }, [data]);
+  }, [data, isDark]);
 
   const layout = useMemo(
     () => ({
       title: {
-        text: 'Predicted vs Actual Prices',
-        font: { size: 16, color: isDark ? '#FFFFFF' : '#000000' },
+        text: '',
+        font: { size: 0 },
       },
       xaxis: {
-        title: 'Date',
-        color: isDark ? '#CCCCCC' : '#666666',
-        gridcolor: isDark ? '#333333' : '#E0E0E0',
+        title: {
+          text: 'Date',
+          font: { size: 12, color: isDark ? '#9ca3af' : '#6b7280' },
+        },
+        color: isDark ? '#9ca3af' : '#6b7280',
+        gridcolor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
         showgrid: true,
+        tickfont: { size: 10, color: isDark ? '#9ca3af' : '#6b7280' },
+        type: 'date',
+        tickformat: '%b %d, %Y',
+        hoverformat: '%B %d, %Y',
       },
       yaxis: {
-        title: 'Price (USD)',
-        color: isDark ? '#CCCCCC' : '#666666',
-        gridcolor: isDark ? '#333333' : '#E0E0E0',
+        title: {
+          text: 'Price (USD)',
+          font: { size: 12, color: isDark ? '#9ca3af' : '#6b7280' },
+        },
+        color: isDark ? '#9ca3af' : '#6b7280',
+        gridcolor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
         showgrid: true,
+        tickfont: { size: 10, color: isDark ? '#9ca3af' : '#6b7280' },
       },
-      plot_bgcolor: isDark ? '#111111' : '#FFFFFF',
-      paper_bgcolor: isDark ? '#111111' : '#FFFFFF',
-      font: { color: isDark ? '#CCCCCC' : '#666666' },
+      plot_bgcolor: 'transparent',
+      paper_bgcolor: 'transparent',
+      font: { color: isDark ? '#9ca3af' : '#6b7280', size: 11 },
       legend: {
-        x: 0,
-        y: 1,
-        bgcolor: isDark ? 'rgba(17, 17, 17, 0.8)' : 'rgba(255, 255, 255, 0.8)',
-        bordercolor: isDark ? '#333333' : '#E0E0E0',
+        x: 0.5,
+        xanchor: 'center',
+        y: -0.15,
+        yanchor: 'top',
+        orientation: 'h',
+        bgcolor: 'transparent',
+        bordercolor: 'transparent',
+        font: { size: 11, color: isDark ? '#d1d5db' : '#374151' },
       },
-      margin: { l: 60, r: 30, t: 50, b: 60 },
+      margin: { l: 50, r: 20, t: 20, b: 40 },
       height,
       hovermode: 'x unified' as const,
+      showlegend: true,
+      hoverlabel: {
+        bgcolor: isDark ? 'rgba(17, 24, 39, 0.98)' : 'rgba(255, 255, 255, 0.98)',
+        bordercolor: isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)',
+        font: { 
+          size: 13, 
+          color: isDark ? '#f3f4f6' : '#111827',
+          family: 'system-ui, -apple-system, sans-serif',
+        },
+        align: 'left',
+        namelength: -1,
+        padding: { t: 10, b: 10, l: 12, r: 12 },
+        split: false,
+      },
+      hoverdistance: 20,
     }),
     [isDark, height]
   );
@@ -86,12 +118,10 @@ const AccuracyVisualizationChart: React.FC<AccuracyVisualizationChartProps> = ({
           justifyContent: 'center',
           alignItems: 'center',
           height,
-          backgroundColor: isDark ? '#111111' : '#FFFFFF',
-          border: `1px solid ${isDark ? '#1f1f1f' : '#E0E0E0'}`,
-          borderRadius: '10px',
+          backgroundColor: 'transparent',
         }}
       >
-        <CircularProgress size={40} />
+        <CircularProgress size={32} />
       </Box>
     );
   }
@@ -99,11 +129,9 @@ const AccuracyVisualizationChart: React.FC<AccuracyVisualizationChartProps> = ({
   return (
     <Box
       sx={{
-        backgroundColor: isDark ? '#111111' : '#FFFFFF',
-        border: `1px solid ${isDark ? '#1f1f1f' : '#E0E0E0'}`,
-        borderRadius: '10px',
-        padding: '1rem',
+        backgroundColor: 'transparent',
         height: '100%',
+        width: '100%',
       }}
     >
       <Plot
@@ -112,8 +140,15 @@ const AccuracyVisualizationChart: React.FC<AccuracyVisualizationChartProps> = ({
         config={{
           displayModeBar: true,
           displaylogo: false,
-          modeBarButtonsToRemove: ['lasso2d', 'select2d'],
+          modeBarButtonsToRemove: ['lasso2d', 'select2d', 'autoScale2d'],
           responsive: true,
+          toImageButtonOptions: {
+            format: 'png',
+            filename: 'accuracy-chart',
+            height,
+            width: 800,
+            scale: 2,
+          },
         }}
         style={{ width: '100%', height: '100%' }}
       />

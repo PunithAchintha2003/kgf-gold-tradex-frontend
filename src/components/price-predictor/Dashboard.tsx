@@ -344,11 +344,25 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
               xs: 'none', 
               lg: chartHeight 
             },
-            overflowY: 'hidden',
+            overflowY: 'auto',
             overflowX: 'hidden',
             pr: { xs: 0, lg: 2 },
             pb: 0,
             backgroundColor: isDark ? '#121212' : 'var(--background)',
+            '&::-webkit-scrollbar': {
+              width: '8px',
+            },
+            '&::-webkit-scrollbar-track': {
+              background: isDark ? 'rgba(255, 255, 255, 0.08)' : '#f1f1f1',
+              borderRadius: '4px',
+            },
+            '&::-webkit-scrollbar-thumb': {
+              background: isDark ? 'rgba(255, 255, 255, 0.3)' : '#888',
+              borderRadius: '4px',
+            },
+            '&::-webkit-scrollbar-thumb:hover': {
+              background: isDark ? 'rgba(255, 255, 255, 0.5)' : '#666',
+            },
           }}
         >
           {/* Price Information Cards */}
@@ -571,16 +585,48 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
            accuracyVisualizationData.data && 
            accuracyVisualizationData.data.length > 0 && 
            !accuracyVisualizationError && (
-            <Box sx={{ flexShrink: 0, marginTop: { xs: 1.5, sm: 2 } }}>
+            <Box 
+              sx={{ 
+                flexShrink: 0, 
+                marginTop: { xs: 1.5, sm: 2 },
+                backgroundColor: isDark ? '#1a1a1a' : '#f9fafb',
+                border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : '#e5e7eb'}`,
+                borderRadius: '12px',
+                padding: { xs: '1rem', sm: '1.25rem' },
+              }}
+              className="bg-card border rounded-xl"
+            >
+              <Typography
+                variant="h6"
+                sx={{
+                  fontSize: { xs: '0.875rem', sm: '1rem' },
+                  fontWeight: 600,
+                  color: isDark ? '#FFFFFF' : '#111827',
+                  marginBottom: { xs: '0.75rem', sm: '1rem' },
+                }}
+              >
+                Prediction Accuracy
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{
+                  fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                  color: isDark ? '#9ca3af' : '#6b7280',
+                  marginBottom: { xs: '0.75rem', sm: '1rem' },
+                  lineHeight: 1.5,
+                }}
+              >
+                Compare predicted prices with actual prices to see model performance
+              </Typography>
               <Suspense fallback={
-                <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+                <Box display="flex" justifyContent="center" alignItems="center" minHeight="300px">
                   <CircularProgress size={24} />
                 </Box>
               }>
                 <AccuracyVisualizationChart
                   data={accuracyVisualizationData.data}
                   isDark={isDark}
-                  height={400}
+                  height={300}
                 />
               </Suspense>
             </Box>
