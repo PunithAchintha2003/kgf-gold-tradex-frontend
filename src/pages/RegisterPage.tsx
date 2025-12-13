@@ -57,34 +57,34 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.name.trim()) {
-      newErrors.name = 'Full name is required';
+    if (!formData['name'].trim()) {
+      newErrors['name'] = 'Full name is required';
     }
 
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
+    if (!formData['email'].trim()) {
+      newErrors['email'] = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData['email'])) {
+      newErrors['email'] = 'Please enter a valid email address';
     }
 
-    if (!formData.phone.trim()) {
-      newErrors.phone = 'Phone number is required';
-    } else if (!/^\+?[\d\s-()]+$/.test(formData.phone)) {
-      newErrors.phone = 'Please enter a valid phone number';
+    if (!formData['phone'].trim()) {
+      newErrors['phone'] = 'Phone number is required';
+    } else if (!/^\+?[\d\s-()]+$/.test(formData['phone'])) {
+      newErrors['phone'] = 'Please enter a valid phone number';
     }
 
-    if (!formData.address.trim()) {
-      newErrors.address = 'Address is required';
+    if (!formData['address'].trim()) {
+      newErrors['address'] = 'Address is required';
     }
 
-    if (!formData.role) {
-      newErrors.role = 'Please select an account type';
+    if (!formData['role']) {
+      newErrors['role'] = 'Please select an account type';
     }
 
-    if (!formData.password) {
-      newErrors.password = 'Password is required';
-    } else if (formData.password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters long';
+    if (!formData['password']) {
+      newErrors['password'] = 'Password is required';
+    } else if (formData['password'].length < 8) {
+      newErrors['password'] = 'Password must be at least 8 characters long';
     }
 
     if (!formData['confirmPassword']) {
@@ -313,7 +313,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                   <Checkbox
                     id="terms"
                     checked={formData.agreeTerms}
-                    onCheckedChange={(checked) => handleInputChange('agreeTerms', checked)}
+                    onCheckedChange={(checked) => handleInputChange('agreeTerms', checked === true)}
                     className={errors['agreeTerms'] ? 'border-destructive' : ''}
                   />
                   <label htmlFor="terms" className="text-sm leading-5">
@@ -331,7 +331,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                   <Checkbox
                     id="marketing"
                     checked={formData.agreeMarketing}
-                    onCheckedChange={(checked) => handleInputChange('agreeMarketing', checked)}
+                    onCheckedChange={(checked) => handleInputChange('agreeMarketing', checked === true)}
                   />
                   <label htmlFor="marketing" className="text-sm leading-5">
                     I want to receive marketing communications and updates about new features

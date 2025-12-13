@@ -3,8 +3,7 @@
  * Provides centralized API error handling and request/response interceptors
  */
 
-import { BaseQueryFn, FetchArgs, FetchBaseQueryError } from '@reduxjs/toolkit/query/react';
-import { fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { BaseQueryFn, FetchArgs, FetchBaseQueryError, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { env } from '@/utils/env';
 
 export interface ApiError {
@@ -44,7 +43,7 @@ export const baseQueryWithReauth: BaseQueryFn<
   unknown,
   FetchBaseQueryError
 > = async (args, api, extraOptions) => {
-  let result = await baseQuery(args, api, extraOptions);
+  const result = await baseQuery(args, api, extraOptions);
 
   // Handle 401 Unauthorized - redirect to login
   if (result.error && result.error.status === 401) {
@@ -57,6 +56,13 @@ export const baseQueryWithReauth: BaseQueryFn<
     }
   }
 
+  // Handle 404 Not Found - log silently (endpoint may not exist on backend)
+  if (result.error && result.error.status === 404) {
+    // Silently handle 404s - don't spam console with errors for optional endpoints
+    // The component will handle the absence of data gracefully
+    // No logging needed - 404s are expected for optional endpoints
+  }
+
   // Handle network errors
   if (result.error && 'status' in result.error && result.error.status === 'FETCH_ERROR') {
     console.error('Network error:', result.error);
@@ -65,4 +71,3 @@ export const baseQueryWithReauth: BaseQueryFn<
 
   return result;
 };
-
