@@ -6,8 +6,19 @@ import { Avatar, AvatarImage, AvatarFallback } from '../../ui/avatar';
 import { MessageCircle, Send } from 'lucide-react';
 import { formatTimestamp } from '../../../utils/dashboardUtils';
 
+interface Message {
+  id: string | number;
+  sender?: string;
+  content?: string;
+  timestamp: string;
+  seller: string;
+  avatar?: string;
+  unread?: boolean;
+  lastMessage?: string;
+}
+
 interface MessagesListProps {
-  messages: any[];
+  messages: Message[];
   onOpenChat: () => void;
 }
 
@@ -19,13 +30,13 @@ export const MessagesList: React.FC<MessagesListProps> = ({ messages, onOpenChat
           <CardContent className="p-4">
             <div className="flex items-start space-x-4">
               <Avatar className="h-12 w-12">
-                <AvatarImage src={message.avatar} alt={message.seller} />
-                <AvatarFallback>{message.seller.slice(0, 2)}</AvatarFallback>
+                <AvatarImage src={message.avatar} alt={message.seller || 'User'} />
+                <AvatarFallback>{(message.seller || 'U').slice(0, 2)}</AvatarFallback>
               </Avatar>
               
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between mb-1">
-                  <h4 className="font-semibold truncate">{message.seller}</h4>
+                  <h4 className="font-semibold truncate">{message.seller || 'Unknown'}</h4>
                   <div className="flex items-center space-x-2">
                     {message.unread && (
                       <Badge className="bg-red-500 text-white">New</Badge>
@@ -36,7 +47,7 @@ export const MessagesList: React.FC<MessagesListProps> = ({ messages, onOpenChat
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground truncate mb-3">
-                  {message.lastMessage}
+                  {message.lastMessage || message.content || 'No message'}
                 </p>
                 <Button 
                   size="sm" 

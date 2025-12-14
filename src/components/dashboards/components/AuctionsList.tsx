@@ -6,8 +6,19 @@ import { Clock, TrendingUp, Eye } from 'lucide-react';
 import { ImageWithFallback } from '../../../shared/components/figma/ImageWithFallback';
 import { formatPrice } from '../../../utils/dashboardUtils';
 
+interface Auction {
+  id: string | number;
+  title: string;
+  image: string;
+  currentBid: number;
+  timeLeft: number | string;
+  status?: string;
+  isWinning?: boolean;
+  myBid?: number;
+}
+
 interface AuctionsListProps {
-  auctions: any[];
+  auctions: Auction[];
   onNavigate: (path: string) => void;
 }
 
@@ -45,7 +56,7 @@ export const AuctionsList: React.FC<AuctionsListProps> = ({ auctions, onNavigate
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">My Bid:</span>
                   <span className={auction.isWinning ? 'text-green-600' : 'text-red-600'}>
-                    {formatPrice(auction.myBid)}
+                    {formatPrice(auction.myBid || 0)}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
