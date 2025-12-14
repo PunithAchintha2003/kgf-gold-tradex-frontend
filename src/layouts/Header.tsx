@@ -20,12 +20,12 @@ export const Header: React.FC<HeaderProps> = React.memo(({ onNavigate, currentPa
   const { theme, toggleTheme, language, setLanguage, t, user, isAuthenticated, logout } = useApp();
 
   // Fetch real-time gold price
-  const { data: realtimeData, isLoading: priceLoading } = useGetRealtimePriceQuery(undefined, {
+  const { data: realtimeData } = useGetRealtimePriceQuery(undefined, {
     pollingInterval: 10000, // Poll every 10 seconds
   });
 
   // Fetch USD/LKR exchange rate
-  const { data: exchangeRateData, isLoading: rateLoading } = useGetExchangeRateQuery({ from: 'USD', to: 'LKR' }, {
+  const { data: exchangeRateData } = useGetExchangeRateQuery({ from: 'USD', to: 'LKR' }, {
     pollingInterval: 30000, // Poll every 30 seconds
   });
 
