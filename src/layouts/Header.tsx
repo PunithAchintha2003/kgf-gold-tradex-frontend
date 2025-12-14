@@ -47,7 +47,7 @@ export const Header: React.FC<HeaderProps> = React.memo(({ onNavigate, currentPa
       karat: '24K',
       price: converted.displayText // This will be "LKR 310K" format
     };
-  }, [realtimeData?.current_price, exchangeRateData?.exchange_rate, priceLoading, rateLoading]);
+  }, [realtimeData?.current_price, exchangeRateData?.exchange_rate]);
 
   const publicNavItems = useMemo(() => [
     { path: '/', label: t('nav.home'), icon: null },

@@ -55,7 +55,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const handleSendMessage = () => {
     if (message.trim()) {
       // In a real app, this would send the message
-      console.log('Sending message:', message);
+      // TODO: Implement actual message sending logic
       setMessage('');
     }
   };
