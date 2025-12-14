@@ -19,6 +19,7 @@ export default defineConfig(function (_a) {
             alias: {
                 '@': path.resolve(__dirname, './src'),
             },
+            dedupe: ['react', 'react-dom'],
         },
         server: {
             port: 4000,
@@ -28,6 +29,10 @@ export default defineConfig(function (_a) {
         build: {
             target: 'esnext',
             outDir: 'build',
+            commonjsOptions: {
+                include: [/node_modules/],
+                transformMixedEsModules: true,
+            },
             minify: 'terser',
             terserOptions: {
                 compress: {
@@ -52,6 +57,10 @@ export default defineConfig(function (_a) {
             rollupOptions: {
                 output: {
                     manualChunks: function (id) {
+                        // Ensure React and React-DOM are always together - check first
+                        if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) {
+                            return 'react-vendor';
+                        }
                         // Route-based code splitting for better performance
                         if (id.includes('src/components/dashboards')) {
                             return 'dashboards';
@@ -60,9 +69,6 @@ export default defineConfig(function (_a) {
                             return 'price-predictor';
                         }
                         if (id.includes('node_modules')) {
-                            if (id.includes('react') || id.includes('react-dom')) {
-                                return 'react-vendor';
-                            }
                             if (id.includes('plotly.js') || id.includes('react-plotly')) {
                                 return 'plotly';
                             }
@@ -98,6 +104,7 @@ export default defineConfig(function (_a) {
             include: [
                 'react',
                 'react-dom',
+                'react/jsx-runtime',
                 '@mui/material',
                 '@mui/icons-material',
                 '@emotion/react',
