@@ -25,6 +25,23 @@ const PredictionHistoryTable: React.FC<PredictionHistoryTableProps> = ({
   isLoading = false,
   isDark,
 }) => {
+  // Sort predictions: pending items first, then by date (newest first)
+  // MUST be called before any early returns (Rules of Hooks)
+  const sortedPredictions = useMemo(() => {
+    if (!predictions || predictions.length === 0) return [];
+    
+    return [...predictions].sort((a, b) => {
+      // First, sort by status: pending items come first
+      if (a.status === 'pending' && b.status !== 'pending') return -1;
+      if (a.status !== 'pending' && b.status === 'pending') return 1;
+      
+      // If both have same status, sort by date (newest first)
+      const dateA = new Date(a.date).getTime();
+      const dateB = new Date(b.date).getTime();
+      return dateB - dateA;
+    });
+  }, [predictions]);
+
   if (isLoading) {
     return (
       <Box
@@ -102,22 +119,6 @@ const PredictionHistoryTable: React.FC<PredictionHistoryTableProps> = ({
       </Box>
     );
   }
-
-  // Sort predictions: pending items first, then by date (newest first)
-  const sortedPredictions = useMemo(() => {
-    if (!predictions || predictions.length === 0) return [];
-    
-    return [...predictions].sort((a, b) => {
-      // First, sort by status: pending items come first
-      if (a.status === 'pending' && b.status !== 'pending') return -1;
-      if (a.status !== 'pending' && b.status === 'pending') return 1;
-      
-      // If both have same status, sort by date (newest first)
-      const dateA = new Date(a.date).getTime();
-      const dateB = new Date(b.date).getTime();
-      return dateB - dateA;
-    });
-  }, [predictions]);
 
   return (
     <Box

@@ -6,8 +6,26 @@ import { Eye, MessageCircle, Star } from 'lucide-react';
 import { ImageWithFallback } from '../../../shared/components/figma/ImageWithFallback';
 import { formatPrice, getStatusIcon, getStatusColor, formatDate } from '../../../utils/dashboardUtils';
 
+interface OrderItem {
+  name: string;
+  image: string;
+  quantity: number;
+  price: number;
+  [key: string]: unknown;
+}
+
+interface Order {
+  id: string | number;
+  status: string;
+  date: string;
+  total: number;
+  seller: string;
+  items: OrderItem[];
+  [key: string]: unknown;
+}
+
 interface OrdersListProps {
-  orders: any[];
+  orders: Order[];
   onOpenChat: () => void;
 }
 
@@ -44,7 +62,7 @@ export const OrdersList: React.FC<OrdersListProps> = ({ orders, onOpenChat }) =>
               </div>
 
               <div className="space-y-3">
-                {order.items.map((item: any, index: number) => (
+                {order.items.map((item: OrderItem, index: number) => (
                   <div key={index} className="flex items-center space-x-4">
                     <ImageWithFallback
                       src={item.image}

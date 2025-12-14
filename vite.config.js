@@ -6,7 +6,9 @@ export default defineConfig(function (_a) {
     var mode = _a.mode;
     return ({
         plugins: [
-            react(),
+            react({
+                jsxRuntime: 'automatic',
+            }),
             mode === 'analyze' && visualizer({
                 filename: 'dist/stats.html',
                 open: true,
@@ -18,8 +20,11 @@ export default defineConfig(function (_a) {
             extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
             alias: {
                 '@': path.resolve(__dirname, './src'),
+                // Ensure single React instance
+                'react': path.resolve(__dirname, './node_modules/react'),
+                'react-dom': path.resolve(__dirname, './node_modules/react-dom'),
             },
-            dedupe: ['react', 'react-dom'],
+            dedupe: ['react', 'react-dom', 'react/jsx-runtime', 'react/jsx-dev-runtime'],
         },
         server: {
             port: 4000,
@@ -33,6 +38,10 @@ export default defineConfig(function (_a) {
                 include: [/node_modules/],
                 transformMixedEsModules: true,
             },
+            // Ensure proper module resolution
+            modulePreload: {
+                polyfill: true,
+            },
             minify: 'terser',
             terserOptions: {
                 compress: {
@@ -41,12 +50,17 @@ export default defineConfig(function (_a) {
                     pure_funcs: ['console.log', 'console.info', 'console.debug', 'console.warn'],
                     passes: 2,
                     dead_code: true,
+                    // Don't mangle React internals
+                    keep_classnames: false,
+                    keep_fnames: false,
                 },
                 mangle: {
                     safari10: true,
                     properties: {
                         regex: /^_/
-                    }
+                    },
+                    // Preserve React property names
+                    reserved: ['React', 'ReactDOM', 'Children', 'Component', 'PureComponent']
                 },
                 format: {
                     comments: false
@@ -57,8 +71,12 @@ export default defineConfig(function (_a) {
             rollupOptions: {
                 output: {
                     manualChunks: function (id) {
-                        // Ensure React and React-DOM are always together - check first
-                        if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) {
+                        // CRITICAL: Ensure React and React-DOM are ALWAYS together - check FIRST
+                        // This prevents multiple React instances which causes the Children error
+                        if (id.includes('node_modules/react/') || 
+                            id.includes('node_modules/react-dom/') ||
+                            id.includes('node_modules/react/jsx-runtime') ||
+                            id.includes('node_modules/react/jsx-dev-runtime')) {
                             return 'react-vendor';
                         }
                         // Route-based code splitting for better performance
@@ -77,9 +95,6 @@ export default defineConfig(function (_a) {
                             }
                             if (id.includes('@reduxjs') || id.includes('redux-persist')) {
                                 return 'redux';
-                            }
-                            if (id.includes('react-router')) {
-                                return 'router';
                             }
                             if (id.includes('lucide-react') || id.includes('react-icons')) {
                                 return 'icons';
@@ -105,6 +120,7 @@ export default defineConfig(function (_a) {
                 'react',
                 'react-dom',
                 'react/jsx-runtime',
+                'react/jsx-dev-runtime',
                 '@mui/material',
                 '@mui/icons-material',
                 '@emotion/react',
