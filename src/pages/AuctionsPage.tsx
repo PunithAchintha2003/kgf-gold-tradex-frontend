@@ -149,7 +149,13 @@ export const AuctionsPage: React.FC<AuctionsPageProps> = ({ onNavigate }) => {
     return 'text-green-600';
   };
 
-  const getBidProgress = (auction: any) => {
+  interface Auction {
+    id: number;
+    currentBid: number;
+    startingBid: number;
+  }
+
+  const getBidProgress = (auction: Auction) => {
     return Math.min(100, ((auction.currentBid - auction.startingBid) / auction.startingBid) * 100);
   };
 

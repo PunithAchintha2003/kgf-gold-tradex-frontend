@@ -14,7 +14,8 @@ export function measurePerformance<T>(
   const duration = performance.now() - start;
   
   if (label && import.meta.env.DEV) {
-    console.log(`[Performance] ${label}: ${duration.toFixed(2)}ms`);
+    // eslint-disable-next-line no-console
+    console.warn(`[Performance] ${label}: ${duration.toFixed(2)}ms`);
   }
   
   return { result, duration };
