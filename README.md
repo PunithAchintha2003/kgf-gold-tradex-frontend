@@ -555,6 +555,79 @@ VITE_BUILD_SOURCEMAP=false
 - Variables are available at build time and will be embedded in the bundle
 - Set variables for Production, Preview, and Development environments as needed
 
+#### Deploying with GitHub Actions
+
+This project includes a GitHub Actions workflow for automatic deployment to Vercel.
+
+##### Required GitHub Secrets
+
+Add these secrets to your GitHub repository:
+
+1. Go to your GitHub repository
+2. Navigate to **Settings > Secrets and variables > Actions**
+3. Click **New repository secret**
+4. Add the following secrets:
+
+| Secret Name         | Description            | Where to Get It                                                                    |
+| ------------------- | ---------------------- | ---------------------------------------------------------------------------------- |
+| `VERCEL_TOKEN`      | Vercel API token       | [Vercel Settings > Tokens](https://vercel.com/account/tokens) - Create a new token |
+| `VERCEL_ORG_ID`     | Vercel Organization ID | Vercel Project Settings > General - Copy Organization ID                           |
+| `VERCEL_PROJECT_ID` | Vercel Project ID      | Vercel Project Settings > General - Copy Project ID                                |
+
+##### Optional GitHub Secrets (for build-time environment variables)
+
+You can also add these secrets if you want to override defaults during build:
+
+| Secret Name                 | Description             | Default                                         |
+| --------------------------- | ----------------------- | ----------------------------------------------- |
+| `VITE_API_BASE_URL`         | API base URL            | `https://kgf-gold-price-predictor.onrender.com` |
+| `VITE_APP_ENV`              | Application environment | `production`                                    |
+| `VITE_APP_NAME`             | Application name        | `KGF Gold TradeX`                               |
+| `VITE_APP_VERSION`          | Application version     | `0.1.0`                                         |
+| `VITE_ENABLE_ANALYTICS`     | Enable analytics        | `true`                                          |
+| `VITE_ENABLE_ERROR_LOGGING` | Enable error logging    | `true`                                          |
+| `VITE_BUILD_SOURCEMAP`      | Generate source maps    | `false`                                         |
+
+**Note**: These build-time variables are optional. The workflow will use defaults if not provided. For runtime environment variables, configure them in Vercel's dashboard instead.
+
+##### How It Works
+
+The GitHub Actions workflow (`.github/workflows/deploy-vercel.yml`) will:
+
+- ✅ Run on push to `main`/`master` branches (production deployment)
+- ✅ Run on pull requests (preview deployment)
+- ✅ Run type checking
+- ✅ Run linting (non-blocking)
+- ✅ Build the project
+- ✅ Deploy to Vercel automatically
+
+##### Getting Your Vercel Credentials
+
+1. **VERCEL_TOKEN**:
+
+   - Go to [Vercel Account Settings > Tokens](https://vercel.com/account/tokens)
+   - Click **Create Token**
+   - Give it a name (e.g., "GitHub Actions")
+   - Copy the token (you'll only see it once!)
+
+2. **VERCEL_ORG_ID**:
+
+   - Go to your Vercel project dashboard
+   - Navigate to **Settings > General**
+   - Find **Organization ID** and copy it
+
+3. **VERCEL_PROJECT_ID**:
+   - In the same **Settings > General** page
+   - Find **Project ID** and copy it
+
+##### Workflow Features
+
+- **Automatic Production Deployments**: Pushes to `main`/`master` trigger production deployments
+- **Preview Deployments**: Pull requests get preview deployments
+- **Type Checking**: Ensures code quality before deployment
+- **Linting**: Checks code style (non-blocking)
+- **Build Optimization**: Uses Vercel's optimized build process
+
 #### Manual Deployment with Vercel CLI
 
 You can also deploy manually using Vercel CLI:
