@@ -83,11 +83,11 @@ KGF Gold TradeX is a comprehensive gold marketplace platform that enables users 
 
 ### Core Framework
 
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| [React](https://react.dev/) | 18.3 | UI Framework |
-| [TypeScript](https://www.typescriptlang.org/) | 5.8 | Type Safety |
-| [Vite](https://vitejs.dev/) | 7.1 | Build Tool & Dev Server |
+| Technology                                    | Version | Purpose                 |
+| --------------------------------------------- | ------- | ----------------------- |
+| [React](https://react.dev/)                   | 18.3    | UI Framework            |
+| [TypeScript](https://www.typescriptlang.org/) | 5.8     | Type Safety             |
+| [Vite](https://vitejs.dev/)                   | 7.1     | Build Tool & Dev Server |
 
 ### State Management & Data Fetching
 
@@ -318,15 +318,62 @@ See `vite.config.ts` for full configuration.
 
 ### Environment Variables
 
-Environment variables are type-safe and validated. Available variables:
+Environment variables are type-safe and validated. All Vite environment variables must be prefixed with `VITE_` to be exposed to client-side code.
 
-- `VITE_API_BASE_URL` - API base URL (required)
-- `VITE_APP_ENV` - Application environment
-- `VITE_APP_NAME` - Application name
-- `VITE_ENABLE_ANALYTICS` - Enable analytics
-- `VITE_ENABLE_ERROR_LOGGING` - Enable error logging
+#### Required Variables
 
-See `src/utils/env.ts` for type definitions.
+| Variable            | Description  | Default                                         | Required               |
+| ------------------- | ------------ | ----------------------------------------------- | ---------------------- |
+| `VITE_API_BASE_URL` | API base URL | `https://kgf-gold-price-predictor.onrender.com` | ✅ Yes (in production) |
+
+#### Optional Variables
+
+| Variable                    | Description               | Default           | Options                                |
+| --------------------------- | ------------------------- | ----------------- | -------------------------------------- |
+| `VITE_APP_ENV`              | Application environment   | `development`     | `development`, `production`, `staging` |
+| `VITE_APP_NAME`             | Application name          | `KGF Gold TradeX` | Any string                             |
+| `VITE_APP_VERSION`          | Application version       | `0.1.0`           | Semantic version                       |
+| `VITE_ENABLE_ANALYTICS`     | Enable analytics tracking | `false`           | `true`, `false`                        |
+| `VITE_ENABLE_ERROR_LOGGING` | Enable error logging      | `true`            | `true`, `false`                        |
+| `VITE_BUILD_SOURCEMAP`      | Generate source maps      | `false`           | `true`, `false`                        |
+| `VITE_DEMO_PASSWORD`        | Demo account password     | Empty string      | Any string                             |
+
+#### Example `.env` File
+
+```env
+# API Configuration
+VITE_API_BASE_URL=https://kgf-gold-price-predictor.onrender.com
+
+# Application Configuration
+VITE_APP_ENV=development
+VITE_APP_NAME=KGF Gold TradeX
+VITE_APP_VERSION=0.1.0
+
+# Feature Flags
+VITE_ENABLE_ANALYTICS=false
+VITE_ENABLE_ERROR_LOGGING=true
+
+# Build Configuration
+VITE_BUILD_SOURCEMAP=false
+```
+
+#### Production Environment Variables (Copy-Paste Ready)
+
+For Vercel or other deployment platforms:
+
+```env
+VITE_API_BASE_URL=https://kgf-gold-price-predictor.onrender.com
+VITE_APP_ENV=production
+VITE_APP_NAME=KGF Gold TradeX
+VITE_APP_VERSION=0.1.0
+VITE_ENABLE_ANALYTICS=true
+VITE_ENABLE_ERROR_LOGGING=true
+VITE_BUILD_SOURCEMAP=false
+```
+
+#### Type Definitions
+
+See `src/utils/env.ts` for type-safe environment variable access and validation.
 
 ## 🧪 Testing
 
@@ -377,6 +424,7 @@ npm run build
 ```
 
 This will:
+
 1. Run TypeScript type checking
 2. Build the application with optimizations
 3. Generate production-ready assets in the `build/` directory
@@ -384,6 +432,7 @@ This will:
 ### Build Output
 
 The build process generates:
+
 - Optimized JavaScript bundles
 - Minified CSS
 - Optimized assets
@@ -429,79 +478,70 @@ npm run build:prod
 
 The application can be deployed to:
 
-- **Vercel** - Recommended for Vite apps (configured with GitHub Actions)
+- **Vercel** - Recommended for Vite apps (auto-detects Vite framework)
 - **Netlify** - Easy deployment with CI/CD
 - **AWS S3 + CloudFront** - Static hosting
 - **Docker** - Containerized deployment
 
-### Deploying to Vercel with GitHub Actions
+### Deploying to Vercel
 
-This project is configured for automatic deployment to Vercel via GitHub Actions.
+Vercel automatically detects Vite projects and configures the build settings. However, you can manually configure if needed.
 
-#### Prerequisites
+#### Vercel Configuration Settings
 
-1. **Vercel Account**: Sign up at [vercel.com](https://vercel.com) if you haven't already
-2. **Vercel Project**: Create a new project in Vercel dashboard
-3. **GitHub Repository**: Ensure your code is pushed to GitHub
+When setting up your Vercel project, use these settings:
+
+| Setting              | Value           | Description                                             |
+| -------------------- | --------------- | ------------------------------------------------------- |
+| **Root Directory**   | `./`            | Project root (default)                                  |
+| **Framework Preset** | `Vite`          | Auto-detected, but can be set manually                  |
+| **Build Command**    | `npm run build` | Production build command                                |
+| **Output Directory** | `build`         | Build output directory (configured in `vite.config.js`) |
+| **Install Command**  | `npm install`   | Default npm install                                     |
 
 #### Setup Steps
 
-1. **Get Vercel Credentials**:
-   - Go to [Vercel Settings > Tokens](https://vercel.com/account/tokens)
-   - Create a new token and copy it
-   - In your Vercel project dashboard, go to Settings > General
-   - Copy your **Organization ID** and **Project ID**
-   - **Root Directory**: Since this project is at the repository root, leave the root directory as `.` (default) in Vercel project settings. If your project is in a subdirectory, set it accordingly.
+1. **Connect Repository to Vercel**:
 
-2. **Configure GitHub Secrets**:
-   - Go to your GitHub repository
-   - Navigate to **Settings > Secrets and variables > Actions**
-   - Add the following secrets:
-     - `VERCEL_TOKEN`: Your Vercel token
-     - `VERCEL_ORG_ID`: Your Vercel organization ID
-     - `VERCEL_PROJECT_ID`: Your Vercel project ID
+   - Go to [vercel.com](https://vercel.com) and sign in
+   - Click "Add New Project"
+   - Import your GitHub/GitLab/Bitbucket repository
+   - Vercel will auto-detect Vite framework
 
-3. **Configure Environment Variables in Vercel**:
-   - Go to your Vercel project dashboard
-   - Navigate to **Settings > Environment Variables**
+2. **Configure Build Settings** (if auto-detection fails):
+
+   - **Root Directory**: `./` (default)
+   - **Framework Preset**: `Vite`
+   - **Build Command**: `npm run build`
+   - **Output Directory**: `build`
+   - **Install Command**: `npm install`
+
+3. **Configure Environment Variables**:
+
+   - Go to **Settings > Environment Variables** in your Vercel project
    - Add all required environment variables (see below)
+   - Select environments (Production, Preview, Development) for each variable
 
 4. **Deploy**:
-   - Push to `main` or `master` branch to trigger automatic deployment
-   - Or manually trigger the workflow from **Actions** tab in GitHub
+   - Push to your main branch to trigger automatic deployment
+   - Or click "Deploy" in the Vercel dashboard
 
-#### Workflow Features
+#### Environment Variables for Vercel
 
-- ✅ Automatic deployment on push to main/master branches
-- ✅ Type checking before deployment
-- ✅ Linting (non-blocking)
-- ✅ Production build with optimizations
-- ✅ Preview deployments for pull requests
-
-#### Manual Deployment
-
-You can also deploy manually using Vercel CLI:
-
-```bash
-# Install Vercel CLI
-npm i -g vercel
-
-# Deploy
-vercel --prod
-```
-
-### Environment Variables in Production
-
-Ensure all required environment variables are set in your deployment platform:
+Copy and paste these environment variables into Vercel's Environment Variables section:
 
 **Required Variables:**
+
 ```env
-VITE_API_BASE_URL=https://your-api-url.com
+VITE_API_BASE_URL=https://kgf-gold-price-predictor.onrender.com
 VITE_APP_ENV=production
 ```
 
-**Optional Variables:**
+**Recommended Production Variables:**
+
 ```env
+VITE_API_BASE_URL=https://kgf-gold-price-predictor.onrender.com
+VITE_APP_ENV=production
 VITE_APP_NAME=KGF Gold TradeX
 VITE_APP_VERSION=0.1.0
 VITE_ENABLE_ANALYTICS=true
@@ -509,7 +549,51 @@ VITE_ENABLE_ERROR_LOGGING=true
 VITE_BUILD_SOURCEMAP=false
 ```
 
-**Note**: In Vercel, add these in the project settings under Environment Variables. They will be automatically available during build time.
+**Note**:
+
+- All Vite environment variables must be prefixed with `VITE_` to be exposed to client-side code
+- Variables are available at build time and will be embedded in the bundle
+- Set variables for Production, Preview, and Development environments as needed
+
+#### Manual Deployment with Vercel CLI
+
+You can also deploy manually using Vercel CLI:
+
+```bash
+# Install Vercel CLI
+npm i -g vercel
+
+# Login to Vercel
+vercel login
+
+# Deploy to preview
+vercel
+
+# Deploy to production
+vercel --prod
+```
+
+#### Troubleshooting Vercel Deployment
+
+**Build Fails with Validation Errors:**
+
+- The `prepare` script has been removed from `package.json` to prevent blocking deployments
+- Run `npm run validate` locally before pushing to catch issues early
+
+**Environment Variables Not Working:**
+
+- Ensure all variables are prefixed with `VITE_`
+- Redeploy after adding new environment variables
+- Check that variables are set for the correct environment (Production/Preview/Development)
+
+**Build Output Directory Issues:**
+
+- The build outputs to `build/` directory (configured in `vite.config.js`)
+- Ensure Vercel's Output Directory is set to `build`
+
+### Environment Variables Reference
+
+See [Configuration](#-configuration) section for detailed environment variable documentation.
 
 ## 📝 Code Style
 
@@ -524,6 +608,7 @@ npm run format
 ### Editor Configuration
 
 The project includes:
+
 - `.editorconfig` - Editor settings
 - `.prettierrc` - Prettier configuration
 - ESLint integration
@@ -611,6 +696,7 @@ npm audit fix
 ### Performance Monitoring
 
 Monitor performance in production using:
+
 - Browser DevTools
 - Lighthouse
 - Web Vitals
@@ -620,11 +706,11 @@ Monitor performance in production using:
 The application supports modern browsers:
 
 | Browser | Version |
-|---------|---------|
-| Chrome | Latest |
-| Firefox | Latest |
-| Safari | Latest |
-| Edge | Latest |
+| ------- | ------- |
+| Chrome  | Latest  |
+| Firefox | Latest  |
+| Safari  | Latest  |
+| Edge    | Latest  |
 
 ### Polyfills
 
@@ -668,6 +754,18 @@ npm run type-check
 npm run lint
 npm run type-check
 ```
+
+#### Vercel Deployment Errors
+
+**Error: `npm run validate` failed during install**
+
+- This has been fixed by removing the `prepare` script
+- Run `npm run validate` locally before pushing to catch issues early
+
+**Error: Linting errors blocking deployment**
+
+- Fix linting issues locally: `npm run lint:fix`
+- Common fixes: Remove unnecessary dependencies, fix TypeScript `any` types, remove `console.log` statements
 
 ### Getting Help
 
