@@ -6,9 +6,7 @@ export default defineConfig(function (_a) {
     var mode = _a.mode;
     return ({
         plugins: [
-            react({
-                jsxRuntime: 'automatic',
-            }),
+            react(),
             mode === 'analyze' && visualizer({
                 filename: 'dist/stats.html',
                 open: true,
@@ -20,11 +18,8 @@ export default defineConfig(function (_a) {
             extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
             alias: {
                 '@': path.resolve(__dirname, './src'),
-                // Ensure single React instance
-                'react': path.resolve(__dirname, './node_modules/react'),
-                'react-dom': path.resolve(__dirname, './node_modules/react-dom'),
             },
-            dedupe: ['react', 'react-dom', 'react/jsx-runtime', 'react/jsx-dev-runtime'],
+            dedupe: ['react', 'react-dom'],
         },
         server: {
             port: 4000,
@@ -34,14 +29,6 @@ export default defineConfig(function (_a) {
         build: {
             target: 'esnext',
             outDir: 'build',
-            commonjsOptions: {
-                include: [/node_modules/],
-                transformMixedEsModules: true,
-            },
-            // Ensure proper module resolution
-            modulePreload: {
-                polyfill: true,
-            },
             minify: 'terser',
             terserOptions: {
                 compress: {
@@ -50,16 +37,13 @@ export default defineConfig(function (_a) {
                     pure_funcs: ['console.log', 'console.info', 'console.debug', 'console.warn'],
                     passes: 2,
                     dead_code: true,
-                    // Don't mangle React internals
-                    keep_classnames: false,
-                    keep_fnames: false,
                 },
                 mangle: {
                     safari10: true,
-                    // Don't mangle properties - this can break React
-                    properties: false,
-                    // Preserve React property names
-                    reserved: ['React', 'ReactDOM', 'Children', 'Component', 'PureComponent', 'createElement', 'Fragment']
+                    properties: {
+                        regex: /^_/
+                    },
+                    reserved: ['React', 'Children']
                 },
                 format: {
                     comments: false
@@ -70,17 +54,23 @@ export default defineConfig(function (_a) {
             rollupOptions: {
                 output: {
                     manualChunks: function (id) {
-                        // CRITICAL: Ensure React and React-DOM are ALWAYS together - check FIRST
-                        // This prevents multiple React instances which causes the Children error
-                        const isReact = id.includes('node_modules/react') && !id.includes('node_modules/react-');
-                        const isReactDom = id.includes('node_modules/react-dom');
-                        
-                        if (isReact || isReactDom || 
-                            id.includes('/react/jsx-runtime') ||
-                            id.includes('/react/jsx-dev-runtime') ||
-                            id === 'react' ||
-                            id === 'react-dom') {
-                            return 'react-vendor';
+                        // CRITICAL: Check React FIRST before other packages
+                        // Only bundle core React, not react-router, react-icons, etc.
+                        if (id.includes('node_modules')) {
+                            // Check for React core (but not react-router, react-icons, etc.)
+                            if ((id.includes('/react/') || id.includes('\\react\\') || id.endsWith('/react') || id.endsWith('\\react')) && 
+                                !id.includes('react-router') && 
+                                !id.includes('react-redux') &&
+                                !id.includes('react-hook-form') &&
+                                !id.includes('react-icons') &&
+                                !id.includes('react-plotly') &&
+                                !id.includes('lucide-react')) {
+                                return 'react-vendor';
+                            }
+                            // Check for react-dom
+                            if (id.includes('/react-dom/') || id.includes('\\react-dom\\') || id.endsWith('/react-dom') || id.endsWith('\\react-dom')) {
+                                return 'react-vendor';
+                            }
                         }
                         
                         // Route-based code splitting for better performance
@@ -90,6 +80,7 @@ export default defineConfig(function (_a) {
                         if (id.includes('src/components/price-predictor')) {
                             return 'price-predictor';
                         }
+                        
                         if (id.includes('node_modules')) {
                             if (id.includes('plotly.js') || id.includes('react-plotly')) {
                                 return 'plotly';
@@ -99,6 +90,9 @@ export default defineConfig(function (_a) {
                             }
                             if (id.includes('@reduxjs') || id.includes('redux-persist')) {
                                 return 'redux';
+                            }
+                            if (id.includes('react-router')) {
+                                return 'router';
                             }
                             if (id.includes('lucide-react') || id.includes('react-icons')) {
                                 return 'icons';
@@ -123,8 +117,6 @@ export default defineConfig(function (_a) {
             include: [
                 'react',
                 'react-dom',
-                'react/jsx-runtime',
-                'react/jsx-dev-runtime',
                 '@mui/material',
                 '@mui/icons-material',
                 '@emotion/react',
