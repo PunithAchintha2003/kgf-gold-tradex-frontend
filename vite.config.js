@@ -29,26 +29,7 @@ export default defineConfig(function (_a) {
         build: {
             target: 'esnext',
             outDir: 'build',
-            minify: 'terser',
-            terserOptions: {
-                compress: {
-                    drop_console: true,
-                    drop_debugger: true,
-                    pure_funcs: ['console.log', 'console.info', 'console.debug', 'console.warn'],
-                    passes: 2,
-                    dead_code: true,
-                },
-                mangle: {
-                    safari10: true,
-                    properties: {
-                        regex: /^_/
-                    },
-                    reserved: ['React', 'Children']
-                },
-                format: {
-                    comments: false
-                }
-            },
+            minify: 'esbuild',
             cssCodeSplit: true,
             cssMinify: true,
             rollupOptions: {
