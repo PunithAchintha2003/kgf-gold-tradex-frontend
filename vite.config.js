@@ -76,7 +76,11 @@ export default defineConfig(function (_a) {
                         if (id.includes('node_modules/react/') || 
                             id.includes('node_modules/react-dom/') ||
                             id.includes('node_modules/react/jsx-runtime') ||
-                            id.includes('node_modules/react/jsx-dev-runtime')) {
+                            id.includes('node_modules/react/jsx-dev-runtime') ||
+                            id === 'react' ||
+                            id === 'react-dom' ||
+                            id.startsWith('react/') ||
+                            id.startsWith('react-dom/')) {
                             return 'react-vendor';
                         }
                         // Route-based code splitting for better performance
