@@ -56,11 +56,10 @@ export default defineConfig(function (_a) {
                 },
                 mangle: {
                     safari10: true,
-                    properties: {
-                        regex: /^_/
-                    },
+                    // Don't mangle properties - this can break React
+                    properties: false,
                     // Preserve React property names
-                    reserved: ['React', 'ReactDOM', 'Children', 'Component', 'PureComponent']
+                    reserved: ['React', 'ReactDOM', 'Children', 'Component', 'PureComponent', 'createElement', 'Fragment']
                 },
                 format: {
                     comments: false
@@ -73,16 +72,17 @@ export default defineConfig(function (_a) {
                     manualChunks: function (id) {
                         // CRITICAL: Ensure React and React-DOM are ALWAYS together - check FIRST
                         // This prevents multiple React instances which causes the Children error
-                        if (id.includes('node_modules/react/') || 
-                            id.includes('node_modules/react-dom/') ||
-                            id.includes('node_modules/react/jsx-runtime') ||
-                            id.includes('node_modules/react/jsx-dev-runtime') ||
+                        const isReact = id.includes('node_modules/react') && !id.includes('node_modules/react-');
+                        const isReactDom = id.includes('node_modules/react-dom');
+                        
+                        if (isReact || isReactDom || 
+                            id.includes('/react/jsx-runtime') ||
+                            id.includes('/react/jsx-dev-runtime') ||
                             id === 'react' ||
-                            id === 'react-dom' ||
-                            id.startsWith('react/') ||
-                            id.startsWith('react-dom/')) {
+                            id === 'react-dom') {
                             return 'react-vendor';
                         }
+                        
                         // Route-based code splitting for better performance
                         if (id.includes('src/components/dashboards')) {
                             return 'dashboards';
