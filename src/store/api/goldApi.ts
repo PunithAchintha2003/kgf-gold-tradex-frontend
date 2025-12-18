@@ -125,10 +125,47 @@ export interface PredictionHistoryResponse {
   total: number;
 }
 
+// Enhanced prediction interfaces
+export interface EnhancedPrediction {
+  next_day_price: number;
+  current_price: number;
+  change: number;
+  change_percentage: number;
+  method: string;
+}
+
+export interface ModelInfo {
+  name: string;
+  type: string;
+  r2_score: number | null;
+  features: {
+    total: number;
+    selected: number;
+    top_features: string[];
+  };
+  fallback_available: boolean;
+}
+
+export interface SentimentInfo {
+  combined_sentiment: number;
+  news_volume: number;
+  sentiment_trend: number;
+}
+
+export interface EnhancedPredictionResponse {
+  status: string;
+  prediction: EnhancedPrediction;
+  model: ModelInfo;
+  sentiment: SentimentInfo;
+  top_features: string[];
+  timestamp: string;
+  message?: string;
+}
+
 export const goldApi = createApi({
   reducerPath: 'goldApi',
   baseQuery: baseQueryWithReauth,
-  tagTypes: ['DailyData', 'RealtimePrice', 'PredictionExplanation', 'ExchangeRate', 'AccuracyVisualization', 'PredictionHistory'],
+  tagTypes: ['DailyData', 'RealtimePrice', 'PredictionExplanation', 'ExchangeRate', 'AccuracyVisualization', 'PredictionHistory', 'EnhancedPrediction'],
   endpoints: (builder) => ({
     getDailyData: builder.query<DailyDataResponse, { days?: number; start_date?: string; end_date?: string } | void>({
       query: (params) => {
@@ -167,6 +204,10 @@ export const goldApi = createApi({
       },
       providesTags: ['PredictionHistory'],
     }),
+    getEnhancedPrediction: builder.query<EnhancedPredictionResponse, void>({
+      query: () => '/xauusd/enhanced-prediction',
+      providesTags: ['EnhancedPrediction'],
+    }),
   }),
 });
 
@@ -176,5 +217,6 @@ export const {
   useGetPredictionExplanationQuery, 
   useGetExchangeRateQuery,
   useGetAccuracyVisualizationQuery,
-  useGetPredictionHistoryQuery
+  useGetPredictionHistoryQuery,
+  useGetEnhancedPredictionQuery
 } = goldApi;
