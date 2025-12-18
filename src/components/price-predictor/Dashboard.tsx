@@ -9,7 +9,8 @@ import {
   useGetAccuracyVisualizationQuery,
   useGetPredictionHistoryQuery,
   useGetEnhancedPredictionQuery,
-  useGetModelInfoQuery
+  useGetModelInfoQuery,
+  useGetPredictionStatsQuery
 } from '../../store/api/goldApi';
 import { useTheme } from '../../hooks/useTheme';
 import CurrencyDropdown, { type CurrencyUnit } from './CurrencyDropdown';
@@ -158,6 +159,16 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
     error: modelInfoError,
     isLoading: modelInfoLoading,
   } = useGetModelInfoQuery(undefined, {
+    pollingInterval: 600000, // 10 minutes
+    refetchOnMountOrArgChange: true,
+  });
+
+  // Fetch comprehensive prediction stats
+  const {
+    data: predictionStats,
+    error: _predictionStatsError,
+    isLoading: _predictionStatsLoading,
+  } = useGetPredictionStatsQuery(undefined, {
     pollingInterval: 600000, // 10 minutes
     refetchOnMountOrArgChange: true,
   });
@@ -598,6 +609,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
                 accuracyStats={displayData.accuracy_stats}
                 isDark={isDark}
                 {...(accuracyVisualizationData?.statistics ? { newStats: accuracyVisualizationData.statistics } : {})}
+                {...(predictionStats?.data ? { predictionStats: predictionStats.data } : {})}
               />
             </Suspense>
           </Box>
