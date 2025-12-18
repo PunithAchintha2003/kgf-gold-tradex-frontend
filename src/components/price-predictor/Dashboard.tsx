@@ -8,7 +8,8 @@ import {
   useGetExchangeRateQuery,
   useGetAccuracyVisualizationQuery,
   useGetPredictionHistoryQuery,
-  useGetEnhancedPredictionQuery
+  useGetEnhancedPredictionQuery,
+  useGetModelInfoQuery
 } from '../../store/api/goldApi';
 import { useTheme } from '../../hooks/useTheme';
 import CurrencyDropdown, { type CurrencyUnit } from './CurrencyDropdown';
@@ -148,6 +149,16 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
     isLoading: enhancedPredictionLoading,
   } = useGetEnhancedPredictionQuery(undefined, {
     pollingInterval: 300000, // 5 minutes
+    refetchOnMountOrArgChange: true,
+  });
+
+  // Fetch detailed model info with live accuracy metrics
+  const {
+    data: modelInfo,
+    error: modelInfoError,
+    isLoading: modelInfoLoading,
+  } = useGetModelInfoQuery(undefined, {
+    pollingInterval: 600000, // 10 minutes
     refetchOnMountOrArgChange: true,
   });
 
@@ -966,6 +977,283 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
                   </Box>
                 </Box>
               )}
+            </Box>
+          )}
+
+          {/* Detailed Model Info Section */}
+          {modelInfo?.status === 'success' && !modelInfoError && (
+            <Box 
+              sx={{ 
+                flexShrink: 0, 
+                marginTop: { xs: 1.5, sm: 2 },
+                backgroundColor: isDark ? '#1a1a1a' : '#f9fafb',
+                border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : '#e5e7eb'}`,
+                borderRadius: '12px',
+                padding: { xs: '1rem', sm: '1.25rem' },
+              }}
+            >
+              <Typography
+                variant="h6"
+                sx={{
+                  fontSize: { xs: '0.875rem', sm: '1rem' },
+                  fontWeight: 600,
+                  color: isDark ? '#FFFFFF' : '#111827',
+                  marginBottom: { xs: '0.75rem', sm: '1rem' },
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                }}
+              >
+                📊 Live Model Accuracy
+              </Typography>
+
+              {/* R² Score Comparison */}
+              <Box sx={{ 
+                display: 'grid', 
+                gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, 
+                gap: 2,
+                mb: 2,
+              }}>
+                {/* Training R² Score */}
+                <Box sx={{
+                  backgroundColor: isDark ? 'rgba(59, 130, 246, 0.1)' : 'rgba(59, 130, 246, 0.05)',
+                  border: `1px solid ${isDark ? 'rgba(59, 130, 246, 0.3)' : 'rgba(59, 130, 246, 0.2)'}`,
+                  borderRadius: '8px',
+                  padding: '0.75rem',
+                }}>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      fontSize: { xs: '0.65rem', sm: '0.7rem' },
+                      color: isDark ? '#93c5fd' : '#3b82f6',
+                      textTransform: 'uppercase',
+                      fontWeight: 600,
+                      letterSpacing: '0.5px',
+                    }}
+                  >
+                    Training R² Score
+                  </Typography>
+                  <Typography
+                    variant="h5"
+                    sx={{
+                      fontSize: { xs: '1.25rem', sm: '1.5rem' },
+                      fontWeight: 700,
+                      color: isDark ? '#60a5fa' : '#2563eb',
+                      mt: 0.5,
+                    }}
+                  >
+                    {modelInfo.model.training_r2_score != null 
+                      ? `${(modelInfo.model.training_r2_score * 100).toFixed(2)}%` 
+                      : 'N/A'}
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      fontSize: { xs: '0.6rem', sm: '0.65rem' },
+                      color: isDark ? '#9ca3af' : '#6b7280',
+                      display: 'block',
+                      mt: 0.5,
+                    }}
+                  >
+                    From historical test data
+                  </Typography>
+                </Box>
+
+                {/* Live R² Score */}
+                <Box sx={{
+                  backgroundColor: isDark ? 'rgba(16, 185, 129, 0.1)' : 'rgba(16, 185, 129, 0.05)',
+                  border: `1px solid ${isDark ? 'rgba(16, 185, 129, 0.3)' : 'rgba(16, 185, 129, 0.2)'}`,
+                  borderRadius: '8px',
+                  padding: '0.75rem',
+                }}>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      fontSize: { xs: '0.65rem', sm: '0.7rem' },
+                      color: isDark ? '#6ee7b7' : '#10b981',
+                      textTransform: 'uppercase',
+                      fontWeight: 600,
+                      letterSpacing: '0.5px',
+                    }}
+                  >
+                    Live R² Score
+                  </Typography>
+                  <Typography
+                    variant="h5"
+                    sx={{
+                      fontSize: { xs: '1.25rem', sm: '1.5rem' },
+                      fontWeight: 700,
+                      color: isDark ? '#34d399' : '#059669',
+                      mt: 0.5,
+                    }}
+                  >
+                    {modelInfo.model.live_r2_score != null 
+                      ? `${(modelInfo.model.live_r2_score * 100).toFixed(2)}%` 
+                      : 'N/A'}
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      fontSize: { xs: '0.6rem', sm: '0.65rem' },
+                      color: isDark ? '#9ca3af' : '#6b7280',
+                      display: 'block',
+                      mt: 0.5,
+                    }}
+                  >
+                    From actual predictions
+                  </Typography>
+                </Box>
+              </Box>
+
+              {/* Live Accuracy Stats */}
+              {modelInfo.model.live_accuracy_stats && (
+                <Box sx={{ 
+                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
+                  borderRadius: '8px',
+                  padding: '0.75rem',
+                  mb: 2,
+                }}>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{
+                      fontSize: { xs: '0.75rem', sm: '0.8rem' },
+                      fontWeight: 600,
+                      color: isDark ? '#FFFFFF' : '#111827',
+                      mb: 1,
+                    }}
+                  >
+                    Prediction Statistics
+                  </Typography>
+                  <Box sx={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(2, 1fr)', 
+                    gap: 1,
+                  }}>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                        color: isDark ? '#d1d5db' : '#374151',
+                      }}
+                    >
+                      <strong>Total:</strong> {modelInfo.model.live_accuracy_stats.total_predictions}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                        color: isDark ? '#d1d5db' : '#374151',
+                      }}
+                    >
+                      <strong>Evaluated:</strong> {modelInfo.model.live_accuracy_stats.evaluated_predictions}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                        color: isDark ? '#d1d5db' : '#374151',
+                        gridColumn: 'span 2',
+                      }}
+                    >
+                      <strong>Avg Accuracy:</strong>{' '}
+                      <span style={{ color: isDark ? '#34d399' : '#059669', fontWeight: 600 }}>
+                        {modelInfo.model.live_accuracy_stats.average_accuracy != null 
+                          ? `${modelInfo.model.live_accuracy_stats.average_accuracy.toFixed(2)}%` 
+                          : 'N/A'}
+                      </span>
+                    </Typography>
+                  </Box>
+                </Box>
+              )}
+
+              {/* Selected Features */}
+              {modelInfo.model.selected_features && modelInfo.model.selected_features.length > 0 && (
+                <Box>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{
+                      fontSize: { xs: '0.75rem', sm: '0.8rem' },
+                      fontWeight: 600,
+                      color: isDark ? '#FFFFFF' : '#111827',
+                      mb: 1,
+                    }}
+                  >
+                    Top Selected Features ({modelInfo.model.selected_features_count}/{modelInfo.model.features_count})
+                  </Typography>
+                  <Box sx={{ 
+                    display: 'flex', 
+                    flexWrap: 'wrap', 
+                    gap: 0.5,
+                  }}>
+                    {modelInfo.model.selected_features.slice(0, 5).map((feature, index) => (
+                      <Box
+                        key={index}
+                        sx={{
+                          backgroundColor: isDark ? 'rgba(139, 92, 246, 0.15)' : 'rgba(139, 92, 246, 0.1)',
+                          border: `1px solid ${isDark ? 'rgba(139, 92, 246, 0.3)' : 'rgba(139, 92, 246, 0.2)'}`,
+                          borderRadius: '4px',
+                          padding: '0.25rem 0.5rem',
+                        }}
+                      >
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            fontSize: { xs: '0.6rem', sm: '0.65rem' },
+                            color: isDark ? '#c4b5fd' : '#7c3aed',
+                            fontFamily: 'monospace',
+                          }}
+                        >
+                          {feature}
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Box>
+                </Box>
+              )}
+
+              {/* Timestamp */}
+              <Typography
+                variant="caption"
+                sx={{
+                  fontSize: { xs: '0.6rem', sm: '0.65rem' },
+                  color: isDark ? '#6b7280' : '#9ca3af',
+                  display: 'block',
+                  mt: 1.5,
+                  textAlign: 'right',
+                }}
+              >
+                Updated: {new Date(modelInfo.timestamp).toLocaleString()}
+              </Typography>
+            </Box>
+          )}
+
+          {/* Model Info Loading State */}
+          {modelInfoLoading && (
+            <Box 
+              sx={{ 
+                flexShrink: 0, 
+                marginTop: { xs: 1.5, sm: 2 },
+                backgroundColor: isDark ? '#1a1a1a' : '#f9fafb',
+                border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : '#e5e7eb'}`,
+                borderRadius: '12px',
+                padding: { xs: '1rem', sm: '1.25rem' },
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                minHeight: '100px',
+              }}
+            >
+              <CircularProgress size={20} />
+              <Typography
+                variant="body2"
+                sx={{
+                  ml: 1.5,
+                  fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                  color: isDark ? '#9ca3af' : '#6b7280',
+                }}
+              >
+                Loading model info...
+              </Typography>
             </Box>
           )}
 
