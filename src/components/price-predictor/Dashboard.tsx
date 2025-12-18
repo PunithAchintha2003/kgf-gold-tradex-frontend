@@ -7,7 +7,8 @@ import {
   useGetRealtimePriceQuery, 
   useGetExchangeRateQuery,
   useGetAccuracyVisualizationQuery,
-  useGetPredictionHistoryQuery
+  useGetPredictionHistoryQuery,
+  useGetEnhancedPredictionQuery
 } from '../../store/api/goldApi';
 import { useTheme } from '../../hooks/useTheme';
 import CurrencyDropdown, { type CurrencyUnit } from './CurrencyDropdown';
@@ -138,6 +139,16 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
   } = useGetPredictionHistoryQuery({ days: 30 }, {
     pollingInterval: 900000, // 15 minutes
     skip: false, // Keep enabled, but handle errors gracefully
+  });
+
+  // Fetch enhanced prediction with model details and sentiment
+  const {
+    data: enhancedPrediction,
+    error: enhancedPredictionError,
+    isLoading: enhancedPredictionLoading,
+  } = useGetEnhancedPredictionQuery(undefined, {
+    pollingInterval: 300000, // 5 minutes
+    refetchOnMountOrArgChange: true,
   });
 
   // Use WebSocket data if available, otherwise fall back to REST API
@@ -746,6 +757,264 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
                   isDark={isDark}
                 />
               </Suspense>
+            </Box>
+          )}
+
+          {/* Enhanced Prediction Section */}
+          {enhancedPrediction && enhancedPrediction.status === 'success' && !enhancedPredictionError && (
+            <Box 
+              sx={{ 
+                flexShrink: 0, 
+                marginTop: { xs: 1.5, sm: 2 },
+                backgroundColor: isDark ? '#1a1a1a' : '#f9fafb',
+                border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : '#e5e7eb'}`,
+                borderRadius: '12px',
+                padding: { xs: '1rem', sm: '1.25rem' },
+              }}
+              className="bg-card border rounded-xl"
+            >
+              <Typography
+                variant="h6"
+                sx={{
+                  fontSize: { xs: '0.875rem', sm: '1rem' },
+                  fontWeight: 600,
+                  color: isDark ? '#FFFFFF' : '#111827',
+                  marginBottom: { xs: '0.5rem', sm: '0.75rem' },
+                }}
+              >
+                Enhanced Prediction
+              </Typography>
+              
+              {/* Prediction Details */}
+              <Box sx={{ mb: 2 }}>
+                <Typography
+                  variant="h4"
+                  sx={{
+                    fontSize: { xs: '1.5rem', sm: '2rem' },
+                    fontWeight: 700,
+                    color: enhancedPrediction.prediction.change >= 0 ? '#10b981' : '#ef4444',
+                    mb: 0.5,
+                  }}
+                >
+                  ${enhancedPrediction.prediction.next_day_price.toFixed(2)}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                    color: isDark ? '#9ca3af' : '#6b7280',
+                  }}
+                >
+                  Current: ${enhancedPrediction.prediction.current_price.toFixed(2)}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                    color: enhancedPrediction.prediction.change >= 0 ? '#10b981' : '#ef4444',
+                    fontWeight: 600,
+                  }}
+                >
+                  {enhancedPrediction.prediction.change >= 0 ? '+' : ''}
+                  {enhancedPrediction.prediction.change.toFixed(2)} (
+                  {enhancedPrediction.prediction.change >= 0 ? '+' : ''}
+                  {enhancedPrediction.prediction.change_percentage.toFixed(2)}%)
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                    color: isDark ? '#9ca3af' : '#6b7280',
+                    display: 'block',
+                    mt: 0.5,
+                  }}
+                >
+                  Method: {enhancedPrediction.prediction.method}
+                </Typography>
+              </Box>
+
+              {/* Model Information */}
+              <Box sx={{ mb: 2 }}>
+                <Typography
+                  variant="subtitle2"
+                  sx={{
+                    fontSize: { xs: '0.8rem', sm: '0.875rem' },
+                    fontWeight: 600,
+                    color: isDark ? '#FFFFFF' : '#111827',
+                    mb: 1,
+                  }}
+                >
+                  Model Details
+                </Typography>
+                <Box sx={{ pl: 1 }}>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                      color: isDark ? '#d1d5db' : '#374151',
+                      mb: 0.5,
+                    }}
+                  >
+                    <strong>Name:</strong> {enhancedPrediction.model.name}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                      color: isDark ? '#d1d5db' : '#374151',
+                      mb: 0.5,
+                    }}
+                  >
+                    <strong>Type:</strong> {enhancedPrediction.model.type}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                      color: isDark ? '#d1d5db' : '#374151',
+                      mb: 0.5,
+                    }}
+                  >
+                    <strong>Accuracy (R²):</strong> {enhancedPrediction.model.r2_score 
+                      ? `${(enhancedPrediction.model.r2_score * 100).toFixed(2)}%` 
+                      : 'N/A'}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                      color: isDark ? '#d1d5db' : '#374151',
+                      mb: 0.5,
+                    }}
+                  >
+                    <strong>Features:</strong> {enhancedPrediction.model.features.selected}/{enhancedPrediction.model.features.total} selected
+                  </Typography>
+                  {enhancedPrediction.model.features.top_features.length > 0 && (
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                        color: isDark ? '#9ca3af' : '#6b7280',
+                        display: 'block',
+                        mt: 0.5,
+                      }}
+                    >
+                      Top Features: {enhancedPrediction.model.features.top_features.slice(0, 3).join(', ')}
+                    </Typography>
+                  )}
+                  {enhancedPrediction.model.fallback_available && (
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                        color: '#10b981',
+                        display: 'block',
+                        mt: 0.5,
+                      }}
+                    >
+                      ✓ Fallback model available
+                    </Typography>
+                  )}
+                </Box>
+              </Box>
+
+              {/* Sentiment Analysis */}
+              {(enhancedPrediction.sentiment.news_volume > 0 || 
+                enhancedPrediction.sentiment.combined_sentiment !== 0) && (
+                <Box>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{
+                      fontSize: { xs: '0.8rem', sm: '0.875rem' },
+                      fontWeight: 600,
+                      color: isDark ? '#FFFFFF' : '#111827',
+                      mb: 1,
+                    }}
+                  >
+                    Sentiment Analysis
+                  </Typography>
+                  <Box sx={{ pl: 1 }}>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                        color: isDark ? '#d1d5db' : '#374151',
+                        mb: 0.5,
+                      }}
+                    >
+                      <strong>Combined Sentiment:</strong> {enhancedPrediction.sentiment.combined_sentiment.toFixed(3)}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                        color: isDark ? '#d1d5db' : '#374151',
+                        mb: 0.5,
+                      }}
+                    >
+                      <strong>News Volume:</strong> {enhancedPrediction.sentiment.news_volume}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                        color: isDark ? '#d1d5db' : '#374151',
+                      }}
+                    >
+                      <strong>Sentiment Trend:</strong> {enhancedPrediction.sentiment.sentiment_trend.toFixed(3)}
+                    </Typography>
+                  </Box>
+                </Box>
+              )}
+            </Box>
+          )}
+
+          {/* Enhanced Prediction Loading State */}
+          {enhancedPredictionLoading && (
+            <Box 
+              sx={{ 
+                flexShrink: 0, 
+                marginTop: { xs: 1.5, sm: 2 },
+                backgroundColor: isDark ? '#1a1a1a' : '#f9fafb',
+                border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : '#e5e7eb'}`,
+                borderRadius: '12px',
+                padding: { xs: '1rem', sm: '1.25rem' },
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                minHeight: '150px',
+              }}
+            >
+              <CircularProgress size={24} />
+            </Box>
+          )}
+
+          {/* Enhanced Prediction Error State */}
+          {enhancedPredictionError && (
+            <Box 
+              sx={{ 
+                flexShrink: 0, 
+                marginTop: { xs: 1.5, sm: 2 },
+                backgroundColor: isDark ? '#1a1a1a' : '#f9fafb',
+                border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : '#e5e7eb'}`,
+                borderRadius: '12px',
+                padding: { xs: '1rem', sm: '1.25rem' },
+              }}
+            >
+              <Typography
+                variant="h6"
+                sx={{
+                  fontSize: { xs: '0.875rem', sm: '1rem' },
+                  fontWeight: 600,
+                  color: isDark ? '#FFFFFF' : '#111827',
+                  marginBottom: { xs: '0.5rem', sm: '0.75rem' },
+                }}
+              >
+                Enhanced Prediction
+              </Typography>
+              <Alert severity="warning" sx={{ mt: 1 }}>
+                Unable to load enhanced prediction. Please try again later.
+              </Alert>
             </Box>
           )}
 

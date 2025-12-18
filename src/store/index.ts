@@ -23,6 +23,12 @@ export const store = configureStore({
     getDefaultMiddleware({
       serializableCheck: {
         ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
+        // Increase warning threshold to 128ms for large API responses
+        warnAfter: 128,
+      },
+      // Increase threshold for immutability checks as well
+      immutableCheck: {
+        warnAfter: 128,
       },
     }).concat(goldApi.middleware),
 });
