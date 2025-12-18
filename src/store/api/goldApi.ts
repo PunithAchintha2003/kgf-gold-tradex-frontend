@@ -162,10 +162,46 @@ export interface EnhancedPredictionResponse {
   message?: string;
 }
 
+// Detailed Model Info interfaces
+export interface LiveAccuracyStats {
+  average_accuracy: number;
+  r2_score: number | null;
+  total_predictions: number;
+  evaluated_predictions: number;
+}
+
+export interface DetailedModelInfo {
+  active_model: string | null;
+  model_type: string | null;
+  training_r2_score: number | null;
+  live_r2_score: number | null;
+  r2_score: number | null;
+  features_count: number | null;
+  selected_features_count: number | null;
+  fallback_available: boolean;
+  live_accuracy_stats: LiveAccuracyStats | null;
+  selected_features?: string[];
+  total_features?: number | null;
+}
+
+export interface R2Explanation {
+  training_r2_score: string;
+  live_r2_score: string;
+  r2_score: string;
+}
+
+export interface ModelInfoResponse {
+  status: string;
+  model: DetailedModelInfo;
+  r2_explanation: R2Explanation;
+  timestamp: string;
+  message?: string;
+}
+
 export const goldApi = createApi({
   reducerPath: 'goldApi',
   baseQuery: baseQueryWithReauth,
-  tagTypes: ['DailyData', 'RealtimePrice', 'PredictionExplanation', 'ExchangeRate', 'AccuracyVisualization', 'PredictionHistory', 'EnhancedPrediction'],
+  tagTypes: ['DailyData', 'RealtimePrice', 'PredictionExplanation', 'ExchangeRate', 'AccuracyVisualization', 'PredictionHistory', 'EnhancedPrediction', 'ModelInfo'],
   endpoints: (builder) => ({
     getDailyData: builder.query<DailyDataResponse, { days?: number; start_date?: string; end_date?: string } | void>({
       query: (params) => {
@@ -208,6 +244,10 @@ export const goldApi = createApi({
       query: () => '/xauusd/enhanced-prediction',
       providesTags: ['EnhancedPrediction'],
     }),
+    getModelInfo: builder.query<ModelInfoResponse, void>({
+      query: () => '/xauusd/model-info',
+      providesTags: ['ModelInfo'],
+    }),
   }),
 });
 
@@ -218,5 +258,6 @@ export const {
   useGetExchangeRateQuery,
   useGetAccuracyVisualizationQuery,
   useGetPredictionHistoryQuery,
-  useGetEnhancedPredictionQuery
+  useGetEnhancedPredictionQuery,
+  useGetModelInfoQuery
 } = goldApi;
