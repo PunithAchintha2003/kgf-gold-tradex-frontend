@@ -2,24 +2,31 @@ import React from 'react';
 import { Typography, Box } from '@mui/material';
 import type { 
   AccuracyStats as AccuracyStatsType,
-  AccuracyVisualizationStatistics 
+  AccuracyVisualizationStatistics,
+  PredictionStatsData
 } from '../../store/api/goldApi';
 
 interface AccuracyStatsProps {
   accuracyStats: AccuracyStatsType;
   isDark: boolean;
   newStats?: AccuracyVisualizationStatistics; // Optional new statistics from accuracy-visualization endpoint
+  predictionStats?: PredictionStatsData; // Optional comprehensive stats from prediction-stats endpoint
 }
 
 const AccuracyStats: React.FC<AccuracyStatsProps> = ({
   accuracyStats,
   isDark,
   newStats,
+  predictionStats,
 }) => {
-  const pendingPredictions = accuracyStats.total_predictions - accuracyStats.evaluated_predictions;
+  // Use prediction stats if available, otherwise fall back to accuracy stats
+  const totalPredictions = predictionStats?.total_predictions ?? accuracyStats.total_predictions;
+  const evaluatedPredictions = predictionStats?.evaluated.count ?? accuracyStats.evaluated_predictions;
+  const pendingPredictions = predictionStats?.pending.count ?? (totalPredictions - evaluatedPredictions);
+  const evaluationRate = predictionStats?.evaluation_rate_percent ?? null;
   
   // Use new stats if available, otherwise fall back to old stats
-  const averageAccuracy = newStats?.average_accuracy ?? null;
+  const averageAccuracy = predictionStats?.evaluated.average_accuracy ?? newStats?.average_accuracy ?? null;
   const maxAccuracy = newStats?.max_accuracy ?? null;
 
   return (
@@ -176,8 +183,22 @@ const AccuracyStats: React.FC<AccuracyStatsProps> = ({
                 lineHeight: 1.2,
               }}
             >
-              {accuracyStats.total_predictions} predictions
+              {totalPredictions} predictions
             </Typography>
+            {evaluationRate !== null && (
+              <Typography 
+                variant="body2" 
+                className={`${isDark ? 'text-gray-400' : 'text-gray-500'} text-xs font-medium`}
+                sx={{ 
+                  color: isDark ? '#888888' : '#999999',
+                  fontSize: '0.75rem',
+                  fontWeight: 500,
+                  marginTop: '0.25rem',
+                }}
+              >
+                {evaluationRate.toFixed(1)}% evaluated
+              </Typography>
+            )}
           </Box>
 
           {/* Evaluated Card */}
@@ -216,7 +237,7 @@ const AccuracyStats: React.FC<AccuracyStatsProps> = ({
                 lineHeight: 1.2,
               }}
             >
-              {accuracyStats.evaluated_predictions} with results
+              {evaluatedPredictions} with results
             </Typography>
           </Box>
 

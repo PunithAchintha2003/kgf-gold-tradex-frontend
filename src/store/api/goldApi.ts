@@ -198,10 +198,36 @@ export interface ModelInfoResponse {
   message?: string;
 }
 
+// Prediction Stats interfaces
+export interface EvaluatedStats {
+  count: number;
+  with_results: number;
+  average_accuracy: number;
+}
+
+export interface PendingStats {
+  count: number;
+  awaiting_market_results: number;
+}
+
+export interface PredictionStatsData {
+  total_predictions: number;
+  evaluated: EvaluatedStats;
+  pending: PendingStats;
+  r2_score: number | null;
+  evaluation_rate_percent: number;
+}
+
+export interface PredictionStatsResponse {
+  status: string;
+  data: PredictionStatsData;
+  message?: string;
+}
+
 export const goldApi = createApi({
   reducerPath: 'goldApi',
   baseQuery: baseQueryWithReauth,
-  tagTypes: ['DailyData', 'RealtimePrice', 'PredictionExplanation', 'ExchangeRate', 'AccuracyVisualization', 'PredictionHistory', 'EnhancedPrediction', 'ModelInfo'],
+  tagTypes: ['DailyData', 'RealtimePrice', 'PredictionExplanation', 'ExchangeRate', 'AccuracyVisualization', 'PredictionHistory', 'EnhancedPrediction', 'ModelInfo', 'PredictionStats'],
   endpoints: (builder) => ({
     getDailyData: builder.query<DailyDataResponse, { days?: number; start_date?: string; end_date?: string } | void>({
       query: (params) => {
@@ -248,6 +274,10 @@ export const goldApi = createApi({
       query: () => '/xauusd/model-info',
       providesTags: ['ModelInfo'],
     }),
+    getPredictionStats: builder.query<PredictionStatsResponse, void>({
+      query: () => '/xauusd/prediction-stats',
+      providesTags: ['PredictionStats'],
+    }),
   }),
 });
 
@@ -259,5 +289,6 @@ export const {
   useGetAccuracyVisualizationQuery,
   useGetPredictionHistoryQuery,
   useGetEnhancedPredictionQuery,
-  useGetModelInfoQuery
+  useGetModelInfoQuery,
+  useGetPredictionStatsQuery
 } = goldApi;
