@@ -180,6 +180,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
     data: pendingPredictionsData,
     error: _pendingPredictionsError,
     isLoading: pendingPredictionsLoading,
+    refetch: refetchPendingPredictions,
   } = useGetPendingPredictionsQuery(undefined, {
     pollingInterval: 300000, // 5 minutes - refresh more frequently since these change as market closes
     refetchOnMountOrArgChange: true,
@@ -790,6 +791,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
                   predictions={pendingPredictionsData.data?.predictions || []}
                   isLoading={pendingPredictionsLoading}
                   isDark={isDark}
+                  onRefetch={refetchPendingPredictions}
                 />
               </Suspense>
             </Box>
