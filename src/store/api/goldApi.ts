@@ -242,6 +242,19 @@ export interface PendingPredictionsResponse {
   message?: string;
 }
 
+// Update Pending Predictions interfaces
+export interface UpdatePendingPredictionsResponse {
+  status: string;
+  message: string;
+  updated_count: number;
+  failed_count: number;
+  skipped_count?: number;
+  updated_dates?: string[];
+  failed_dates?: Array<{ date: string; error: string }>;
+  skipped_dates?: string[];
+  total_pending?: number;
+}
+
 export const goldApi = createApi({
   reducerPath: 'goldApi',
   baseQuery: baseQueryWithReauth,
@@ -300,6 +313,13 @@ export const goldApi = createApi({
       query: () => '/xauusd/pending-predictions',
       providesTags: ['PendingPredictions'],
     }),
+    updatePendingPredictions: builder.mutation<UpdatePendingPredictionsResponse, void>({
+      query: () => ({
+        url: '/xauusd/update-pending-predictions',
+        method: 'POST',
+      }),
+      invalidatesTags: ['PendingPredictions', 'PredictionHistory', 'PredictionStats', 'AccuracyVisualization'],
+    }),
   }),
 });
 
@@ -313,5 +333,6 @@ export const {
   useGetEnhancedPredictionQuery,
   useGetModelInfoQuery,
   useGetPredictionStatsQuery,
-  useGetPendingPredictionsQuery
+  useGetPendingPredictionsQuery,
+  useUpdatePendingPredictionsMutation
 } = goldApi;
