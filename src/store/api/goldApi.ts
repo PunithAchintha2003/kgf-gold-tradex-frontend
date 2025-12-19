@@ -138,12 +138,15 @@ export interface ModelInfo {
   name: string;
   type: string;
   r2_score: number | null;
+  training_r2_score?: number | null;
+  live_r2_score?: number | null;
   features: {
     total: number;
     selected: number;
     top_features: string[];
   };
   fallback_available: boolean;
+  live_accuracy_stats?: LiveAccuracyStats | null;
 }
 
 export interface SentimentInfo {

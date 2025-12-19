@@ -943,6 +943,45 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
                       ? `${(enhancedPrediction.model.r2_score * 100).toFixed(2)}%` 
                       : 'N/A'}
                   </Typography>
+                  {enhancedPrediction.model.training_r2_score !== null && enhancedPrediction.model.training_r2_score !== undefined && (
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                        color: isDark ? '#9ca3af' : '#6b7280',
+                        display: 'block',
+                        mb: 0.5,
+                      }}
+                    >
+                      Training R²: {(enhancedPrediction.model.training_r2_score * 100).toFixed(2)}%
+                    </Typography>
+                  )}
+                  {enhancedPrediction.model.live_r2_score !== null && enhancedPrediction.model.live_r2_score !== undefined && (
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                        color: '#10b981',
+                        display: 'block',
+                        mb: 0.5,
+                      }}
+                    >
+                      Live R²: {(enhancedPrediction.model.live_r2_score * 100).toFixed(2)}% (from {enhancedPrediction.model.live_accuracy_stats?.evaluated_predictions || 0} predictions)
+                    </Typography>
+                  )}
+                  {enhancedPrediction.model.live_accuracy_stats && (
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                        color: isDark ? '#9ca3af' : '#6b7280',
+                        display: 'block',
+                        mb: 0.5,
+                      }}
+                    >
+                      Avg Accuracy: {(enhancedPrediction.model.live_accuracy_stats.average_accuracy * 100).toFixed(2)}% ({enhancedPrediction.model.live_accuracy_stats.evaluated_predictions}/{enhancedPrediction.model.live_accuracy_stats.total_predictions} evaluated)
+                    </Typography>
+                  )}
                   <Typography
                     variant="body2"
                     sx={{
