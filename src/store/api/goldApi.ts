@@ -224,10 +224,28 @@ export interface PredictionStatsResponse {
   message?: string;
 }
 
+// Pending Predictions interfaces
+export interface PendingPredictionItem {
+  date: string;
+  predicted_price: number;
+  method: string;
+}
+
+export interface PendingPredictionsData {
+  pending_count: number;
+  predictions: PendingPredictionItem[];
+}
+
+export interface PendingPredictionsResponse {
+  status: string;
+  data: PendingPredictionsData;
+  message?: string;
+}
+
 export const goldApi = createApi({
   reducerPath: 'goldApi',
   baseQuery: baseQueryWithReauth,
-  tagTypes: ['DailyData', 'RealtimePrice', 'PredictionExplanation', 'ExchangeRate', 'AccuracyVisualization', 'PredictionHistory', 'EnhancedPrediction', 'ModelInfo', 'PredictionStats'],
+  tagTypes: ['DailyData', 'RealtimePrice', 'PredictionExplanation', 'ExchangeRate', 'AccuracyVisualization', 'PredictionHistory', 'EnhancedPrediction', 'ModelInfo', 'PredictionStats', 'PendingPredictions'],
   endpoints: (builder) => ({
     getDailyData: builder.query<DailyDataResponse, { days?: number; start_date?: string; end_date?: string } | void>({
       query: (params) => {
@@ -278,6 +296,10 @@ export const goldApi = createApi({
       query: () => '/xauusd/prediction-stats',
       providesTags: ['PredictionStats'],
     }),
+    getPendingPredictions: builder.query<PendingPredictionsResponse, void>({
+      query: () => '/xauusd/pending-predictions',
+      providesTags: ['PendingPredictions'],
+    }),
   }),
 });
 
@@ -290,5 +312,6 @@ export const {
   useGetPredictionHistoryQuery,
   useGetEnhancedPredictionQuery,
   useGetModelInfoQuery,
-  useGetPredictionStatsQuery
+  useGetPredictionStatsQuery,
+  useGetPendingPredictionsQuery
 } = goldApi;

@@ -10,7 +10,8 @@ import {
   useGetPredictionHistoryQuery,
   useGetEnhancedPredictionQuery,
   useGetModelInfoQuery,
-  useGetPredictionStatsQuery
+  useGetPredictionStatsQuery,
+  useGetPendingPredictionsQuery
 } from '../../store/api/goldApi';
 import { useTheme } from '../../hooks/useTheme';
 import CurrencyDropdown, { type CurrencyUnit } from './CurrencyDropdown';
@@ -23,6 +24,7 @@ const AccuracyStats = lazy(() => import('./AccuracyStats'));
 const PredictionExplanation = lazy(() => import('./PredictionExplanation'));
 const AccuracyVisualizationChart = lazy(() => import('./AccuracyVisualizationChart'));
 const PredictionHistoryTable = lazy(() => import('./PredictionHistoryTable'));
+const PendingPredictions = lazy(() => import('./PendingPredictions'));
 
 interface DashboardProps {
   currencyUnit: CurrencyUnit;
@@ -170,6 +172,16 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
     isLoading: _predictionStatsLoading,
   } = useGetPredictionStatsQuery(undefined, {
     pollingInterval: 600000, // 10 minutes
+    refetchOnMountOrArgChange: true,
+  });
+
+  // Fetch pending predictions
+  const {
+    data: pendingPredictionsData,
+    error: _pendingPredictionsError,
+    isLoading: pendingPredictionsLoading,
+  } = useGetPendingPredictionsQuery(undefined, {
+    pollingInterval: 300000, // 5 minutes - refresh more frequently since these change as market closes
     refetchOnMountOrArgChange: true,
   });
 
@@ -753,6 +765,33 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
                   ? 'Endpoint not available.' 
                   : 'Please try again later.'}
               </Alert>
+            </Box>
+          )}
+
+          {/* Pending Predictions Section */}
+          {pendingPredictionsData && pendingPredictionsData.status === 'success' && (
+            <Box 
+              sx={{ 
+                flexShrink: 0, 
+                marginTop: { xs: 1.5, sm: 2 },
+                backgroundColor: isDark ? '#1a1a1a' : '#f9fafb',
+                border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : '#e5e7eb'}`,
+                borderRadius: '12px',
+                padding: { xs: '1rem', sm: '1.25rem' },
+              }}
+              className="bg-card border rounded-xl"
+            >
+              <Suspense fallback={
+                <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
+                  <CircularProgress size={24} />
+                </Box>
+              }>
+                <PendingPredictions
+                  predictions={pendingPredictionsData.data?.predictions || []}
+                  isLoading={pendingPredictionsLoading}
+                  isDark={isDark}
+                />
+              </Suspense>
             </Box>
           )}
 
