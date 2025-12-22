@@ -34,6 +34,20 @@ const PendingPredictions: React.FC<PendingPredictionsProps> = ({
   isDark,
   onRefetch,
 }) => {
+  // Helper function to shorten method names
+  const shortenMethod = (method: string): string => {
+    if (!method) return 'LR (F)';
+    
+    const methodLower = method.toLowerCase();
+    if (methodLower.includes('news-enhanced') || methodLower.includes('enhanced')) {
+      return 'NELR (P)';
+    }
+    if (methodLower.includes('lasso')) {
+      return 'LR (F)';
+    }
+    return method; // Fallback to original if pattern doesn't match
+  };
+
   const [updatePendingPredictions, { isLoading: isUpdating }] = useUpdatePendingPredictionsMutation();
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
@@ -406,7 +420,7 @@ const PendingPredictions: React.FC<PendingPredictionsProps> = ({
                       borderBottom: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.05)' : '#f3f4f6'}`,
                     }}
                   >
-                    {prediction.method || 'Lasso Regression'}
+                    {shortenMethod(prediction.method || 'Lasso Regression')}
                   </TableCell>
                   <TableCell
                     align="center"

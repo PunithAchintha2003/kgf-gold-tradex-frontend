@@ -11,7 +11,10 @@ import {
   Chip,
   CircularProgress,
   Paper,
+  Tooltip,
+  IconButton,
 } from '@mui/material';
+import { Info } from '@mui/icons-material';
 import type { PredictionHistoryItem } from '../../store/api/goldApi';
 
 interface PredictionHistoryTableProps {
@@ -25,6 +28,20 @@ const PredictionHistoryTable: React.FC<PredictionHistoryTableProps> = ({
   isLoading = false,
   isDark,
 }) => {
+  // Helper function to shorten method names
+  const shortenMethod = (method: string): string => {
+    if (!method) return 'LR (F)';
+    
+    const methodLower = method.toLowerCase();
+    if (methodLower.includes('news-enhanced') || methodLower.includes('enhanced')) {
+      return 'NELR (P)';
+    }
+    if (methodLower.includes('lasso')) {
+      return 'LR (F)';
+    }
+    return method; // Fallback to original if pattern doesn't match
+  };
+
   // Sort predictions: pending items first, then by date (newest first)
   // MUST be called before any early returns (Rules of Hooks)
   const sortedPredictions = useMemo(() => {
@@ -129,17 +146,71 @@ const PredictionHistoryTable: React.FC<PredictionHistoryTableProps> = ({
         gap: { xs: '0.75rem', sm: '1rem' },
       }}
     >
-      <Typography
-        variant="h6"
+      <Box
         sx={{
-          fontSize: { xs: '0.875rem', sm: '1rem' },
-          fontWeight: 600,
-          color: isDark ? '#FFFFFF' : '#111827',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
           marginBottom: { xs: '0.5rem', sm: '0.75rem' },
         }}
       >
-        Prediction History
-      </Typography>
+        <Typography
+          variant="h6"
+          sx={{
+            fontSize: { xs: '0.875rem', sm: '1rem' },
+            fontWeight: 600,
+            color: isDark ? '#FFFFFF' : '#111827',
+          }}
+        >
+          Prediction History
+        </Typography>
+        <Tooltip
+          title={
+            <Box sx={{ p: 0.5 }}>
+              <Typography variant="body2" sx={{ mb: 0.5, fontWeight: 600 }}>
+                Method Abbreviations:
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 0.5 }}>
+                <strong>NELR (P)</strong> = News-Enhanced Lasso Regression (Primary)
+              </Typography>
+              <Typography variant="body2">
+                <strong>LR (F)</strong> = Lasso Regression (Fallback)
+              </Typography>
+            </Box>
+          }
+          arrow
+          placement="top"
+          componentsProps={{
+            tooltip: {
+              sx: {
+                backgroundColor: isDark ? 'rgba(26, 26, 26, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+                color: isDark ? '#e5e7eb' : '#111827',
+                border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : '#e5e7eb'}`,
+                boxShadow: isDark 
+                  ? '0 4px 6px rgba(0, 0, 0, 0.3)' 
+                  : '0 4px 6px rgba(0, 0, 0, 0.1)',
+                '& .MuiTooltip-arrow': {
+                  color: isDark ? 'rgba(26, 26, 26, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+                },
+              },
+            },
+          }}
+        >
+          <IconButton
+            size="small"
+            sx={{
+              color: isDark ? '#9ca3af' : '#6b7280',
+              '&:hover': {
+                color: isDark ? '#d1d5db' : '#374151',
+                backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)',
+              },
+              padding: '4px',
+            }}
+          >
+            <Info sx={{ fontSize: { xs: '1rem', sm: '1.125rem' } }} />
+          </IconButton>
+        </Tooltip>
+      </Box>
       <Typography
         variant="body2"
         sx={{
@@ -248,6 +319,22 @@ const PredictionHistoryTable: React.FC<PredictionHistoryTableProps> = ({
                 Accuracy
               </TableCell>
               <TableCell
+                sx={{
+                  backgroundColor: isDark ? 'rgba(26, 26, 26, 0.95)' : 'rgba(249, 250, 251, 0.95)',
+                  backdropFilter: 'blur(8px)',
+                  color: isDark ? '#d1d5db' : '#6b7280',
+                  fontWeight: 600,
+                  fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                  borderBottom: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : '#e5e7eb'}`,
+                  padding: { xs: '0.75rem 0.5rem', sm: '1rem' },
+                  position: 'sticky',
+                  top: 0,
+                  zIndex: 10,
+                }}
+              >
+                Method
+              </TableCell>
+              <TableCell
                 align="center"
                 sx={{
                   backgroundColor: isDark ? 'rgba(26, 26, 26, 0.95)' : 'rgba(249, 250, 251, 0.95)',
@@ -354,6 +441,16 @@ const PredictionHistoryTable: React.FC<PredictionHistoryTableProps> = ({
                       : '-'}
                   </TableCell>
                   <TableCell
+                    sx={{
+                      color: isDark ? '#9ca3af' : '#6b7280',
+                      fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                      borderBottom: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.05)' : '#f3f4f6'}`,
+                      padding: { xs: '0.75rem 0.5rem', sm: '1rem' },
+                    }}
+                  >
+                    {shortenMethod(pred.method || 'Lasso Regression')}
+                  </TableCell>
+                  <TableCell
                     align="center"
                     sx={{
                       borderBottom: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.05)' : '#f3f4f6'}`,
@@ -406,13 +503,3 @@ const PredictionHistoryTable: React.FC<PredictionHistoryTableProps> = ({
 };
 
 export default PredictionHistoryTable;
-
-
-
-
-
-
-
-
-
-
