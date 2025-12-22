@@ -1,15 +1,8 @@
-import React, { useMemo, useCallback } from 'react';
-// Assuming these types are correctly defined elsewhere:
+import React, { useEffect, useRef, useMemo, useCallback } from 'react';
+import { createChart, ColorType, IChartApi, ISeriesApi, LineStyle, CrosshairMode, PriceLineOptions, Time, PriceScaleMode } from 'lightweight-charts';
 import type { DailyDataPoint, HistoricalPrediction, Prediction } from '../../store/api/goldApi';
 import type { CurrencyUnit } from './CurrencyDropdown';
-// Assuming this utility is correctly defined elsewhere:
 import { convertPrice } from '../../utils/currencyConverter';
-
-// Import Plotly directly to avoid React module resolution issues
-import Plot from 'react-plotly.js';
-
-// Placeholder for Plotly.js type (if not available globally)
-declare type PlotlyData = Plotly.Data;
 
 interface ChartProps {
   data: DailyDataPoint[];
@@ -34,41 +27,17 @@ const Chart: React.FC<ChartProps> = ({
   usdToLkrRate,
   zoomLevel = 0,
 }) => {
-  
-  // Convert realtime price if it exists and we're in LKR mode (pawn)
-  const convertedRealtimePrice = useMemo(() => {
-    if (realtimePrice == null || isNaN(realtimePrice)) {
-      return null;
-    }
-    
-    try {
-      return currencyUnit === 'pawn' 
-        ? convertPrice(realtimePrice, currencyUnit, usdToLkrRate).price 
-        : realtimePrice;
-    } catch (_error) {
-      console.error('Error converting realtime price:', _error);
-      return null;
-    }
-  }, [realtimePrice, currencyUnit, usdToLkrRate]);
-  
-  
-  // Calculate current price (this will be the converted price from the data)
-  const currentPrice = useMemo(() => {
-    if (convertedRealtimePrice != null && !isNaN(convertedRealtimePrice)) {
-      return convertedRealtimePrice;
-    }
-    if (data && data.length > 0) {
-      const lastDataPoint = data[data.length - 1];
-      if (lastDataPoint?.close != null && !isNaN(lastDataPoint.close)) {
-        return lastDataPoint.close;
-      }
-    }
-    return 0; // Default fallback
-  }, [convertedRealtimePrice, data]);
-  
-  // Helper function to format LKR values in user-friendly way
-  const formatLKRValue = useCallback((value: number | null | undefined) => {
-    // Handle null/undefined values
+  const chartContainerRef = useRef<HTMLDivElement>(null);
+  const chartRef = useRef<IChartApi | null>(null);
+  const goldPriceSeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
+  const accuracyLineSeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
+  const predictionSeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
+  const currentPriceMarkerRef = useRef<ISeriesApi<'Line'> | null>(null);
+  const currentPriceLineRef = useRef<ReturnType<ISeriesApi<'Line'>['createPriceLine']> | null>(null);
+  const predictedPriceLineRef = useRef<ReturnType<ISeriesApi<'Line'>['createPriceLine']> | null>(null);
+
+  // Helper function to format price values
+  const formatPrice = useCallback((value: number | null | undefined): string => {
     if (value == null || isNaN(value)) {
       return currencyUnit === 'pawn' ? 'LKR 0' : '$0.00';
     }
@@ -86,99 +55,96 @@ const Chart: React.FC<ChartProps> = ({
     }
   }, [currencyUnit]);
 
-  const plotData = useMemo(() => {
-    // Use data if available, otherwise create empty array (predictions will still be shown)
+  // Convert realtime price
+  const convertedRealtimePrice = useMemo(() => {
+    if (realtimePrice == null || isNaN(realtimePrice)) {
+      return null;
+    }
+    
+    try {
+      return currencyUnit === 'pawn' 
+        ? convertPrice(realtimePrice, currencyUnit, usdToLkrRate).price 
+        : realtimePrice;
+    } catch (_error) {
+      console.error('Error converting realtime price:', _error);
+      return null;
+    }
+  }, [realtimePrice, currencyUnit, usdToLkrRate]);
+  
+  // Calculate current price
+  const currentPrice = useMemo(() => {
+    if (convertedRealtimePrice != null && !isNaN(convertedRealtimePrice)) {
+      return convertedRealtimePrice;
+    }
+    if (data && data.length > 0) {
+      const lastDataPoint = data[data.length - 1];
+      if (lastDataPoint?.close != null && !isNaN(lastDataPoint.close)) {
+        return lastDataPoint.close;
+      }
+    }
+    return 0;
+  }, [convertedRealtimePrice, data]);
+  
+  // Prepare chart data
+  const chartData = useMemo(() => {
     const dataToUse = data && data.length > 0 ? data : [];
 
-    // Sort data by date to ensure proper chronological order
+    // Sort data by date
     const sortedData = [...dataToUse]
-      .filter(d => d && d.date) // Filter out invalid entries
+      .filter(d => d && d.date)
       .sort((a, b) => {
         try {
           const dateA = new Date(a.date).getTime();
           const dateB = new Date(b.date).getTime();
           if (isNaN(dateA) || isNaN(dateB)) return 0;
           return dateA - dateB;
-        } catch (error) {
-          console.error('Error sorting data by date:', error);
+        } catch {
           return 0;
         }
       });
 
-    // Debug: Log what data we're plotting
-    if (sortedData.length > 0) {
-      // Debug logging removed to prevent console warnings
-    }
-
-    const traces: PlotlyData[] = [];
-
-    // Main price line (gold yellow) - use close values when available, show all data points
-    // For dates before market data (before Oct 6), use predicted_price as fallback
-    // Note: Data from Dashboard is already converted via convertChartData, so we use it directly
+    // Prepare gold price line data
     const goldLineData = sortedData
       .filter(d => d.close != null || d.predicted_price != null)
       .map(d => {
-        // Use close if available (market data), otherwise use predicted_price (for dates before Oct 6)
-        // Data is already converted by convertChartData in Dashboard, so use directly
         let price: number | null = null;
         
         if (d.close != null && typeof d.close === 'number' && isFinite(d.close)) {
-          // close is already in the target currency (converted by convertChartData)
-          price = d.close;
+          price = d.close; // Already converted by convertChartData
         } else if (d.predicted_price != null && typeof d.predicted_price === 'number' && isFinite(d.predicted_price)) {
-          // predicted_price is still in USD/troy-ounce, so convert it
           try {
             if (usdToLkrRate && usdToLkrRate > 0 && isFinite(usdToLkrRate)) {
               price = convertPrice(d.predicted_price, currencyUnit, usdToLkrRate).price;
             } else {
-              console.warn('Invalid exchange rate for predicted_price conversion');
-              price = d.predicted_price; // Use unconverted price as fallback
+              price = d.predicted_price;
             }
-          } catch (error) {
-            console.error('Error converting predicted_price:', error);
-            price = d.predicted_price; // Use unconverted price as fallback
+          } catch {
+            price = d.predicted_price;
           }
         }
         
+        // Ensure date is in YYYY-MM-DD format for lightweight-charts
+        const dateStr = d.date;
         return {
-          date: d.date,
-          price,
-          isPrediction: d.close == null && d.predicted_price != null, // Mark if this is prediction-only data
+          time: (dateStr as string) as Time,
+          value: price,
         };
       })
-      .filter(d => d.price != null); // Remove any null prices
+      .filter((d): d is { time: Time; value: number } => 
+        d.value != null && isFinite(d.value)
+      )
+      .map(d => ({
+        time: d.time,
+        value: d.value,
+      }));
 
-    if (goldLineData.length > 0) {
-      traces.push({
-        x: goldLineData.map(d => d.date),
-        y: goldLineData.map(d => {
-          const price = d.price;
-          if (price == null || typeof price !== 'number' || !isFinite(price)) {
-            return 0;
-          }
-          return price;
-        }),
-        type: 'scatter',
-        mode: 'lines',
-        name: 'Gold Price Line',
-        line: {
-          color: '#F5D300',
-          width: 2,
-        },
-        hovertemplate: `Date: %{x}<br>Price: %{customdata}<extra></extra>`,
-        customdata: goldLineData.map(d => formatLKRValue(d.price ?? 0)),
-      });
-    }
-
-    // Accuracy Line - show all predicted prices with specified color #0055ff
-    // Combine historical predictions with predictions from data array and main prediction
+    // Prepare accuracy line (historical predictions)
     const allPredictions: HistoricalPrediction[] = [];
     
-    // Add predictions from data array (includes predictions before Oct 6 that backend added)
+    // Add predictions from data array
     if (sortedData && sortedData.length > 0) {
       sortedData.forEach(d => {
         if (d.predicted_price != null && typeof d.predicted_price === 'number' && isFinite(d.predicted_price) && d.date) {
-          // Check if this date already exists to avoid duplicates
           const exists = allPredictions.some(p => p.date === d.date);
           if (!exists) {
             allPredictions.push({
@@ -190,11 +156,10 @@ const Chart: React.FC<ChartProps> = ({
       });
     }
     
-    // Add all historical predictions (including future ones)
+    // Add historical predictions
     if (historicalPredictions && historicalPredictions.length > 0) {
       historicalPredictions.forEach(p => {
         if (p && p.predicted_price != null && typeof p.predicted_price === 'number' && isFinite(p.predicted_price) && p.date) {
-          // Check if this date already exists to avoid duplicates
           const exists = allPredictions.some(existing => existing.date === p.date);
           if (!exists) {
             allPredictions.push({
@@ -206,7 +171,7 @@ const Chart: React.FC<ChartProps> = ({
       });
     }
     
-    // Add the main prediction if it exists and isn't already in historical predictions
+    // Add main prediction
     if (prediction && 
         prediction.predicted_price != null && 
         typeof prediction.predicted_price === 'number' && 
@@ -222,7 +187,7 @@ const Chart: React.FC<ChartProps> = ({
       }
     }
     
-    // Sort predictions by date to ensure proper line drawing (ascending order)
+    // Sort predictions by date
     allPredictions.sort((a, b) => {
       try {
         if (!a || !a.date || !b || !b.date) return 0;
@@ -230,495 +195,466 @@ const Chart: React.FC<ChartProps> = ({
         const dateB = new Date(b.date).getTime();
         if (isNaN(dateA) || isNaN(dateB)) return 0;
         return dateA - dateB;
-      } catch (error) {
-        console.error('Error sorting allPredictions:', error);
+      } catch {
         return 0;
       }
     });
 
-    if (allPredictions.length > 0) {
-      // Convert predictions to current currency unit
-      const convertedGhostData = allPredictions
+    // Convert predictions to chart data
+    const accuracyLineData = allPredictions
         .filter(p => p && p.predicted_price != null && typeof p.predicted_price === 'number' && isFinite(p.predicted_price) && p.date)
         .map(p => {
           try {
             if (usdToLkrRate && usdToLkrRate > 0 && isFinite(usdToLkrRate)) {
               return {
-                ...p,
-                predicted_price: convertPrice(p.predicted_price, currencyUnit, usdToLkrRate).price
+              time: (p.date as string) as Time,
+              value: convertPrice(p.predicted_price, currencyUnit, usdToLkrRate).price,
               };
             } else {
-              console.warn('Invalid exchange rate for prediction conversion');
-              return p; // Return unconverted prediction
-            }
-          } catch (error) {
-            console.error('Error converting prediction price:', error);
-            return p; // Return unconverted prediction
+            return {
+              time: (p.date as string) as Time,
+              value: p.predicted_price,
+            };
           }
-        })
-        .sort((a, b) => {
-          try {
-            const dateA = new Date(a.date).getTime();
-            const dateB = new Date(b.date).getTime();
-            if (isNaN(dateA) || isNaN(dateB)) return 0;
-            return dateA - dateB;
-          } catch (error) {
-            console.error('Error sorting converted predictions:', error);
-            return 0;
-          }
-        });
+        } catch {
+          return {
+            time: (p.date as string) as Time,
+            value: p.predicted_price,
+          };
+        }
+      })
+      .filter(d => d.value != null && isFinite(d.value));
 
-      traces.push({
-        x: convertedGhostData.map(p => p.date),
-        y: convertedGhostData.map(p => p.predicted_price),
-        type: 'scatter',
-        mode: 'lines+markers',
-        name: 'Accuracy Line',
-        line: {
-          color: '#0055ff', // Your specified color
-          width: 3,
-          dash: 'solid',
-        },
-        marker: {
-          color: '#0055ff',
-          size: 8,
-          symbol: 'circle',
-        },
-        opacity: 0.8,
-        hovertemplate: `Predicted: %{x}<br>Price: %{customdata}<extra></extra>`,
-        customdata: convertedGhostData.map(p => formatLKRValue(p.predicted_price ?? 0)),
-      });
-    }
-
-    let predDate: string | undefined;
-    let predPrice: number | undefined;
-
-    if (prediction && prediction.predicted_price != null && typeof prediction.predicted_price === 'number' && isFinite(prediction.predicted_price)) {
-      predDate = prediction.next_day;
+    // Prepare prediction line (from current to future prediction)
+    let predictionLineData: Array<{ time: Time; value: number }> = [];
+    if (prediction && prediction.predicted_price != null && typeof prediction.predicted_price === 'number' && isFinite(prediction.predicted_price) && prediction.next_day) {
+      const lastDate = sortedData && sortedData.length > 0 
+        ? sortedData[sortedData.length - 1]?.date 
+        : (historicalPredictions && historicalPredictions.length > 0
+            ? historicalPredictions[historicalPredictions.length - 1]?.date
+            : new Date().toISOString().split('T')[0]);
+      
+      const predDate = prediction.next_day;
+      let predPrice: number;
+      
       try {
         if (usdToLkrRate && usdToLkrRate > 0 && isFinite(usdToLkrRate)) {
           predPrice = convertPrice(prediction.predicted_price, currencyUnit, usdToLkrRate).price;
         } else {
-          console.warn('Invalid exchange rate for prediction price conversion');
-          predPrice = prediction.predicted_price; // Use unconverted price as fallback
+          predPrice = prediction.predicted_price;
         }
-      } catch (error) {
-        console.error('Error converting prediction price:', error);
-        predPrice = prediction.predicted_price; // Use unconverted price as fallback
+      } catch {
+        predPrice = prediction.predicted_price;
+      }
+
+      if (lastDate && currentPrice > 0) {
+        predictionLineData = [
+          { time: (lastDate as string) as Time, value: currentPrice },
+          { time: (predDate as string) as Time, value: predPrice },
+        ];
       }
     }
-
-    // Current price marker - use last available date from sorted data
-    const lastDate = sortedData && sortedData.length > 0 
-      ? sortedData[sortedData.length - 1]?.date ?? new Date().toISOString().split('T')[0]
-      : (historicalPredictions && historicalPredictions.length > 0
-          ? historicalPredictions[historicalPredictions.length - 1]?.date ?? new Date().toISOString().split('T')[0]
-          : new Date().toISOString().split('T')[0]);
-
-    const safeLastDate = lastDate ?? new Date().toISOString().split('T')[0];
-    traces.push({
-      x: [safeLastDate] as string[],
-      y: [currentPrice],
-      type: 'scatter',
-      mode: 'markers',
-      name: 'Current Price',
-      marker: {
-        color: '#F5D300', // Back to original yellow
-        size: 9,
-      },
-        hovertemplate: `Current Price<br>Date: %{x}<br>Price: ${formatLKRValue(currentPrice || 0)}<extra></extra>`,
-    });
-
-    // Current price horizontal line
-    traces.push({
-      x: [sortedData && sortedData.length > 0 ? sortedData[0]?.date ?? safeLastDate : safeLastDate, safeLastDate] as string[],
-      y: [currentPrice, currentPrice],
-      type: 'scatter',
-      mode: 'lines',
-      name: 'Current Price Level',
-      line: {
-        color: '#F5D300', // Back to original yellow
-        width: 1.5,
-        dash: 'dot',
-      },
-      showlegend: false,
-      hoverinfo: 'skip',
-    });
-
-    // Prediction line and level
-    if (predDate && predPrice !== undefined) {
-      // Prediction line
-      traces.push({
-        x: [safeLastDate, predDate] as string[],
-        y: [currentPrice, predPrice],
-        type: 'scatter',
-        mode: 'lines+markers',
-        name: 'Prediction',
-        line: {
-          color: '#00fa2e',
-          width: 2,
-          dash: 'dot',
-        },
-        marker: {
-          color: '#00fa2e',
-          size: 7,
-        },
-        hovertemplate: `Prediction Date: %{x}<br>Price: ${formatLKRValue(predPrice || 0)}<extra></extra>`,
-      });
-
-      // Prediction horizontal line
-      traces.push({
-        x: [sortedData && sortedData.length > 0 ? sortedData[0]?.date ?? predDate : predDate, predDate],
-        y: [predPrice, predPrice],
-        type: 'scatter',
-        mode: 'lines',
-        name: 'Prediction Level',
-        line: {
-          color: '#26d4b4',
-          width: 1.5,
-          dash: 'dot',
-        },
-        showlegend: false,
-        hoverinfo: 'skip',
-      });
-    }
-
-    return traces;
-  }, [data, prediction, historicalPredictions, currentPrice, currencyUnit, usdToLkrRate, formatLKRValue]);
-
-  const layout = useMemo(() => {
-    // Use data if available, otherwise prepare for predictions-only display
-    const hasData = data && data.length > 0;
-    const hasPredictions = historicalPredictions && historicalPredictions.length > 0;
-    
-    // If no data and no predictions, return minimal layout
-    if (!hasData && !hasPredictions) {
-      return {
-        title: undefined,
-        xaxis: { showgrid: true },
-        yaxis: { showgrid: true },
-        plot_bgcolor: isDark ? '#000000' : '#FFFFFF',
-        paper_bgcolor: isDark ? '#000000' : '#FFFFFF',
-        font: { color: isDark ? '#FFFFFF' : '#000000' },
-        height,
-      };
-    }
-    
-    // Use data if available, otherwise use empty array
-    const dataToUse = data && data.length > 0 ? data : [];
-
-    // Dynamic LKR tick calculation for clean chart
-    const getLKRTickVals = () => {
-      // close values are already converted by convertChartData
-      const allPrices = dataToUse
-        .filter(d => d.close != null && typeof d.close === 'number' && isFinite(d.close))
-        .map(d => d.close as number);
-      // Also include predicted_price values for y-axis range (convert from USD)
-      dataToUse.forEach(d => {
-        if (d.predicted_price != null && typeof d.predicted_price === 'number' && isFinite(d.predicted_price) && d.close == null) {
-          try {
-            if (usdToLkrRate && usdToLkrRate > 0 && isFinite(usdToLkrRate)) {
-              allPrices.push(convertPrice(d.predicted_price, currencyUnit, usdToLkrRate).price);
-            } else {
-              allPrices.push(d.predicted_price); // Use unconverted price
-            }
-          } catch (error) {
-            console.error('Error converting predicted_price for y-axis:', error);
-            allPrices.push(d.predicted_price); // Use unconverted price
-          }
-        }
-      });
-      if (currentPrice > 0 && isFinite(currentPrice)) allPrices.push(currentPrice);
-      if (prediction && prediction.predicted_price != null && typeof prediction.predicted_price === 'number' && isFinite(prediction.predicted_price)) {
-        try {
-          if (usdToLkrRate && usdToLkrRate > 0 && isFinite(usdToLkrRate)) {
-            allPrices.push(convertPrice(prediction.predicted_price, currencyUnit, usdToLkrRate).price);
-          } else {
-            allPrices.push(prediction.predicted_price); // Use unconverted price
-          }
-        } catch (error) {
-          console.error('Error converting prediction price for y-axis:', error);
-          allPrices.push(prediction.predicted_price); // Use unconverted price
-        }
-      }
-      
-      if (allPrices.length === 0) return [0];
-      
-      const minPrice = Math.min(...allPrices);
-      const maxPrice = Math.max(...allPrices);
-      const range = maxPrice - minPrice;
-      
-      let tickStep = 0;
-      
-      // Determine a dynamic step based on the range for a clean look
-      if (range >= 50000) {
-        tickStep = 10000; // 10K step for large fluctuations
-      } else if (range >= 10000) {
-        tickStep = 5000; // 5K step
-      } else if (range >= 2000) {
-        tickStep = 1000; // 1K step
-      } else {
-        tickStep = 500; // 500 LKR for small ranges
-      }
-      
-      // Calculate a "clean" starting point by rounding down the minPrice to the nearest tickStep
-      const start = Math.floor(minPrice / tickStep) * tickStep;
-      
-      const levels: number[] = [];
-      let currentLevel = start;
-      // Generate ticks until they exceed the max price
-      while (currentLevel <= maxPrice) {
-        levels.push(currentLevel);
-        currentLevel += tickStep;
-      }
-      
-      // Ensure we have at least 5 ticks if possible, even if the step needs slight adjustment
-      if (levels.length < 3 && range > 0) {
-          // If the range is very small, use an even smaller step
-          tickStep = Math.max(100, Math.ceil(range / 50) * 10);
-          levels.length = 0; // Reset
-          currentLevel = Math.floor(minPrice / tickStep) * tickStep;
-           while (currentLevel <= maxPrice) {
-               levels.push(currentLevel);
-               currentLevel += tickStep;
-           }
-      }
-      
-      return levels.filter(val => val > 0); // Filter out zero if it appears
-    };
-
-    const predPriceConverted = prediction && 
-        prediction.predicted_price != null && 
-        typeof prediction.predicted_price === 'number' && 
-        isFinite(prediction.predicted_price)
-        ? (() => {
-            try {
-              if (usdToLkrRate && usdToLkrRate > 0 && isFinite(usdToLkrRate)) {
-                return convertPrice(prediction.predicted_price, currencyUnit, usdToLkrRate).price;
-              } else {
-                console.warn('Invalid exchange rate for predPriceConverted');
-                return prediction.predicted_price;
-              }
-            } catch (error) {
-              console.error('Error converting predPriceConverted:', error);
-              return prediction.predicted_price;
-            }
-          })()
-        : undefined;
-
-    // Calculate y-axis range with padding for zoom out effect
-    const getAllPrices = () => {
-      // Include close prices from data (already converted by convertChartData)
-      const prices = dataToUse
-        .filter(d => d.close != null && typeof d.close === 'number' && isFinite(d.close))
-        .map(d => d.close as number);
-      // Also include predicted_price as fallback for dates without close values
-      // Note: predicted_price is still in USD, so convert it
-      dataToUse.forEach(d => {
-        if (d.predicted_price != null && typeof d.predicted_price === 'number' && isFinite(d.predicted_price) && d.close == null) {
-          try {
-            if (usdToLkrRate && usdToLkrRate > 0 && isFinite(usdToLkrRate)) {
-              prices.push(convertPrice(d.predicted_price, currencyUnit, usdToLkrRate).price);
-            } else {
-              prices.push(d.predicted_price); // Use unconverted price
-            }
-          } catch (error) {
-            console.error('Error converting predicted_price in getAllPrices:', error);
-            prices.push(d.predicted_price); // Use unconverted price
-          }
-        }
-      });
-      if (currentPrice > 0 && isFinite(currentPrice)) prices.push(currentPrice);
-      if (predPriceConverted !== undefined && isFinite(predPriceConverted)) prices.push(predPriceConverted);
-      // Include all prediction prices from historical_predictions (convert from USD)
-      if (historicalPredictions && historicalPredictions.length > 0) {
-        historicalPredictions.forEach(p => {
-          if (p.predicted_price != null && typeof p.predicted_price === 'number' && isFinite(p.predicted_price)) {
-            try {
-              if (usdToLkrRate && usdToLkrRate > 0 && isFinite(usdToLkrRate)) {
-                prices.push(convertPrice(p.predicted_price, currencyUnit, usdToLkrRate).price);
-              } else {
-                prices.push(p.predicted_price); // Use unconverted price
-              }
-            } catch (error) {
-              console.error('Error converting historical prediction price:', error);
-              prices.push(p.predicted_price); // Use unconverted price
-            }
-          }
-        });
-      }
-      return prices;
-    };
-
-    const allPrices = getAllPrices();
-    const minPrice = Math.min(...allPrices);
-    const maxPrice = Math.max(...allPrices);
-    const range = maxPrice - minPrice;
-    
-    // Calculate padding based on zoom level
-    // zoomLevel 0 = 10% padding (default)
-    // Positive zoomLevel = less padding (zoom in)
-    // Negative zoomLevel = more padding (zoom out)
-    const basePadding = 0.1; // 10% base padding
-    const zoomFactor = Math.pow(0.7, zoomLevel); // Exponential zoom
-    const padding = range * basePadding * zoomFactor;
-    
-    const yAxisRange = [minPrice - padding, maxPrice + padding];
 
     return {
-      title: undefined,
-      xaxis: {
-        showgrid: true,
-        gridwidth: 1,
-        gridcolor: isDark ? '#1f1f1f' : '#E0E0E0',
-        color: isDark ? '#888888' : '#666666',
-        showline: true,
-        linewidth: 1,
-        linecolor: isDark ? '#333333' : '#CCCCCC',
-        zeroline: false,
-        // Better date formatting for 2 months view
-        tickformat: '%b %d',
-        // Show ticks every 7 days for 2 months view (7 days * 24 hours * 60 min * 60 sec * 1000 ms)
-        dtick: data && data.length > 30 ? 7 * 24 * 60 * 60 * 1000 : undefined,
-        // Explicitly set range to show all dates from data AND predictions, including dates before Oct 6
-        // Combine market data dates with prediction dates to get full range
-        range: (() => {
-          // Collect all dates from market data
-          const dataDates = dataToUse && dataToUse.length > 0 ? dataToUse.map(d => d.date) : [];
-          
-          // Collect all dates from predictions (including before Oct 6)
-          const predictionDates = historicalPredictions && historicalPredictions.length > 0
-            ? historicalPredictions.map(p => p.date)
-            : [];
-          
-          // Add main prediction date if exists
-          if (prediction && prediction.next_day) {
-            predictionDates.push(prediction.next_day);
-          }
-          
-          // Combine and find earliest and latest
-          const allDates = [...new Set([...dataDates, ...predictionDates])].sort();
-          
-          if (allDates.length === 0) return undefined;
-          
-          const firstDate = allDates[0];
-          const lastDate = allDates[allDates.length - 1];
-          if (!firstDate || !lastDate) return undefined;
-          
-          const earliestDate = new Date(firstDate);
-          const latestDate = new Date(lastDate);
-          
-          // Add 2 days padding on each side to ensure full visibility
-          earliestDate.setDate(earliestDate.getDate() - 2);
-          latestDate.setDate(latestDate.getDate() + 2);
-          
-          const rangeStart = earliestDate.toISOString();
-          const rangeEnd = latestDate.toISOString();
-          
-          // Debug logging removed to prevent console warnings
-          
-          return [rangeStart, rangeEnd];
-        })(),
-        // Show all available data, don't limit to recent dates
-        rangeslider: { visible: false }, // Can be enabled if needed
-        type: 'date' as const, // Ensure proper date handling
+      goldLineData,
+      accuracyLineData,
+      predictionLineData,
+    };
+  }, [data, historicalPredictions, prediction, currencyUnit, usdToLkrRate, currentPrice]);
+
+  // Initialize chart
+  useEffect(() => {
+    if (!chartContainerRef.current) return;
+
+    // Create chart with modern TradingView-style configuration
+    const chart = createChart(chartContainerRef.current, {
+      layout: {
+        background: {
+          type: ColorType.Solid,
+          color: isDark ? '#000000' : '#FFFFFF',
+        },
+        textColor: isDark ? '#D1D5DB' : '#374151',
+        fontSize: 12,
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
       },
-      yaxis: {
-        showgrid: true,
-        gridwidth: 1,
-        gridcolor: isDark ? '#1f1f1f' : '#E0E0E0',
-        color: isDark ? '#888888' : '#666666',
-        showline: true,
-        linewidth: 1,
-        linecolor: isDark ? '#333333' : '#CCCCCC',
-        zeroline: false,
-        range: yAxisRange, // Set zoomed out range with padding
-        // Plotly will automatically format the ticks based on the data and range
-        tickformat: currencyUnit === 'pawn' ? ',.0f' : '$,.2f',
-        ticksuffix: currencyUnit === 'pawn' ? ' LKR' : '',
-        side: 'right' as const,
-        // Dynamic LKR tick values for clean, representative gaps
-        ...(currencyUnit === 'pawn' ? {
-          tickmode: 'array' as const,
-          tickvals: getLKRTickVals(),
-        } : {
-          tickmode: 'auto' as const,
-        }),
-      },
-      plot_bgcolor: isDark ? '#000000' : '#FFFFFF',
-      paper_bgcolor: isDark ? '#000000' : '#FFFFFF',
-      font: {
-        color: isDark ? '#FFFFFF' : '#000000',
-        family: 'Segoe UI, Roboto, sans-serif',
-      },
-      hovermode: 'x' as const,
-      showlegend: true,
-      legend: {
-        x: 0.02,
-        y: 0.98,
-        bgcolor: isDark ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)',
-        bordercolor: isDark ? '#333333' : '#CCCCCC',
-        borderwidth: 1,
-        font: {
-          size: height < 500 ? 8 : 10,
+      grid: {
+        vertLines: {
+          color: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
+          style: LineStyle.Solid,
+          visible: true,
+        },
+        horzLines: {
+          color: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
+          style: LineStyle.Solid,
+          visible: true,
         },
       },
-      margin: {
-        l: height < 500 ? 5 : 10,
-        r: height < 500 ? 50 : 80,
-        t: height < 500 ? 15 : 20,
-        b: height < 500 ? 30 : 40,
+      crosshair: {
+        mode: CrosshairMode.Normal,
+        vertLine: {
+          color: isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.3)',
+          width: 1,
+          style: LineStyle.Dashed,
+          labelBackgroundColor: isDark ? '#1F2937' : '#F3F4F6',
+        },
+        horzLine: {
+          color: isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.3)',
+          width: 1,
+          style: LineStyle.Dashed,
+          labelBackgroundColor: isDark ? '#1F2937' : '#F3F4F6',
+        },
       },
+      rightPriceScale: {
+        borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+        scaleMargins: {
+          top: 0.1,
+          bottom: 0.1,
+        },
+        mode: PriceScaleMode.Normal,
+        entireTextOnly: false,
+      },
+      timeScale: {
+        borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+        timeVisible: true,
+        secondsVisible: false,
+        rightOffset: 12,
+        barSpacing: 3,
+        rightBarStaysOnScroll: true,
+        lockVisibleTimeRangeOnResize: false,
+      },
+      width: chartContainerRef.current.clientWidth,
       height,
-      annotations: [
-        // Current price annotation aligned with prediction
-        ...(dataToUse && dataToUse.length > 0 ? [{
-          x: prediction && prediction.predicted_price ? prediction.next_day : dataToUse[dataToUse.length - 1]?.date ?? '',
-          y: currentPrice,
-          text: formatLKRValue(currentPrice || 0),
-          showarrow: false,
-          font: {
-            color: '#F5D300',
-            size: height < 500 ? 11 : 14,
-            family: 'Segoe UI, Roboto, sans-serif'
-          },
-          xanchor: 'left' as const,
-          yanchor: 'middle' as const,
-          xshift: 10
-        }] : []),
-        // Prediction price annotation
-        ...(predPriceConverted !== undefined && prediction ? [{
-          x: prediction.next_day,
-          y: predPriceConverted, // Use the converted price
-          text: formatLKRValue(predPriceConverted || 0),
-          showarrow: false,
-          font: {
-            color: '#26d4b4',
-            size: height < 500 ? 11 : 14,
-            family: 'Segoe UI, Roboto, sans-serif'
-          },
-          xanchor: 'left' as const,
-          yanchor: 'middle' as const,
-          xshift: 10
-        }] : [])
-      ]
+      handleScroll: {
+        mouseWheel: true,
+        pressedMouseMove: true,
+        horzTouchDrag: true,
+        vertTouchDrag: true,
+      },
+      handleScale: {
+        axisPressedMouseMove: true,
+        axisDoubleClickReset: true,
+        mouseWheel: true,
+        pinch: true,
+      },
+    });
+
+    chartRef.current = chart;
+
+    // Add gold price line series
+    const goldPriceSeries = chart.addLineSeries({
+      color: '#F5D300',
+      lineWidth: 2,
+      title: 'Gold Price',
+      priceFormat: {
+        type: 'price',
+        precision: currencyUnit === 'pawn' ? 0 : 2,
+        minMove: currencyUnit === 'pawn' ? 1 : 0.01,
+      },
+      lastValueVisible: true,
+      priceLineVisible: false,
+      crosshairMarkerVisible: true,
+      crosshairMarkerRadius: 4,
+    });
+
+    // Add accuracy line series (historical predictions)
+    const accuracyLineSeries = chart.addLineSeries({
+      color: '#0055ff',
+      lineWidth: 2,
+      title: '',
+      priceFormat: {
+        type: 'price',
+        precision: currencyUnit === 'pawn' ? 0 : 2,
+        minMove: currencyUnit === 'pawn' ? 1 : 0.01,
+      },
+      lastValueVisible: false,
+      priceLineVisible: false,
+      crosshairMarkerVisible: true,
+      crosshairMarkerRadius: 4,
+      lineStyle: LineStyle.Solid,
+    });
+
+    // Add prediction line series (future prediction)
+    const predictionSeries = chart.addLineSeries({
+          color: '#00fa2e',
+      lineWidth: 2,
+      title: 'Prediction',
+      priceFormat: {
+        type: 'price',
+        precision: currencyUnit === 'pawn' ? 0 : 2,
+        minMove: currencyUnit === 'pawn' ? 1 : 0.01,
+      },
+      lastValueVisible: true,
+      priceLineVisible: false,
+      crosshairMarkerVisible: true,
+      crosshairMarkerRadius: 4,
+      lineStyle: LineStyle.Dashed,
+    });
+
+    // Add current price marker series
+    const currentPriceMarker = chart.addLineSeries({
+      color: '#F5D300',
+      lineWidth: 1,
+      title: 'Current Price Level',
+      priceFormat: {
+        type: 'price',
+        precision: currencyUnit === 'pawn' ? 0 : 2,
+        minMove: currencyUnit === 'pawn' ? 1 : 0.01,
+      },
+      lastValueVisible: false,
+      priceLineVisible: false,
+      crosshairMarkerVisible: false,
+      lineStyle: LineStyle.Dotted,
+      visible: false, // Hidden by default, only used for price line
+    });
+
+    goldPriceSeriesRef.current = goldPriceSeries;
+    accuracyLineSeriesRef.current = accuracyLineSeries;
+    predictionSeriesRef.current = predictionSeries;
+    currentPriceMarkerRef.current = currentPriceMarker;
+
+    // Set data
+    if (chartData.goldLineData.length > 0) {
+      goldPriceSeries.setData(chartData.goldLineData);
+    }
+
+    if (chartData.accuracyLineData.length > 0) {
+      accuracyLineSeries.setData(chartData.accuracyLineData);
+    }
+
+    if (chartData.predictionLineData.length > 0) {
+      predictionSeries.setData(chartData.predictionLineData);
+    }
+
+    // Price lines will be created in the update effect to avoid duplicates
+
+    // Apply zoom level
+    if (zoomLevel !== 0 && chartData.goldLineData.length > 0) {
+      const timeScale = chart.timeScale();
+      const visibleRange = timeScale.getVisibleRange();
+      
+      if (visibleRange && visibleRange.from && visibleRange.to) {
+        // Convert Time to number for calculations (Time can be string or number)
+        const fromTime = typeof visibleRange.from === 'string' 
+          ? new Date(visibleRange.from).getTime() 
+          : (visibleRange.from as number);
+        const toTime = typeof visibleRange.to === 'string' 
+          ? new Date(visibleRange.to).getTime() 
+          : (visibleRange.to as number);
+        
+        const range = toTime - fromTime;
+        const zoomFactor = Math.pow(0.7, zoomLevel);
+        const newRange = range * zoomFactor;
+        const center = (fromTime + toTime) / 2;
+        
+        // Convert back to Time format (use string format for dates)
+        const newFrom = new Date(center - newRange / 2).toISOString().split('T')[0] as Time;
+        const newTo = new Date(center + newRange / 2).toISOString().split('T')[0] as Time;
+        
+        timeScale.setVisibleRange({
+          from: newFrom,
+          to: newTo,
+        });
+      }
+    } else {
+      // Fit content initially
+      chart.timeScale().fitContent();
+    }
+
+    // Handle resize
+    const handleResize = () => {
+      if (chartContainerRef.current && chartRef.current) {
+        chartRef.current.applyOptions({
+          width: chartContainerRef.current.clientWidth,
+        });
+      }
     };
-  }, [isDark, height, currentPrice, prediction, data, historicalPredictions, currencyUnit, usdToLkrRate, formatLKRValue, zoomLevel]);
 
-  const config = {
-    displayModeBar: false,
-    displaylogo: false,
-    responsive: true,
-  };
+    window.addEventListener('resize', handleResize);
 
-  // Allow chart to render even if only predictions are available (no market data yet)
+    // Cleanup
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      if (chartRef.current) {
+        chartRef.current.remove();
+        chartRef.current = null;
+      }
+    };
+  }, [chartData, isDark, height, currentPrice, prediction, currencyUnit, usdToLkrRate, formatPrice, zoomLevel]);
+
+  // Update theme when isDark changes
+  useEffect(() => {
+    if (chartRef.current) {
+      chartRef.current.applyOptions({
+        layout: {
+          background: {
+            type: ColorType.Solid,
+            color: isDark ? '#000000' : '#FFFFFF',
+          },
+          textColor: isDark ? '#D1D5DB' : '#374151',
+        },
+        grid: {
+          vertLines: {
+            color: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
+          },
+          horzLines: {
+            color: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
+          },
+        },
+        crosshair: {
+          vertLine: {
+            color: isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.3)',
+            labelBackgroundColor: isDark ? '#1F2937' : '#F3F4F6',
+          },
+          horzLine: {
+            color: isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.3)',
+            labelBackgroundColor: isDark ? '#1F2937' : '#F3F4F6',
+          },
+        },
+        rightPriceScale: {
+          borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+        },
+        timeScale: {
+          borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+        },
+      });
+    }
+  }, [isDark]);
+
+  // Update data when chartData changes
+  useEffect(() => {
+    if (!chartRef.current) return;
+
+    if (goldPriceSeriesRef.current && chartData.goldLineData.length > 0) {
+      goldPriceSeriesRef.current.setData(chartData.goldLineData);
+      
+      // Update current price line - remove existing one first
+      if (currentPrice > 0) {
+        // Remove existing price line if it exists
+        if (currentPriceLineRef.current) {
+          goldPriceSeriesRef.current.removePriceLine(currentPriceLineRef.current);
+          currentPriceLineRef.current = null;
+        }
+        
+        // Create new price line
+        const priceLine: PriceLineOptions = {
+          price: currentPrice,
+          color: '#F5D300',
+          lineWidth: 1,
+          lineStyle: LineStyle.Dotted,
+          axisLabelVisible: false,
+          lineVisible: true,
+          axisLabelColor: '#F5D300',
+          axisLabelTextColor: isDark ? '#FFFFFF' : '#000000',
+          title: `Current: ${formatPrice(currentPrice)}`,
+        };
+        currentPriceLineRef.current = goldPriceSeriesRef.current.createPriceLine(priceLine);
+            } else {
+        // Remove price line if current price is 0 or invalid
+        if (currentPriceLineRef.current) {
+          goldPriceSeriesRef.current.removePriceLine(currentPriceLineRef.current);
+          currentPriceLineRef.current = null;
+        }
+      }
+    }
+
+    if (accuracyLineSeriesRef.current && chartData.accuracyLineData.length > 0) {
+      accuracyLineSeriesRef.current.setData(chartData.accuracyLineData);
+    }
+
+    if (predictionSeriesRef.current && chartData.predictionLineData.length > 0) {
+      predictionSeriesRef.current.setData(chartData.predictionLineData);
+      
+      // Update prediction price line - remove existing one first
+      if (prediction && prediction.predicted_price != null && typeof prediction.predicted_price === 'number' && isFinite(prediction.predicted_price)) {
+        try {
+          let predPrice: number;
+          if (usdToLkrRate && usdToLkrRate > 0 && isFinite(usdToLkrRate)) {
+            predPrice = convertPrice(prediction.predicted_price, currencyUnit, usdToLkrRate).price;
+          } else {
+            predPrice = prediction.predicted_price;
+          }
+
+          // Remove existing price line if it exists
+          if (predictedPriceLineRef.current) {
+            predictionSeriesRef.current.removePriceLine(predictedPriceLineRef.current);
+            predictedPriceLineRef.current = null;
+          }
+
+          // Create new price line
+          const priceLine: PriceLineOptions = {
+            price: predPrice,
+            color: '#26d4b4',
+            lineWidth: 1,
+            lineStyle: LineStyle.Dotted,
+            axisLabelVisible: false,
+            lineVisible: true,
+            axisLabelColor: '#26d4b4',
+            axisLabelTextColor: isDark ? '#FFFFFF' : '#000000',
+            title: `Predicted: ${formatPrice(predPrice)}`,
+          };
+          predictedPriceLineRef.current = predictionSeriesRef.current.createPriceLine(priceLine);
+        } catch (error) {
+          console.error('Error updating prediction price line:', error);
+        }
+      } else {
+        // Remove price line if prediction is invalid
+        if (predictedPriceLineRef.current) {
+          predictionSeriesRef.current.removePriceLine(predictedPriceLineRef.current);
+          predictedPriceLineRef.current = null;
+        }
+      }
+    }
+
+    // Apply zoom
+    if (zoomLevel !== 0 && chartData.goldLineData.length > 0) {
+      const timeScale = chartRef.current.timeScale();
+      const visibleRange = timeScale.getVisibleRange();
+      
+      if (visibleRange && visibleRange.from && visibleRange.to) {
+        // Convert Time to number for calculations
+        const fromTime = typeof visibleRange.from === 'string' 
+          ? new Date(visibleRange.from).getTime() 
+          : (visibleRange.from as number);
+        const toTime = typeof visibleRange.to === 'string' 
+          ? new Date(visibleRange.to).getTime() 
+          : (visibleRange.to as number);
+        
+        const range = toTime - fromTime;
+        const zoomFactor = Math.pow(0.7, zoomLevel);
+        const newRange = range * zoomFactor;
+        const center = (fromTime + toTime) / 2;
+        
+        // Convert back to Time format
+        const newFrom = new Date(center - newRange / 2).toISOString().split('T')[0] as Time;
+        const newTo = new Date(center + newRange / 2).toISOString().split('T')[0] as Time;
+        
+        timeScale.setVisibleRange({
+          from: newFrom,
+          to: newTo,
+        });
+      }
+    } else if (chartData.goldLineData.length > 0) {
+      chartRef.current.timeScale().fitContent();
+    }
+  }, [chartData, currentPrice, prediction, currencyUnit, usdToLkrRate, formatPrice, zoomLevel, isDark]);
+
+  // Calculate accuracy line price (last value from accuracy line data)
+  const accuracyLinePrice = useMemo(() => {
+    if (chartData.accuracyLineData && chartData.accuracyLineData.length > 0) {
+      const lastValue = chartData.accuracyLineData[chartData.accuracyLineData.length - 1];
+      return lastValue?.value ?? null;
+    }
+    return null;
+  }, [chartData.accuracyLineData]);
+
+  // Check if we have data
   const hasData = data && data.length > 0;
   const hasPredictions = historicalPredictions && historicalPredictions.length > 0;
   
   if (!hasData && !hasPredictions) {
     return (
       <div 
-        className={`flex items-center justify-center h-${height} ${isDark ? 'bg-gray-900' : 'bg-gray-100'} rounded-lg`}
+        className={`flex items-center justify-center ${isDark ? 'bg-gray-900' : 'bg-gray-100'} rounded-lg`}
         style={{ height: `${height}px` }}
       >
         <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'}`}>No data available</p>
@@ -726,31 +662,149 @@ const Chart: React.FC<ChartProps> = ({
     );
   }
 
-  // Additional safety check before rendering Plot
-  if (!plotData || plotData.length === 0) {
-    return (
-      <div 
-        className={`flex items-center justify-center ${isDark ? 'bg-gray-900' : 'bg-gray-100'} rounded-lg`}
-        style={{ height: `${height}px` }}
-      >
-        <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Loading chart...</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="w-full relative">
-      <Plot
-        key={`plot-${currencyUnit}-${data?.length || 0}-${isDark}-${zoomLevel}`}
-        data={plotData ?? []}
-        layout={layout as unknown as Plotly.Layout}
-        config={config}
-        style={{ width: '100%', height: `${height}px` }}
-        useResizeHandler={true}
-        onError={(_error) => {
-          console.error('Plotly error:', _error);
+    <div className="w-full relative" style={{ height: `${height}px` }}>
+      <div
+        ref={chartContainerRef}
+        style={{
+          width: '100%',
+          height: '100%',
         }}
       />
+      {/* Price Labels Overlay - Top Left Corner */}
+      <div
+        style={{
+          position: 'absolute',
+          top: '12px',
+          left: '12px',
+          zIndex: 10,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px',
+          padding: '12px',
+          backgroundColor: isDark ? 'rgba(0, 0, 0, 0.75)' : 'rgba(255, 255, 255, 0.9)',
+          borderRadius: '8px',
+          border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
+          backdropFilter: 'blur(8px)',
+          boxShadow: isDark 
+            ? '0 4px 6px rgba(0, 0, 0, 0.3)' 
+            : '0 4px 6px rgba(0, 0, 0, 0.1)',
+        }}
+      >
+        {/* Current Price Label */}
+        {currentPrice > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div
+              style={{
+                width: '12px',
+                height: '2px',
+                backgroundColor: '#F5D300',
+                borderRadius: '1px',
+              }}
+            />
+            <span
+              style={{
+                fontSize: '12px',
+                fontWeight: 500,
+                color: isDark ? '#D1D5DB' : '#374151',
+              }}
+            >
+              Current:
+            </span>
+            <span
+              style={{
+                fontSize: '12px',
+                fontWeight: 600,
+                color: '#F5D300',
+              }}
+            >
+              {formatPrice(currentPrice)}
+            </span>
+          </div>
+        )}
+        
+        {/* Predicted Price Label */}
+        {prediction && 
+         prediction.predicted_price != null && 
+         typeof prediction.predicted_price === 'number' && 
+         isFinite(prediction.predicted_price) && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div
+              style={{
+                width: '12px',
+                height: '2px',
+                backgroundColor: '#26d4b4',
+                borderRadius: '1px',
+                borderStyle: 'dashed',
+                borderWidth: '1px',
+                borderColor: '#26d4b4',
+              }}
+            />
+            <span
+              style={{
+                fontSize: '12px',
+                fontWeight: 500,
+                color: isDark ? '#D1D5DB' : '#374151',
+              }}
+            >
+              Predicted:
+            </span>
+            <span
+              style={{
+                fontSize: '12px',
+                fontWeight: 600,
+                color: '#26d4b4',
+              }}
+            >
+              {(() => {
+                try {
+                  let predPrice: number;
+                  if (usdToLkrRate && usdToLkrRate > 0 && isFinite(usdToLkrRate)) {
+                    predPrice = convertPrice(prediction.predicted_price, currencyUnit, usdToLkrRate).price;
+                  } else {
+                    predPrice = prediction.predicted_price;
+                  }
+                  return formatPrice(predPrice);
+                } catch {
+                  return formatPrice(prediction.predicted_price);
+                }
+              })()}
+            </span>
+          </div>
+        )}
+        
+        {/* Accuracy Line Label */}
+        {accuracyLinePrice != null && isFinite(accuracyLinePrice) && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div
+              style={{
+                width: '12px',
+                height: '2px',
+                backgroundColor: '#0055ff',
+                borderRadius: '1px',
+              }}
+            />
+            <span
+              style={{
+                fontSize: '12px',
+                fontWeight: 500,
+                color: isDark ? '#D1D5DB' : '#374151',
+              }}
+            >
+              Accuracy Line:
+            </span>
+            <span
+              style={{
+                fontSize: '12px',
+                fontWeight: 600,
+                color: '#0055ff',
+              }}
+            >
+              {formatPrice(accuracyLinePrice)}
+            </span>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
