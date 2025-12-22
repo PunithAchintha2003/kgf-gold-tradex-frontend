@@ -265,30 +265,37 @@ export const goldApi = createApi({
   endpoints: (builder) => ({
     getDailyData: builder.query<DailyDataResponse, { days?: number; start_date?: string; end_date?: string } | void>({
       query: (params) => {
-        if (!params) return '/xauusd';
+        if (!params) return '/api/v1/xauusd';
         const searchParams = new URLSearchParams();
         if (params.days) searchParams.append('days', params.days.toString());
         if (params.start_date) searchParams.append('start_date', params.start_date);
         if (params.end_date) searchParams.append('end_date', params.end_date);
         const queryString = searchParams.toString();
-        return `/xauusd${queryString ? `?${queryString}` : ''}`;
+        return `/api/v1/xauusd${queryString ? `?${queryString}` : ''}`;
       },
       providesTags: ['DailyData'],
     }),
     getRealtimePrice: builder.query<RealtimePriceResponse, void>({
-      query: () => '/xauusd/realtime',
+      query: () => '/api/v1/xauusd/realtime',
       providesTags: ['RealtimePrice'],
     }),
     getPredictionExplanation: builder.query<PredictionExplanation, void>({
-      query: () => '/xauusd/explanation',
+      // NOTE: This endpoint does not exist in the backend yet
+      // The component using this endpoint currently returns null
+      query: () => '/api/v1/xauusd/explanation',
       providesTags: ['PredictionExplanation'],
     }),
     getExchangeRate: builder.query<ExchangeRateResponse, { from: string; to: string }>({
-      query: ({ from, to }) => `/exchange-rate/${from}/${to}`,
+      query: ({ from, to }) => `/api/v1/exchange-rate/${from}/${to}`,
       providesTags: ['ExchangeRate'],
     }),
-    getAccuracyVisualization: builder.query<AccuracyVisualizationResponse, void>({
-      query: () => '/xauusd/accuracy-visualization',
+    getAccuracyVisualization: builder.query<AccuracyVisualizationResponse, { days?: number } | void>({
+      query: (params) => {
+        const searchParams = new URLSearchParams();
+        if (params?.days) searchParams.append('days', params.days.toString());
+        const queryString = searchParams.toString();
+        return `/api/v1/xauusd/accuracy-visualization${queryString ? `?${queryString}` : ''}`;
+      },
       providesTags: ['AccuracyVisualization'],
     }),
     getPredictionHistory: builder.query<PredictionHistoryResponse, { days?: number }>({
@@ -296,29 +303,29 @@ export const goldApi = createApi({
         const searchParams = new URLSearchParams();
         if (params?.days) searchParams.append('days', params.days.toString());
         const queryString = searchParams.toString();
-        return `/xauusd/prediction-history${queryString ? `?${queryString}` : ''}`;
+        return `/api/v1/xauusd/prediction-history${queryString ? `?${queryString}` : ''}`;
       },
       providesTags: ['PredictionHistory'],
     }),
     getEnhancedPrediction: builder.query<EnhancedPredictionResponse, void>({
-      query: () => '/xauusd/enhanced-prediction',
+      query: () => '/api/v1/xauusd/enhanced-prediction',
       providesTags: ['EnhancedPrediction'],
     }),
     getModelInfo: builder.query<ModelInfoResponse, void>({
-      query: () => '/xauusd/model-info',
+      query: () => '/api/v1/xauusd/model-info',
       providesTags: ['ModelInfo'],
     }),
     getPredictionStats: builder.query<PredictionStatsResponse, void>({
-      query: () => '/xauusd/prediction-stats',
+      query: () => '/api/v1/xauusd/prediction-stats',
       providesTags: ['PredictionStats'],
     }),
     getPendingPredictions: builder.query<PendingPredictionsResponse, void>({
-      query: () => '/xauusd/pending-predictions',
+      query: () => '/api/v1/xauusd/pending-predictions',
       providesTags: ['PendingPredictions'],
     }),
     updatePendingPredictions: builder.mutation<UpdatePendingPredictionsResponse, void>({
       query: () => ({
-        url: '/xauusd/update-pending-predictions',
+        url: '/api/v1/xauusd/update-pending-predictions',
         method: 'POST',
       }),
       invalidatesTags: ['PendingPredictions', 'PredictionHistory', 'PredictionStats', 'AccuracyVisualization'],
