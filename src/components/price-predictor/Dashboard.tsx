@@ -1540,23 +1540,357 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
           <Sidebar
             open={sidebarOpen}
             onClose={() => setSidebarOpen(false)}
-            title="Chart Information"
+            title="Chart Information & Controls"
           >
             <Box sx={{ 
               display: 'flex', 
               flexDirection: 'column', 
-              gap: { xs: 1.5, sm: 2 } 
+              gap: { xs: 2, sm: 2.5 },
+              padding: { xs: 2, sm: 2.5 },
             }}>
-              <Typography
-                variant="body1"
+              {/* Chart Legend */}
+              <Box>
+                <Typography
+                  variant="subtitle2"
+                  sx={{
+                    color: isDark ? '#ffffff' : '#1f2937',
+                    fontWeight: 600,
+                    marginBottom: 1.5,
+                    fontSize: '0.875rem',
+                  }}
+                >
+                  Chart Series
+                </Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Box
+                      sx={{
+                        width: '16px',
+                        height: '3px',
+                        backgroundColor: '#F5D300',
+                        borderRadius: '2px',
+                      }}
+                    />
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: isDark ? '#d1d5db' : '#4b5563',
+                        fontSize: '0.8125rem',
+                      }}
+                    >
+                      Gold Price
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Box
+                      sx={{
+                        width: '16px',
+                        height: '3px',
+                        backgroundColor: '#0055ff',
+                        borderRadius: '2px',
+                      }}
+                    />
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: isDark ? '#d1d5db' : '#4b5563',
+                        fontSize: '0.8125rem',
+                      }}
+                    >
+                      Accuracy Line (Historical Predictions)
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Box
+                      sx={{
+                        width: '16px',
+                        height: '3px',
+                        backgroundColor: '#00fa2e',
+                        borderRadius: '2px',
+                        borderStyle: 'dashed',
+                        borderWidth: '1px',
+                        borderColor: '#00fa2e',
+                      }}
+                    />
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: isDark ? '#d1d5db' : '#4b5563',
+                        fontSize: '0.8125rem',
+                      }}
+                    >
+                      Future Prediction
+                    </Typography>
+                  </Box>
+                </Box>
+              </Box>
+
+              {/* Current Price Info */}
+              <Box
                 sx={{
-                  color: isDark ? '#cccccc' : '#666666',
-                  lineHeight: 1.6,
-                  fontSize: { xs: '0.875rem', sm: '1rem' },
+                  padding: 1.5,
+                  borderRadius: 1,
+                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
+                  border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
                 }}
               >
-                This sidebar can contain additional information, filters, or controls related to the chart.
-              </Typography>
+                <Typography
+                  variant="subtitle2"
+                  sx={{
+                    color: isDark ? '#9ca3af' : '#6b7280',
+                    fontSize: '0.75rem',
+                    marginBottom: 0.5,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                  }}
+                >
+                  Current Price
+                </Typography>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    color: '#F5D300',
+                    fontWeight: 600,
+                    fontSize: '1.25rem',
+                  }}
+                >
+                  {convertedCurrentPrice.displayText}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: isDark ? '#6b7280' : '#9ca3af',
+                    fontSize: '0.6875rem',
+                    marginTop: 0.5,
+                  }}
+                >
+                  {convertedCurrentPrice.unit}
+                </Typography>
+              </Box>
+
+              {/* Prediction Info */}
+              {convertedPredictionPrice && (
+                <Box
+                  sx={{
+                    padding: 1.5,
+                    borderRadius: 1,
+                    backgroundColor: isDark ? 'rgba(38, 212, 180, 0.1)' : 'rgba(38, 212, 180, 0.05)',
+                    border: `1px solid ${isDark ? 'rgba(38, 212, 180, 0.3)' : 'rgba(38, 212, 180, 0.2)'}`,
+                  }}
+                >
+                  <Typography
+                    variant="subtitle2"
+                    sx={{
+                      color: isDark ? '#9ca3af' : '#6b7280',
+                      fontSize: '0.75rem',
+                      marginBottom: 0.5,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                    }}
+                  >
+                    Next Day Prediction
+                  </Typography>
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      color: '#26d4b4',
+                      fontWeight: 600,
+                      fontSize: '1.25rem',
+                    }}
+                  >
+                    {convertedPredictionPrice.displayText}
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: isDark ? '#6b7280' : '#9ca3af',
+                      fontSize: '0.6875rem',
+                      marginTop: 0.5,
+                    }}
+                  >
+                    {displayData?.prediction?.next_day && new Date(displayData.prediction.next_day).toLocaleDateString('en-US', { 
+                      weekday: 'short', 
+                      month: 'short', 
+                      day: 'numeric' 
+                    })}
+                  </Typography>
+                </Box>
+              )}
+
+              {/* Chart Statistics */}
+              {chartData && chartData.length > 0 && (
+                <Box>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{
+                      color: isDark ? '#ffffff' : '#1f2937',
+                      fontWeight: 600,
+                      marginBottom: 1.5,
+                      fontSize: '0.875rem',
+                    }}
+                  >
+                    Data Statistics
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          color: isDark ? '#9ca3af' : '#6b7280',
+                          fontSize: '0.8125rem',
+                        }}
+                      >
+                        Data Points
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          color: isDark ? '#d1d5db' : '#374151',
+                          fontWeight: 500,
+                          fontSize: '0.8125rem',
+                        }}
+                      >
+                        {chartData.length}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          color: isDark ? '#9ca3af' : '#6b7280',
+                          fontSize: '0.8125rem',
+                        }}
+                      >
+                        Date Range
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          color: isDark ? '#d1d5db' : '#374151',
+                          fontWeight: 500,
+                          fontSize: '0.8125rem',
+                        }}
+                      >
+                    {chartData.length > 0 && chartData[0] && chartData[chartData.length - 1] && (
+                      <>
+                        {new Date(chartData[0].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(chartData[chartData.length - 1]!.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </>
+                    )}
+                  </Typography>
+                </Box>
+                    {displayData?.historical_predictions && Array.isArray(displayData.historical_predictions) && displayData.historical_predictions.length > 0 && (
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: isDark ? '#9ca3af' : '#6b7280',
+                            fontSize: '0.8125rem',
+                          }}
+                        >
+                          Historical Predictions
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: isDark ? '#d1d5db' : '#374151',
+                            fontWeight: 500,
+                            fontSize: '0.8125rem',
+                          }}
+                        >
+                          {displayData.historical_predictions.length}
+                        </Typography>
+                      </Box>
+                    )}
+                  </Box>
+                </Box>
+              )}
+
+              {/* Chart Controls Info */}
+              <Box
+                sx={{
+                  padding: 1.5,
+                  borderRadius: 1,
+                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
+                  border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'}`,
+                }}
+              >
+                <Typography
+                  variant="subtitle2"
+                  sx={{
+                    color: isDark ? '#ffffff' : '#1f2937',
+                    fontWeight: 600,
+                    marginBottom: 1,
+                    fontSize: '0.875rem',
+                  }}
+                >
+                  Chart Controls
+                </Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: isDark ? '#9ca3af' : '#6b7280',
+                      fontSize: '0.75rem',
+                      lineHeight: 1.6,
+                    }}
+                  >
+                    • <strong>Zoom:</strong> Use mouse wheel or zoom buttons
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: isDark ? '#9ca3af' : '#6b7280',
+                      fontSize: '0.75rem',
+                      lineHeight: 1.6,
+                    }}
+                  >
+                    • <strong>Pan:</strong> Click and drag to move
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: isDark ? '#9ca3af' : '#6b7280',
+                      fontSize: '0.75rem',
+                      lineHeight: 1.6,
+                    }}
+                  >
+                    • <strong>Crosshair:</strong> Hover to see values
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: isDark ? '#9ca3af' : '#6b7280',
+                      fontSize: '0.75rem',
+                      lineHeight: 1.6,
+                    }}
+                  >
+                    • <strong>Price Lines:</strong> Current and predicted levels shown
+                  </Typography>
+                </Box>
+              </Box>
+
+              {/* Exchange Rate Info */}
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 1, borderTop: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}` }}>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: isDark ? '#6b7280' : '#9ca3af',
+                    fontSize: '0.6875rem',
+                  }}
+                >
+                  USD/LKR Rate
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: isDark ? '#9ca3af' : '#6b7280',
+                    fontWeight: 500,
+                    fontSize: '0.6875rem',
+                  }}
+                >
+                  {usdToLkrRate.toFixed(2)}
+                </Typography>
+              </Box>
             </Box>
           </Sidebar>
           
