@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useMemo, Suspense, lazy, useCallback } from 'react';
 import { Box, Typography, CircularProgress, Alert, useMediaQuery, useTheme as useMuiTheme, IconButton, Tooltip } from '@mui/material';
-import { ZoomIn, ZoomOut, FitScreen } from '@mui/icons-material';
+import { ZoomIn, ZoomOut, FitScreen, Info } from '@mui/icons-material';
 import { TbWorldSearch } from 'react-icons/tb';
+import { FetchBaseQueryError } from '@reduxjs/toolkit/query/react';
 import { 
   useGetDailyDataQuery, 
   useGetRealtimePriceQuery, 
@@ -11,7 +12,8 @@ import {
   useGetEnhancedPredictionQuery,
   useGetModelInfoQuery,
   useGetPredictionStatsQuery,
-  useGetPendingPredictionsQuery
+  useGetPendingPredictionsQuery,
+  useGetPredictionReasonsQuery
 } from '../../store/api/goldApi';
 import { useTheme } from '../../hooks/useTheme';
 import CurrencyDropdown, { type CurrencyUnit } from './CurrencyDropdown';
@@ -21,7 +23,6 @@ import Sidebar from './Sidebar';
 // Lazy load heavy components including Chart (Plotly is ~6-7MB)
 const Chart = lazy(() => import('./Chart'));
 const AccuracyStats = lazy(() => import('./AccuracyStats'));
-const PredictionExplanation = lazy(() => import('./PredictionExplanation'));
 const AccuracyVisualizationChart = lazy(() => import('./AccuracyVisualizationChart'));
 const PredictionHistoryTable = lazy(() => import('./PredictionHistoryTable'));
 const PendingPredictions = lazy(() => import('./PendingPredictions'));
@@ -186,6 +187,16 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
     refetchOnMountOrArgChange: true,
   });
 
+  // Fetch prediction reasons
+  const {
+    data: predictionReasonsData,
+    error: predictionReasonsError,
+    isLoading: predictionReasonsLoading,
+  } = useGetPredictionReasonsQuery(undefined, {
+    pollingInterval: 300000, // 5 minutes - refresh when prediction updates
+    refetchOnMountOrArgChange: true,
+  });
+
   // Use WebSocket data if available, otherwise fall back to REST API
   const displayData = wsData || dailyData;
   const displayError = wsError || dailyError;
@@ -320,6 +331,34 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
       return null;
     }
   }, [displayData, currencyUnit, usdToLkrRate]);
+
+  // Helper function to shorten method names
+  const shortenMethod = (method: string): string => {
+    if (!method) return 'LR (F)';
+    
+    const methodLower = method.toLowerCase();
+    if (methodLower.includes('news-enhanced') || methodLower.includes('enhanced')) {
+      return 'NELR (P)';
+    }
+    if (methodLower.includes('lasso')) {
+      return 'LR (F)';
+    }
+    return method; // Fallback to original if pattern doesn't match
+  };
+
+  // Get the current prediction method dynamically
+  const currentPredictionMethod = useMemo(() => {
+    // Try enhanced prediction first (more detailed)
+    if (enhancedPrediction?.prediction?.method) {
+      return shortenMethod(enhancedPrediction.prediction.method);
+    }
+    // Fall back to daily data prediction method
+    if (displayData?.prediction?.prediction_method) {
+      return shortenMethod(displayData.prediction.prediction_method);
+    }
+    // Default fallback
+    return 'LR (F)';
+  }, [enhancedPrediction?.prediction?.method, displayData?.prediction?.prediction_method]);
 
   if (displayLoading) {
     return (
@@ -602,7 +641,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
                     }}
                     className="text-muted-foreground font-bold"
                   >
-                    Lasso Regression
+                    {currentPredictionMethod}
                   </Typography>
                 </Box>
               </>
@@ -1397,17 +1436,6 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
               </Alert>
             </Box>
           )}
-
-          {/* Prediction Explanation */}
-          <Box sx={{ flexShrink: 0 }}>
-            <Suspense fallback={
-              <Box display="flex" justifyContent="center" alignItems="center" minHeight="120px">
-                <CircularProgress size={24} />
-              </Box>
-            }>
-              <PredictionExplanation isDark={isDark} />
-            </Suspense>
-          </Box>
         </Box>
 
         {/* Right Side: Chart */}
@@ -1540,7 +1568,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
           <Sidebar
             open={sidebarOpen}
             onClose={() => setSidebarOpen(false)}
-            title="Chart Information & Controls"
+            title="Chart Information"
           >
             <Box sx={{ 
               display: 'flex', 
@@ -1548,325 +1576,110 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
               gap: { xs: 2, sm: 2.5 },
               padding: { xs: 2, sm: 2.5 },
             }}>
-              {/* Chart Legend */}
-              <Box>
-                <Typography
-                  variant="subtitle2"
-                  sx={{
-                    color: isDark ? '#ffffff' : '#1f2937',
-                    fontWeight: 600,
-                    marginBottom: 1.5,
-                    fontSize: '0.875rem',
-                  }}
-                >
-                  Chart Series
-                </Typography>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Box
-                      sx={{
-                        width: '16px',
-                        height: '3px',
-                        backgroundColor: '#F5D300',
-                        borderRadius: '2px',
-                      }}
-                    />
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        color: isDark ? '#d1d5db' : '#4b5563',
-                        fontSize: '0.8125rem',
-                      }}
-                    >
-                      Gold Price
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Box
-                      sx={{
-                        width: '16px',
-                        height: '3px',
-                        backgroundColor: '#0055ff',
-                        borderRadius: '2px',
-                      }}
-                    />
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        color: isDark ? '#d1d5db' : '#4b5563',
-                        fontSize: '0.8125rem',
-                      }}
-                    >
-                      Accuracy Line (Historical Predictions)
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Box
-                      sx={{
-                        width: '16px',
-                        height: '3px',
-                        backgroundColor: '#00fa2e',
-                        borderRadius: '2px',
-                        borderStyle: 'dashed',
-                        borderWidth: '1px',
-                        borderColor: '#00fa2e',
-                      }}
-                    />
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        color: isDark ? '#d1d5db' : '#4b5563',
-                        fontSize: '0.8125rem',
-                      }}
-                    >
-                      Future Prediction
-                    </Typography>
-                  </Box>
-                </Box>
-              </Box>
-
-              {/* Current Price Info */}
+              {/* Price Info Row - Current Price and Prediction Side by Side */}
               <Box
                 sx={{
-                  padding: 1.5,
-                  borderRadius: 1,
-                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
-                  border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
+                  display: 'flex',
+                  flexDirection: 'row',
+                  gap: 1.5,
+                  justifyContent: 'space-between',
                 }}
               >
-                <Typography
-                  variant="subtitle2"
-                  sx={{
-                    color: isDark ? '#9ca3af' : '#6b7280',
-                    fontSize: '0.75rem',
-                    marginBottom: 0.5,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                  }}
-                >
-                  Current Price
-                </Typography>
-                <Typography
-                  variant="h6"
-                  sx={{
-                    color: '#F5D300',
-                    fontWeight: 600,
-                    fontSize: '1.25rem',
-                  }}
-                >
-                  {convertedCurrentPrice.displayText}
-                </Typography>
-                <Typography
-                  variant="caption"
-                  sx={{
-                    color: isDark ? '#6b7280' : '#9ca3af',
-                    fontSize: '0.6875rem',
-                    marginTop: 0.5,
-                  }}
-                >
-                  {convertedCurrentPrice.unit}
-                </Typography>
-              </Box>
-
-              {/* Prediction Info */}
-              {convertedPredictionPrice && (
+                {/* Current Price Info */}
                 <Box
                   sx={{
-                    padding: 1.5,
+                    flex: 1,
+                    padding: 1.25,
                     borderRadius: 1,
-                    backgroundColor: isDark ? 'rgba(38, 212, 180, 0.1)' : 'rgba(38, 212, 180, 0.05)',
-                    border: `1px solid ${isDark ? 'rgba(38, 212, 180, 0.3)' : 'rgba(38, 212, 180, 0.2)'}`,
+                    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
+                    border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
+                    minWidth: 0,
                   }}
                 >
                   <Typography
                     variant="subtitle2"
                     sx={{
                       color: isDark ? '#9ca3af' : '#6b7280',
-                      fontSize: '0.75rem',
+                      fontSize: '0.7rem',
                       marginBottom: 0.5,
                       textTransform: 'uppercase',
                       letterSpacing: '0.05em',
                     }}
                   >
-                    Next Day Prediction
+                    Current Price
                   </Typography>
                   <Typography
                     variant="h6"
                     sx={{
-                      color: '#26d4b4',
+                      color: '#F5D300',
                       fontWeight: 600,
-                      fontSize: '1.25rem',
+                      fontSize: '1rem',
                     }}
                   >
-                    {convertedPredictionPrice.displayText}
+                    {convertedCurrentPrice.displayText}
                   </Typography>
                   <Typography
                     variant="caption"
                     sx={{
                       color: isDark ? '#6b7280' : '#9ca3af',
-                      fontSize: '0.6875rem',
+                      fontSize: '0.65rem',
                       marginTop: 0.5,
                     }}
                   >
-                    {displayData?.prediction?.next_day && new Date(displayData.prediction.next_day).toLocaleDateString('en-US', { 
-                      weekday: 'short', 
-                      month: 'short', 
-                      day: 'numeric' 
-                    })}
+                    {convertedCurrentPrice.unit}
                   </Typography>
                 </Box>
-              )}
 
-              {/* Chart Statistics */}
-              {chartData && chartData.length > 0 && (
-                <Box>
-                  <Typography
-                    variant="subtitle2"
+                {/* Prediction Info */}
+                {convertedPredictionPrice && (
+                  <Box
                     sx={{
-                      color: isDark ? '#ffffff' : '#1f2937',
-                      fontWeight: 600,
-                      marginBottom: 1.5,
-                      fontSize: '0.875rem',
+                      flex: 1,
+                      padding: 1.25,
+                      borderRadius: 1,
+                      backgroundColor: isDark ? 'rgba(38, 212, 180, 0.1)' : 'rgba(38, 212, 180, 0.05)',
+                      border: `1px solid ${isDark ? 'rgba(38, 212, 180, 0.3)' : 'rgba(38, 212, 180, 0.2)'}`,
+                      minWidth: 0,
                     }}
                   >
-                    Data Statistics
-                  </Typography>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          color: isDark ? '#9ca3af' : '#6b7280',
-                          fontSize: '0.8125rem',
-                        }}
-                      >
-                        Data Points
-                      </Typography>
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          color: isDark ? '#d1d5db' : '#374151',
-                          fontWeight: 500,
-                          fontSize: '0.8125rem',
-                        }}
-                      >
-                        {chartData.length}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          color: isDark ? '#9ca3af' : '#6b7280',
-                          fontSize: '0.8125rem',
-                        }}
-                      >
-                        Date Range
-                      </Typography>
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          color: isDark ? '#d1d5db' : '#374151',
-                          fontWeight: 500,
-                          fontSize: '0.8125rem',
-                        }}
-                      >
-                    {chartData.length > 0 && chartData[0] && chartData[chartData.length - 1] && (
-                      <>
-                        {new Date(chartData[0].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(chartData[chartData.length - 1]!.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                      </>
-                    )}
-                  </Typography>
-                </Box>
-                    {displayData?.historical_predictions && Array.isArray(displayData.historical_predictions) && displayData.historical_predictions.length > 0 && (
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            color: isDark ? '#9ca3af' : '#6b7280',
-                            fontSize: '0.8125rem',
-                          }}
-                        >
-                          Historical Predictions
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            color: isDark ? '#d1d5db' : '#374151',
-                            fontWeight: 500,
-                            fontSize: '0.8125rem',
-                          }}
-                        >
-                          {displayData.historical_predictions.length}
-                        </Typography>
-                      </Box>
-                    )}
+                    <Typography
+                      variant="subtitle2"
+                      sx={{
+                        color: isDark ? '#9ca3af' : '#6b7280',
+                        fontSize: '0.7rem',
+                        marginBottom: 0.5,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                      }}
+                    >
+                      Next Day Prediction
+                    </Typography>
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        color: '#26d4b4',
+                        fontWeight: 600,
+                        fontSize: '1rem',
+                      }}
+                    >
+                      {convertedPredictionPrice.displayText}
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: isDark ? '#6b7280' : '#9ca3af',
+                        fontSize: '0.65rem',
+                        marginTop: 0.5,
+                      }}
+                    >
+                      {displayData?.prediction?.next_day && new Date(displayData.prediction.next_day).toLocaleDateString('en-US', { 
+                        weekday: 'short', 
+                        month: 'short', 
+                        day: 'numeric' 
+                      })}
+                    </Typography>
                   </Box>
-                </Box>
-              )}
-
-              {/* Chart Controls Info */}
-              <Box
-                sx={{
-                  padding: 1.5,
-                  borderRadius: 1,
-                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
-                  border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'}`,
-                }}
-              >
-                <Typography
-                  variant="subtitle2"
-                  sx={{
-                    color: isDark ? '#ffffff' : '#1f2937',
-                    fontWeight: 600,
-                    marginBottom: 1,
-                    fontSize: '0.875rem',
-                  }}
-                >
-                  Chart Controls
-                </Typography>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      color: isDark ? '#9ca3af' : '#6b7280',
-                      fontSize: '0.75rem',
-                      lineHeight: 1.6,
-                    }}
-                  >
-                    • <strong>Zoom:</strong> Use mouse wheel or zoom buttons
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      color: isDark ? '#9ca3af' : '#6b7280',
-                      fontSize: '0.75rem',
-                      lineHeight: 1.6,
-                    }}
-                  >
-                    • <strong>Pan:</strong> Click and drag to move
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      color: isDark ? '#9ca3af' : '#6b7280',
-                      fontSize: '0.75rem',
-                      lineHeight: 1.6,
-                    }}
-                  >
-                    • <strong>Crosshair:</strong> Hover to see values
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      color: isDark ? '#9ca3af' : '#6b7280',
-                      fontSize: '0.75rem',
-                      lineHeight: 1.6,
-                    }}
-                  >
-                    • <strong>Price Lines:</strong> Current and predicted levels shown
-                  </Typography>
-                </Box>
+                )}
               </Box>
 
               {/* Exchange Rate Info */}
@@ -1891,6 +1704,284 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
                   {usdToLkrRate.toFixed(2)}
                 </Typography>
               </Box>
+
+              {/* Prediction Reasons Section */}
+              {convertedPredictionPrice && (
+                <>
+                  <Box 
+                    sx={{ 
+                      paddingTop: 2, 
+                      borderTop: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
+                      marginTop: 1,
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        marginBottom: 1.5,
+                      }}
+                    >
+                      <Typography
+                        variant="subtitle2"
+                        sx={{
+                          color: isDark ? '#9ca3af' : '#6b7280',
+                          fontSize: '0.95rem',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                          fontWeight: 700,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 0.75,
+                        }}
+                      >
+                        <Box
+                          component="span"
+                          sx={{
+                            width: '4px',
+                            height: '4px',
+                            borderRadius: '50%',
+                            backgroundColor: '#26d4b4',
+                            display: 'inline-block',
+                            boxShadow: isDark 
+                              ? '0 0 8px rgba(38, 212, 180, 0.6)' 
+                              : '0 0 6px rgba(38, 212, 180, 0.4)',
+                          }}
+                        />
+                        Prediction Analysis
+                      </Typography>
+                      <Tooltip
+                        title="AI-generated explanation of the prediction"
+                        arrow
+                        placement="top"
+                        componentsProps={{
+                          tooltip: {
+                            sx: {
+                              backgroundColor: isDark ? 'rgba(26, 26, 26, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+                              color: isDark ? '#e5e7eb' : '#111827',
+                              border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : '#e5e7eb'}`,
+                              boxShadow: isDark 
+                                ? '0 4px 6px rgba(0, 0, 0, 0.3)' 
+                                : '0 4px 6px rgba(0, 0, 0, 0.1)',
+                              '& .MuiTooltip-arrow': {
+                                color: isDark ? 'rgba(26, 26, 26, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+                              },
+                            },
+                          },
+                        }}
+                      >
+                        <IconButton
+                          size="small"
+                          sx={{
+                            color: isDark ? '#9ca3af' : '#6b7280',
+                            padding: '4px',
+                            '&:hover': {
+                              color: '#26d4b4',
+                              backgroundColor: isDark ? 'rgba(38, 212, 180, 0.1)' : 'rgba(38, 212, 180, 0.08)',
+                            },
+                            transition: 'all 0.2s ease-in-out',
+                          }}
+                        >
+                          <Info sx={{ fontSize: '1rem' }} />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+                    
+                    {predictionReasonsLoading ? (
+                      <Box 
+                        sx={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: 1.5, 
+                          paddingY: 2,
+                          paddingX: 1.5,
+                          backgroundColor: isDark ? 'rgba(38, 212, 180, 0.05)' : 'rgba(38, 212, 180, 0.03)',
+                          borderRadius: 1.5,
+                          border: `1px solid ${isDark ? 'rgba(38, 212, 180, 0.15)' : 'rgba(38, 212, 180, 0.1)'}`,
+                        }}
+                      >
+                        <CircularProgress 
+                          size={18} 
+                          sx={{ 
+                            color: '#26d4b4',
+                            filter: isDark ? 'drop-shadow(0 0 4px rgba(38, 212, 180, 0.5))' : 'none',
+                          }} 
+                        />
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: isDark ? '#9ca3af' : '#6b7280',
+                            fontSize: '0.8125rem',
+                            fontWeight: 500,
+                          }}
+                        >
+                          Generating analysis...
+                        </Typography>
+                      </Box>
+                    ) : predictionReasonsError || !predictionReasonsData?.reasons ? (
+                      <Box
+                        sx={{
+                          paddingY: 1.5,
+                          paddingX: 1.5,
+                          backgroundColor: isDark ? 'rgba(107, 114, 128, 0.05)' : 'rgba(156, 163, 175, 0.05)',
+                          borderRadius: 1.5,
+                          border: `1px solid ${isDark ? 'rgba(107, 114, 128, 0.2)' : 'rgba(156, 163, 175, 0.15)'}`,
+                        }}
+                      >
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: isDark ? '#6b7280' : '#9ca3af',
+                            fontSize: '0.8125rem',
+                            fontStyle: 'italic',
+                            textAlign: 'center',
+                          }}
+                        >
+                          {predictionReasonsError 
+                            ? (() => {
+                                const error = predictionReasonsError as FetchBaseQueryError;
+                                if (error?.data && typeof error.data === 'object' && error.data !== null && 'message' in error.data) {
+                                  return (error.data as { message?: string }).message || 'Error loading analysis';
+                                }
+                                return 'Error loading analysis';
+                              })()
+                            : predictionReasonsData?.message || 'Analysis unavailable'}
+                        </Typography>
+                        {predictionReasonsError && (
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              color: isDark ? '#6b7280' : '#9ca3af',
+                              fontSize: '0.75rem',
+                              display: 'block',
+                              marginTop: 0.5,
+                              textAlign: 'center',
+                            }}
+                          >
+                            Please check backend configuration or try again later.
+                          </Typography>
+                        )}
+                      </Box>
+                    ) : (
+                      <Box
+                        sx={{
+                          background: isDark
+                            ? 'linear-gradient(135deg, rgba(38, 212, 180, 0.12) 0%, rgba(38, 212, 180, 0.06) 100%)'
+                            : 'linear-gradient(135deg, rgba(38, 212, 180, 0.08) 0%, rgba(38, 212, 180, 0.03) 100%)',
+                          border: `1px solid ${isDark ? 'rgba(38, 212, 180, 0.25)' : 'rgba(38, 212, 180, 0.18)'}`,
+                          borderRadius: 2,
+                          padding: 2,
+                          position: 'relative',
+                          overflow: 'hidden',
+                          '&::before': {
+                            content: '""',
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            height: '2px',
+                            background: 'linear-gradient(90deg, transparent, #26d4b4, transparent)',
+                            opacity: isDark ? 0.6 : 0.4,
+                          },
+                        }}
+                      >
+                        <Typography
+                          component="div"
+                          variant="body2"
+                          sx={{
+                            color: isDark ? '#e5e7eb' : '#1f2937',
+                            fontSize: '0.875rem',
+                            lineHeight: 1.8,
+                            whiteSpace: 'pre-line',
+                            '& ul, & ol': {
+                              margin: 0,
+                              paddingLeft: 2,
+                            },
+                            '& li': {
+                              marginBottom: 0.875,
+                              '&:last-child': {
+                                marginBottom: 0,
+                              },
+                            },
+                          }}
+                        >
+                          {predictionReasonsData.reasons.split('\n').map((line: string, index: number) => {
+                            // Check if line is a bullet point
+                            const isBullet = line.trim().startsWith('•') || 
+                                           line.trim().startsWith('-') || 
+                                           line.trim().startsWith('*') ||
+                                           /^\d+\./.test(line.trim());
+                            
+                            if (isBullet || line.trim().length === 0) {
+                              return (
+                                <Box
+                                  key={index}
+                                  component="span"
+                                  sx={{
+                                    display: 'block',
+                                    marginBottom: line.trim().length === 0 ? 0.75 : 1,
+                                    paddingLeft: isBullet ? 0 : 0,
+                                  }}
+                                >
+                                  {line.trim().length > 0 && (
+                                    <Box
+                                      component="span"
+                                      sx={{
+                                        display: 'inline-flex',
+                                        alignItems: 'flex-start',
+                                        gap: 1.25,
+                                      }}
+                                    >
+                                      <Box
+                                        component="span"
+                                        sx={{
+                                          width: '8px',
+                                          height: '8px',
+                                          borderRadius: '50%',
+                                          background: 'linear-gradient(135deg, #26d4b4, #20b89a)',
+                                          marginTop: '7px',
+                                          flexShrink: 0,
+                                          boxShadow: isDark 
+                                            ? '0 0 8px rgba(38, 212, 180, 0.5)' 
+                                            : '0 0 6px rgba(38, 212, 180, 0.3)',
+                                        }}
+                                      />
+                                      <Box 
+                                        component="span" 
+                                        sx={{ 
+                                          flex: 1,
+                                          color: isDark ? '#d1d5db' : '#374151',
+                                        }}
+                                      >
+                                        {line.replace(/^[•\-*]\s*/, '').replace(/^\d+\.\s*/, '')}
+                                      </Box>
+                                    </Box>
+                                  )}
+                                </Box>
+                              );
+                            }
+                            
+                            return (
+                              <Box
+                                key={index}
+                                component="span"
+                                sx={{
+                                  display: 'block',
+                                  marginBottom: 1,
+                                  color: isDark ? '#d1d5db' : '#374151',
+                                }}
+                              >
+                                {line}
+                              </Box>
+                            );
+                          })}
+                        </Typography>
+                      </Box>
+                    )}
+                  </Box>
+                </>
+              )}
             </Box>
           </Sidebar>
           

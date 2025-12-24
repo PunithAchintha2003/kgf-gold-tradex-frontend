@@ -228,11 +228,14 @@ const Chart: React.FC<ChartProps> = ({
     // Prepare prediction line (from current to future prediction)
     let predictionLineData: Array<{ time: Time; value: number }> = [];
     if (prediction && prediction.predicted_price != null && typeof prediction.predicted_price === 'number' && isFinite(prediction.predicted_price) && prediction.next_day) {
-      const lastDate = sortedData && sortedData.length > 0 
-        ? sortedData[sortedData.length - 1]?.date 
-        : (historicalPredictions && historicalPredictions.length > 0
-            ? historicalPredictions[historicalPredictions.length - 1]?.date
-            : new Date().toISOString().split('T')[0]);
+      // Use the last date from the gold line data (what's actually displayed)
+      const lastDate = goldLineData.length > 0
+        ? goldLineData[goldLineData.length - 1]?.time
+        : (sortedData && sortedData.length > 0 
+            ? sortedData[sortedData.length - 1]?.date 
+            : (historicalPredictions && historicalPredictions.length > 0
+                ? historicalPredictions[historicalPredictions.length - 1]?.date
+                : null));
       
       const predDate = prediction.next_day;
       let predPrice: number;
@@ -247,9 +250,12 @@ const Chart: React.FC<ChartProps> = ({
         predPrice = prediction.predicted_price;
       }
 
+      // Only create prediction line if we have a valid last date and current price
       if (lastDate && currentPrice > 0) {
+        // Convert lastDate to string if it's a Time type
+        const lastDateStr = typeof lastDate === 'string' ? lastDate : String(lastDate);
         predictionLineData = [
-          { time: (lastDate as string) as Time, value: currentPrice },
+          { time: lastDateStr as Time, value: currentPrice },
           { time: (predDate as string) as Time, value: predPrice },
         ];
       }
@@ -375,7 +381,7 @@ const Chart: React.FC<ChartProps> = ({
 
     // Add prediction line series (future prediction)
     const predictionSeries = chart.addLineSeries({
-          color: '#00fa2e',
+      color: '#00fa2e',
       lineWidth: 2,
       title: 'Prediction',
       priceFormat: {
@@ -427,36 +433,8 @@ const Chart: React.FC<ChartProps> = ({
 
     // Price lines will be created in the update effect to avoid duplicates
 
-    // Apply zoom level
-    if (zoomLevel !== 0 && chartData.goldLineData.length > 0) {
-      const timeScale = chart.timeScale();
-      const visibleRange = timeScale.getVisibleRange();
-      
-      if (visibleRange && visibleRange.from && visibleRange.to) {
-        // Convert Time to number for calculations (Time can be string or number)
-        const fromTime = typeof visibleRange.from === 'string' 
-          ? new Date(visibleRange.from).getTime() 
-          : (visibleRange.from as number);
-        const toTime = typeof visibleRange.to === 'string' 
-          ? new Date(visibleRange.to).getTime() 
-          : (visibleRange.to as number);
-        
-        const range = toTime - fromTime;
-        const zoomFactor = Math.pow(0.7, zoomLevel);
-        const newRange = range * zoomFactor;
-        const center = (fromTime + toTime) / 2;
-        
-        // Convert back to Time format (use string format for dates)
-        const newFrom = new Date(center - newRange / 2).toISOString().split('T')[0] as Time;
-        const newTo = new Date(center + newRange / 2).toISOString().split('T')[0] as Time;
-        
-        timeScale.setVisibleRange({
-          from: newFrom,
-          to: newTo,
-        });
-      }
-    } else {
-      // Fit content initially
+    // Fit content initially - zoom will be applied in the update effect
+    if (chartData.goldLineData.length > 0) {
       chart.timeScale().fitContent();
     }
 
@@ -548,7 +526,7 @@ const Chart: React.FC<ChartProps> = ({
           title: `Current: ${formatPrice(currentPrice)}`,
         };
         currentPriceLineRef.current = goldPriceSeriesRef.current.createPriceLine(priceLine);
-            } else {
+      } else {
         // Remove price line if current price is 0 or invalid
         if (currentPriceLineRef.current) {
           goldPriceSeriesRef.current.removePriceLine(currentPriceLineRef.current);
