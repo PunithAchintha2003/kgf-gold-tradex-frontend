@@ -19,7 +19,6 @@ export default defineConfig(function (_a) {
             alias: {
                 '@': path.resolve(__dirname, './src'),
             },
-            dedupe: ['react', 'react-dom'],
         },
         server: {
             port: 4000,
@@ -29,11 +28,62 @@ export default defineConfig(function (_a) {
         build: {
             target: 'esnext',
             outDir: 'build',
-            minify: 'esbuild',
+            minify: 'terser',
+            terserOptions: {
+                compress: {
+                    drop_console: true,
+                    drop_debugger: true,
+                    pure_funcs: ['console.log', 'console.info', 'console.debug', 'console.warn'],
+                    passes: 2,
+                    dead_code: true,
+                },
+                mangle: {
+                    safari10: true,
+                    properties: {
+                        regex: /^_/
+                    }
+                },
+                format: {
+                    comments: false
+                }
+            },
             cssCodeSplit: true,
             cssMinify: true,
             rollupOptions: {
                 output: {
+                    manualChunks: function (id) {
+                        // Route-based code splitting for better performance
+                        if (id.includes('src/components/dashboards')) {
+                            return 'dashboards';
+                        }
+                        if (id.includes('src/components/price-predictor')) {
+                            return 'price-predictor';
+                        }
+                        if (id.includes('node_modules')) {
+                            if (id.includes('react') || id.includes('react-dom')) {
+                                return 'react-vendor';
+                            }
+                            if (id.includes('plotly.js') || id.includes('react-plotly')) {
+                                return 'plotly';
+                            }
+                            if (id.includes('@mui') || id.includes('@emotion')) {
+                                return 'mui';
+                            }
+                            if (id.includes('@reduxjs') || id.includes('redux-persist')) {
+                                return 'redux';
+                            }
+                            if (id.includes('react-router')) {
+                                return 'router';
+                            }
+                            if (id.includes('lucide-react') || id.includes('react-icons')) {
+                                return 'icons';
+                            }
+                            if (id.includes('@radix-ui')) {
+                                return 'radix-ui';
+                            }
+                            return 'vendor';
+                        }
+                    },
                     chunkFileNames: 'assets/[name]-[hash].js',
                     entryFileNames: 'assets/[name]-[hash].js',
                     assetFileNames: 'assets/[name]-[hash].[ext]'
