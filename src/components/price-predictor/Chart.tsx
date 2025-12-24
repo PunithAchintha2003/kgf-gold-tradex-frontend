@@ -29,11 +29,11 @@ const Chart: React.FC<ChartProps> = ({
 }) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
-  const goldPriceSeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
+  const goldPriceSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
   const accuracyLineSeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
   const predictionSeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
   const currentPriceMarkerRef = useRef<ISeriesApi<'Line'> | null>(null);
-  const currentPriceLineRef = useRef<ReturnType<ISeriesApi<'Line'>['createPriceLine']> | null>(null);
+  const currentPriceLineRef = useRef<ReturnType<ISeriesApi<'Candlestick'>['createPriceLine']> | null>(null);
   const predictedPriceLineRef = useRef<ReturnType<ISeriesApi<'Line'>['createPriceLine']> | null>(null);
 
   // Helper function to format price values
@@ -103,40 +103,26 @@ const Chart: React.FC<ChartProps> = ({
         }
       });
 
-    // Prepare gold price line data
-    const goldLineData = sortedData
-      .filter(d => d.close != null || d.predicted_price != null)
+    // Prepare gold price candlestick data
+    const goldCandlestickData = sortedData
+      .filter(d => d.open != null && d.high != null && d.low != null && d.close != null)
       .map(d => {
-        let price: number | null = null;
-        
-        if (d.close != null && typeof d.close === 'number' && isFinite(d.close)) {
-          price = d.close; // Already converted by convertChartData
-        } else if (d.predicted_price != null && typeof d.predicted_price === 'number' && isFinite(d.predicted_price)) {
-          try {
-            if (usdToLkrRate && usdToLkrRate > 0 && isFinite(usdToLkrRate)) {
-              price = convertPrice(d.predicted_price, currencyUnit, usdToLkrRate).price;
-            } else {
-              price = d.predicted_price;
-            }
-          } catch {
-            price = d.predicted_price;
-          }
-        }
-        
+        // All prices are already converted by convertChartData
         // Ensure date is in YYYY-MM-DD format for lightweight-charts
-        const dateStr = d.date;
         return {
-          time: (dateStr as string) as Time,
-          value: price,
+          time: (d.date as string) as Time,
+          open: d.open,
+          high: d.high,
+          low: d.low,
+          close: d.close,
         };
       })
-      .filter((d): d is { time: Time; value: number } => 
-        d.value != null && isFinite(d.value)
-      )
-      .map(d => ({
-        time: d.time,
-        value: d.value,
-      }));
+      .filter((d): d is { time: Time; open: number; high: number; low: number; close: number } => 
+        d.open != null && isFinite(d.open) &&
+        d.high != null && isFinite(d.high) &&
+        d.low != null && isFinite(d.low) &&
+        d.close != null && isFinite(d.close)
+      );
 
     // Prepare accuracy line (historical predictions)
     const allPredictions: HistoricalPrediction[] = [];
@@ -228,9 +214,9 @@ const Chart: React.FC<ChartProps> = ({
     // Prepare prediction line (from current to future prediction)
     let predictionLineData: Array<{ time: Time; value: number }> = [];
     if (prediction && prediction.predicted_price != null && typeof prediction.predicted_price === 'number' && isFinite(prediction.predicted_price) && prediction.next_day) {
-      // Use the last date from the gold line data (what's actually displayed)
-      const lastDate = goldLineData.length > 0
-        ? goldLineData[goldLineData.length - 1]?.time
+      // Use the last date from the gold candlestick data (what's actually displayed)
+      const lastDate = goldCandlestickData.length > 0
+        ? goldCandlestickData[goldCandlestickData.length - 1]?.time
         : (sortedData && sortedData.length > 0 
             ? sortedData[sortedData.length - 1]?.date 
             : (historicalPredictions && historicalPredictions.length > 0
@@ -262,7 +248,7 @@ const Chart: React.FC<ChartProps> = ({
     }
 
     return {
-      goldLineData,
+      goldCandlestickData,
       accuracyLineData,
       predictionLineData,
     };
@@ -346,10 +332,14 @@ const Chart: React.FC<ChartProps> = ({
 
     chartRef.current = chart;
 
-    // Add gold price line series
-    const goldPriceSeries = chart.addLineSeries({
-      color: '#F5D300',
-      lineWidth: 2,
+    // Add gold price candlestick series
+    const goldPriceSeries = chart.addCandlestickSeries({
+      upColor: '#000eff', // Blue for bullish candles (close >= open)
+      downColor: '#ff0014', // Red for bearish candles (close < open)
+      borderUpColor: '#000eff',
+      borderDownColor: '#ff0014',
+      wickUpColor: '#000eff',
+      wickDownColor: '#ff0014',
       title: 'Gold Price',
       priceFormat: {
         type: 'price',
@@ -358,13 +348,11 @@ const Chart: React.FC<ChartProps> = ({
       },
       lastValueVisible: true,
       priceLineVisible: false,
-      crosshairMarkerVisible: true,
-      crosshairMarkerRadius: 4,
     });
 
     // Add accuracy line series (historical predictions)
     const accuracyLineSeries = chart.addLineSeries({
-      color: '#0055ff',
+      color: '#00fa2e',
       lineWidth: 2,
       title: '',
       priceFormat: {
@@ -381,7 +369,7 @@ const Chart: React.FC<ChartProps> = ({
 
     // Add prediction line series (future prediction)
     const predictionSeries = chart.addLineSeries({
-      color: '#00fa2e',
+      color: '#26d4b4',
       lineWidth: 2,
       title: 'Prediction',
       priceFormat: {
@@ -419,8 +407,8 @@ const Chart: React.FC<ChartProps> = ({
     currentPriceMarkerRef.current = currentPriceMarker;
 
     // Set data
-    if (chartData.goldLineData.length > 0) {
-      goldPriceSeries.setData(chartData.goldLineData);
+    if (chartData.goldCandlestickData.length > 0) {
+      goldPriceSeries.setData(chartData.goldCandlestickData);
     }
 
     if (chartData.accuracyLineData.length > 0) {
@@ -434,7 +422,7 @@ const Chart: React.FC<ChartProps> = ({
     // Price lines will be created in the update effect to avoid duplicates
 
     // Fit content initially - zoom will be applied in the update effect
-    if (chartData.goldLineData.length > 0) {
+    if (chartData.goldCandlestickData.length > 0) {
       chart.timeScale().fitContent();
     }
 
@@ -502,8 +490,8 @@ const Chart: React.FC<ChartProps> = ({
   useEffect(() => {
     if (!chartRef.current) return;
 
-    if (goldPriceSeriesRef.current && chartData.goldLineData.length > 0) {
-      goldPriceSeriesRef.current.setData(chartData.goldLineData);
+    if (goldPriceSeriesRef.current && chartData.goldCandlestickData.length > 0) {
+      goldPriceSeriesRef.current.setData(chartData.goldCandlestickData);
       
       // Update current price line - remove existing one first
       if (currentPrice > 0) {
@@ -584,7 +572,7 @@ const Chart: React.FC<ChartProps> = ({
     }
 
     // Apply zoom
-    if (zoomLevel !== 0 && chartData.goldLineData.length > 0) {
+    if (zoomLevel !== 0 && chartData.goldCandlestickData.length > 0) {
       const timeScale = chartRef.current.timeScale();
       const visibleRange = timeScale.getVisibleRange();
       
@@ -611,7 +599,7 @@ const Chart: React.FC<ChartProps> = ({
           to: newTo,
         });
       }
-    } else if (chartData.goldLineData.length > 0) {
+    } else if (chartData.goldCandlestickData.length > 0) {
       chartRef.current.timeScale().fitContent();
     }
   }, [chartData, currentPrice, prediction, currencyUnit, usdToLkrRate, formatPrice, zoomLevel, isDark]);
@@ -758,7 +746,7 @@ const Chart: React.FC<ChartProps> = ({
               style={{
                 width: '12px',
                 height: '2px',
-                backgroundColor: '#0055ff',
+                backgroundColor: '#00fa2e',
                 borderRadius: '1px',
               }}
             />
@@ -775,7 +763,7 @@ const Chart: React.FC<ChartProps> = ({
               style={{
                 fontSize: '12px',
                 fontWeight: 600,
-                color: '#0055ff',
+                color: '#00fa2e',
               }}
             >
               {formatPrice(accuracyLinePrice)}
