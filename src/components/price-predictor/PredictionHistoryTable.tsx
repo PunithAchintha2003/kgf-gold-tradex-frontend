@@ -42,17 +42,18 @@ const PredictionHistoryTable: React.FC<PredictionHistoryTableProps> = ({
     return method; // Fallback to original if pattern doesn't match
   };
 
-  // Sort predictions: pending items first, then by date (newest first)
+  // Filter out pending predictions and sort by date (newest first)
   // MUST be called before any early returns (Rules of Hooks)
   const sortedPredictions = useMemo(() => {
     if (!predictions || predictions.length === 0) return [];
     
-    return [...predictions].sort((a, b) => {
-      // First, sort by status: pending items come first
-      if (a.status === 'pending' && b.status !== 'pending') return -1;
-      if (a.status !== 'pending' && b.status === 'pending') return 1;
-      
-      // If both have same status, sort by date (newest first)
+    // Filter out pending predictions - only show completed predictions with actual prices
+    const completedPredictions = predictions.filter(
+      (pred) => pred.status === 'completed' && pred.actual_price != null
+    );
+    
+    // Sort by date (newest first)
+    return [...completedPredictions].sort((a, b) => {
       const dateA = new Date(a.date).getTime();
       const dateB = new Date(b.date).getTime();
       return dateB - dateA;
