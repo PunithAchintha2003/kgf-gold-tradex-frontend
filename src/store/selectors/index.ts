@@ -29,14 +29,4 @@ export const selectRealtimePrice = createSelector(
   }
 );
 
-// Select prediction explanation
-export const selectPredictionExplanation = createSelector(
-  [selectGoldApiState],
-  (apiState) => {
-    const query = Object.values(apiState.queries).find(
-      (q) => q?.endpointName === 'getPredictionExplanation'
-    );
-    return query?.data;
-  }
-);
 

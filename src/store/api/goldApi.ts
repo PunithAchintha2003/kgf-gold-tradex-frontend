@@ -52,28 +52,6 @@ export interface RealtimePriceResponse {
   message?: string;
 }
 
-export interface PredictionFactor {
-  factor: string;
-  value: string;
-  interpretation: string;
-  impact: 'Bullish' | 'Bearish' | 'Neutral' | 'Uncertain' | 'Stable';
-  confidence: 'High' | 'Medium' | 'Low';
-}
-
-export interface PredictionExplanation {
-  current_price: number;
-  overall_sentiment: 'Bullish' | 'Bearish' | 'Neutral';
-  sentiment_explanation: string;
-  factors: PredictionFactor[];
-  summary: {
-    bullish_factors: number;
-    bearish_factors: number;
-    neutral_factors: number;
-    total_factors: number;
-  };
-  error?: string;
-}
-
 export interface ExchangeRateResponse {
   from_currency: string;
   to_currency: string;
@@ -245,6 +223,14 @@ export interface PendingPredictionsResponse {
   message?: string;
 }
 
+// Prediction Reasons interfaces
+export interface PredictionReasonsResponse {
+  status: string;
+  reasons: string | null;
+  message?: string;
+  timestamp: string;
+}
+
 // Update Pending Predictions interfaces
 export interface UpdatePendingPredictionsResponse {
   status: string;
@@ -261,7 +247,7 @@ export interface UpdatePendingPredictionsResponse {
 export const goldApi = createApi({
   reducerPath: 'goldApi',
   baseQuery: baseQueryWithReauth,
-  tagTypes: ['DailyData', 'RealtimePrice', 'PredictionExplanation', 'ExchangeRate', 'AccuracyVisualization', 'PredictionHistory', 'EnhancedPrediction', 'ModelInfo', 'PredictionStats', 'PendingPredictions'],
+  tagTypes: ['DailyData', 'RealtimePrice', 'ExchangeRate', 'AccuracyVisualization', 'PredictionHistory', 'EnhancedPrediction', 'ModelInfo', 'PredictionStats', 'PendingPredictions', 'PredictionReasons'],
   endpoints: (builder) => ({
     getDailyData: builder.query<DailyDataResponse, { days?: number; start_date?: string; end_date?: string } | void>({
       query: (params) => {
@@ -278,12 +264,6 @@ export const goldApi = createApi({
     getRealtimePrice: builder.query<RealtimePriceResponse, void>({
       query: () => '/api/v1/xauusd/realtime',
       providesTags: ['RealtimePrice'],
-    }),
-    getPredictionExplanation: builder.query<PredictionExplanation, void>({
-      // NOTE: This endpoint does not exist in the backend yet
-      // The component using this endpoint currently returns null
-      query: () => '/api/v1/xauusd/explanation',
-      providesTags: ['PredictionExplanation'],
     }),
     getExchangeRate: builder.query<ExchangeRateResponse, { from: string; to: string }>({
       query: ({ from, to }) => `/api/v1/exchange-rate/${from}/${to}`,
@@ -330,13 +310,16 @@ export const goldApi = createApi({
       }),
       invalidatesTags: ['PendingPredictions', 'PredictionHistory', 'PredictionStats', 'AccuracyVisualization'],
     }),
+    getPredictionReasons: builder.query<PredictionReasonsResponse, void>({
+      query: () => '/api/v1/xauusd/prediction-reasons',
+      providesTags: ['PredictionReasons'],
+    }),
   }),
 });
 
 export const { 
   useGetDailyDataQuery, 
   useGetRealtimePriceQuery, 
-  useGetPredictionExplanationQuery, 
   useGetExchangeRateQuery,
   useGetAccuracyVisualizationQuery,
   useGetPredictionHistoryQuery,
@@ -344,5 +327,6 @@ export const {
   useGetModelInfoQuery,
   useGetPredictionStatsQuery,
   useGetPendingPredictionsQuery,
-  useUpdatePendingPredictionsMutation
+  useUpdatePendingPredictionsMutation,
+  useGetPredictionReasonsQuery
 } = goldApi;

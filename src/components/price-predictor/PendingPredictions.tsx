@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Box,
   Typography,
@@ -11,15 +11,9 @@ import {
   Paper,
   Chip,
   CircularProgress,
-  Button,
-  Snackbar,
-  Alert,
-  Tooltip,
 } from '@mui/material';
-import { AccessTime, Refresh } from '@mui/icons-material';
-import { SerializedError } from '@reduxjs/toolkit';
-import { FetchBaseQueryError } from '@reduxjs/toolkit/query';
-import { useUpdatePendingPredictionsMutation, type PendingPredictionItem } from '../../store/api/goldApi';
+import { AccessTime } from '@mui/icons-material';
+import { type PendingPredictionItem } from '../../store/api/goldApi';
 
 interface PendingPredictionsProps {
   predictions: PendingPredictionItem[];
@@ -32,7 +26,6 @@ const PendingPredictions: React.FC<PendingPredictionsProps> = ({
   predictions,
   isLoading = false,
   isDark,
-  onRefetch,
 }) => {
   // Helper function to shorten method names
   const shortenMethod = (method: string): string => {
@@ -48,57 +41,6 @@ const PendingPredictions: React.FC<PendingPredictionsProps> = ({
     return method; // Fallback to original if pattern doesn't match
   };
 
-  const [updatePendingPredictions, { isLoading: isUpdating }] = useUpdatePendingPredictionsMutation();
-  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
-    open: false,
-    message: '',
-    severity: 'success',
-  });
-
-  const handleUpdate = async () => {
-    try {
-      const result = await updatePendingPredictions().unwrap();
-      if (result.status === 'success') {
-        setSnackbar({
-          open: true,
-          message: result.message || `Updated ${result.updated_count} predictions`,
-          severity: 'success',
-        });
-        // Refetch pending predictions to show updated list
-        if (onRefetch) {
-          setTimeout(() => {
-            onRefetch();
-          }, 1000);
-        }
-      } else {
-        setSnackbar({
-          open: true,
-          message: result.message || 'Failed to update predictions',
-          severity: 'error',
-        });
-      }
-    } catch (error) {
-      const apiError = error as FetchBaseQueryError | SerializedError;
-      let errorMessage = 'Failed to update predictions';
-      
-      if ('data' in apiError && apiError.data) {
-        const errorData = apiError.data as { message?: string; error?: string };
-        errorMessage = errorData.message || errorData.error || errorMessage;
-      } else if ('message' in apiError) {
-        errorMessage = apiError.message || errorMessage;
-      }
-      
-      setSnackbar({
-        open: true,
-        message: errorMessage,
-        severity: 'error',
-      });
-    }
-  };
-
-  const handleCloseSnackbar = () => {
-    setSnackbar({ ...snackbar, open: false });
-  };
   if (isLoading) {
     return (
       <Box
@@ -223,34 +165,6 @@ const PendingPredictions: React.FC<PendingPredictionsProps> = ({
           Pending Predictions
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Tooltip title="Update pending predictions with actual market prices">
-            <span>
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={handleUpdate}
-                disabled={isUpdating || predictions.length === 0}
-                startIcon={isUpdating ? <CircularProgress size={16} /> : <Refresh />}
-                sx={{
-                  fontSize: { xs: '0.7rem', sm: '0.75rem' },
-                  padding: { xs: '4px 8px', sm: '6px 12px' },
-                  minWidth: 'auto',
-                  borderColor: isDark ? 'rgba(38, 212, 180, 0.5)' : '#26d4b4',
-                  color: isDark ? '#26d4b4' : '#26d4b4',
-                  '&:hover': {
-                    borderColor: isDark ? '#26d4b4' : '#1fb89a',
-                    backgroundColor: isDark ? 'rgba(38, 212, 180, 0.1)' : 'rgba(38, 212, 180, 0.05)',
-                  },
-                  '&:disabled': {
-                    borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#e5e7eb',
-                    color: isDark ? 'rgba(255, 255, 255, 0.3)' : '#9ca3af',
-                  },
-                }}
-              >
-                {isUpdating ? 'Updating...' : 'Update'}
-              </Button>
-            </span>
-          </Tooltip>
           <Chip
             label={`${predictions.length} pending`}
             size="small"
@@ -450,20 +364,6 @@ const PendingPredictions: React.FC<PendingPredictionsProps> = ({
           </TableBody>
         </Table>
       </TableContainer>
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-      >
-        <Alert
-          onClose={handleCloseSnackbar}
-          severity={snackbar.severity}
-          sx={{ width: '100%' }}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
     </Box>
   );
 };
