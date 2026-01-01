@@ -8,6 +8,7 @@ interface ImportMetaEnv {
   readonly VITE_ENABLE_ANALYTICS: string;
   readonly VITE_ENABLE_ERROR_LOGGING: string;
   readonly VITE_BUILD_SOURCEMAP: string;
+  readonly VITE_DEMO_PASSWORD?: string;
 }
 
 interface ImportMeta {
