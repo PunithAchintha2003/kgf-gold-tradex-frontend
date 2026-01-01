@@ -214,36 +214,32 @@ const Chart: React.FC<ChartProps> = ({
     // Prepare prediction line (from current to future prediction)
     let predictionLineData: Array<{ time: Time; value: number }> = [];
     if (prediction && prediction.predicted_price != null && typeof prediction.predicted_price === 'number' && isFinite(prediction.predicted_price) && prediction.next_day) {
+      // Only create prediction line if we have actual candlestick data displayed
       // Use the last date from the gold candlestick data (what's actually displayed)
-      const lastDate = goldCandlestickData.length > 0
-        ? goldCandlestickData[goldCandlestickData.length - 1]?.time
-        : (sortedData && sortedData.length > 0 
-            ? sortedData[sortedData.length - 1]?.date 
-            : (historicalPredictions && historicalPredictions.length > 0
-                ? historicalPredictions[historicalPredictions.length - 1]?.date
-                : null));
-      
-      const predDate = prediction.next_day;
-      let predPrice: number;
-      
-      try {
-        if (usdToLkrRate && usdToLkrRate > 0 && isFinite(usdToLkrRate)) {
-          predPrice = convertPrice(prediction.predicted_price, currencyUnit, usdToLkrRate).price;
-        } else {
+      if (goldCandlestickData.length > 0) {
+        const lastDate = goldCandlestickData[goldCandlestickData.length - 1]?.time;
+        const predDate = prediction.next_day;
+        let predPrice: number;
+        
+        try {
+          if (usdToLkrRate && usdToLkrRate > 0 && isFinite(usdToLkrRate)) {
+            predPrice = convertPrice(prediction.predicted_price, currencyUnit, usdToLkrRate).price;
+          } else {
+            predPrice = prediction.predicted_price;
+          }
+        } catch {
           predPrice = prediction.predicted_price;
         }
-      } catch {
-        predPrice = prediction.predicted_price;
-      }
 
-      // Only create prediction line if we have a valid last date and current price
-      if (lastDate && currentPrice > 0) {
-        // Convert lastDate to string if it's a Time type
-        const lastDateStr = typeof lastDate === 'string' ? lastDate : String(lastDate);
-        predictionLineData = [
-          { time: lastDateStr as Time, value: currentPrice },
-          { time: (predDate as string) as Time, value: predPrice },
-        ];
+        // Only create prediction line if we have a valid last date and current price
+        if (lastDate && currentPrice > 0) {
+          // Ensure lastDate is in the correct format (Time type is string in 'YYYY-MM-DD' format)
+          const lastDateStr = typeof lastDate === 'string' ? lastDate : String(lastDate);
+          predictionLineData = [
+            { time: lastDateStr as Time, value: currentPrice },
+            { time: (predDate as string) as Time, value: predPrice },
+          ];
+        }
       }
     }
 
@@ -254,7 +250,7 @@ const Chart: React.FC<ChartProps> = ({
     };
   }, [data, historicalPredictions, prediction, currencyUnit, usdToLkrRate, currentPrice]);
 
-  // Initialize chart
+  // Initialize chart - only create once, don't recreate on data changes
   useEffect(() => {
     if (!chartContainerRef.current) return;
 
@@ -406,26 +402,6 @@ const Chart: React.FC<ChartProps> = ({
     predictionSeriesRef.current = predictionSeries;
     currentPriceMarkerRef.current = currentPriceMarker;
 
-    // Set data
-    if (chartData.goldCandlestickData.length > 0) {
-      goldPriceSeries.setData(chartData.goldCandlestickData);
-    }
-
-    if (chartData.accuracyLineData.length > 0) {
-      accuracyLineSeries.setData(chartData.accuracyLineData);
-    }
-
-    if (chartData.predictionLineData.length > 0) {
-      predictionSeries.setData(chartData.predictionLineData);
-    }
-
-    // Price lines will be created in the update effect to avoid duplicates
-
-    // Fit content initially - zoom will be applied in the update effect
-    if (chartData.goldCandlestickData.length > 0) {
-      chart.timeScale().fitContent();
-    }
-
     // Handle resize
     const handleResize = () => {
       if (chartContainerRef.current && chartRef.current) {
@@ -445,53 +421,61 @@ const Chart: React.FC<ChartProps> = ({
         chartRef.current = null;
       }
     };
-  }, [chartData, isDark, height, currentPrice, prediction, currencyUnit, usdToLkrRate, formatPrice, zoomLevel]);
+  }, [height, currencyUnit]); // Only recreate when height or currency unit changes
 
   // Update theme when isDark changes
   useEffect(() => {
-    if (chartRef.current) {
-      chartRef.current.applyOptions({
-        layout: {
-          background: {
-            type: ColorType.Solid,
-            color: isDark ? '#000000' : '#FFFFFF',
-          },
-          textColor: isDark ? '#D1D5DB' : '#374151',
+    if (!chartRef.current) return;
+
+    // Update chart options
+    chartRef.current.applyOptions({
+      layout: {
+        background: {
+          type: ColorType.Solid,
+          color: isDark ? '#000000' : '#FFFFFF',
         },
-        grid: {
-          vertLines: {
-            color: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
-          },
-          horzLines: {
-            color: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
-          },
+        textColor: isDark ? '#D1D5DB' : '#374151',
+      },
+      grid: {
+        vertLines: {
+          color: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
         },
-        crosshair: {
-          vertLine: {
-            color: isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.3)',
-            labelBackgroundColor: isDark ? '#1F2937' : '#F3F4F6',
-          },
-          horzLine: {
-            color: isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.3)',
-            labelBackgroundColor: isDark ? '#1F2937' : '#F3F4F6',
-          },
+        horzLines: {
+          color: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
         },
-        rightPriceScale: {
-          borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+      },
+      crosshair: {
+        vertLine: {
+          color: isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.3)',
+          labelBackgroundColor: isDark ? '#1F2937' : '#F3F4F6',
         },
-        timeScale: {
-          borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+        horzLine: {
+          color: isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.3)',
+          labelBackgroundColor: isDark ? '#1F2937' : '#F3F4F6',
         },
-      });
-    }
+      },
+      rightPriceScale: {
+        borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+      },
+      timeScale: {
+        borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+      },
+    });
+    // Note: Price lines are updated by the data update effect which includes isDark in its dependencies
   }, [isDark]);
+
+  // Track if this is the first data load
+  const isInitialLoadRef = useRef(true);
 
   // Update data when chartData changes
   useEffect(() => {
     if (!chartRef.current) return;
 
-    if (goldPriceSeriesRef.current && chartData.goldCandlestickData.length > 0) {
-      goldPriceSeriesRef.current.setData(chartData.goldCandlestickData);
+    // Update candlestick data
+    if (goldPriceSeriesRef.current) {
+      if (chartData.goldCandlestickData.length > 0) {
+        goldPriceSeriesRef.current.setData(chartData.goldCandlestickData);
+      }
       
       // Update current price line - remove existing one first
       if (currentPrice > 0) {
@@ -523,12 +507,21 @@ const Chart: React.FC<ChartProps> = ({
       }
     }
 
-    if (accuracyLineSeriesRef.current && chartData.accuracyLineData.length > 0) {
-      accuracyLineSeriesRef.current.setData(chartData.accuracyLineData);
+    // Update accuracy line data
+    if (accuracyLineSeriesRef.current) {
+      if (chartData.accuracyLineData.length > 0) {
+        accuracyLineSeriesRef.current.setData(chartData.accuracyLineData);
+      }
     }
 
-    if (predictionSeriesRef.current && chartData.predictionLineData.length > 0) {
-      predictionSeriesRef.current.setData(chartData.predictionLineData);
+    // Update prediction line data
+    if (predictionSeriesRef.current) {
+      if (chartData.predictionLineData.length > 0) {
+        predictionSeriesRef.current.setData(chartData.predictionLineData);
+      } else {
+        // Clear prediction line if no data
+        predictionSeriesRef.current.setData([]);
+      }
       
       // Update prediction price line - remove existing one first
       if (prediction && prediction.predicted_price != null && typeof prediction.predicted_price === 'number' && isFinite(prediction.predicted_price)) {
@@ -571,9 +564,31 @@ const Chart: React.FC<ChartProps> = ({
       }
     }
 
-    // Apply zoom
-    if (zoomLevel !== 0 && chartData.goldCandlestickData.length > 0) {
-      const timeScale = chartRef.current.timeScale();
+    // Only fit content on initial load or when zoom level is 0
+    // Avoid calling fitContent on every data update to prevent blinking
+    if (chartData.goldCandlestickData.length > 0) {
+      if (isInitialLoadRef.current) {
+        chartRef.current.timeScale().fitContent();
+        isInitialLoadRef.current = false;
+      } else if (zoomLevel === 0) {
+        // Only fit content if zoom level is explicitly 0 (not just default)
+        const timeScale = chartRef.current.timeScale();
+        const visibleRange = timeScale.getVisibleRange();
+        // Only fit if there's no visible range (chart is empty) or user wants to reset
+        if (!visibleRange) {
+          timeScale.fitContent();
+        }
+      }
+    }
+  }, [chartData, currentPrice, prediction, currencyUnit, usdToLkrRate, formatPrice, isDark]);
+
+  // Separate effect for zoom level changes to avoid unnecessary updates
+  useEffect(() => {
+    if (!chartRef.current || chartData.goldCandlestickData.length === 0) return;
+
+    const timeScale = chartRef.current.timeScale();
+    
+    if (zoomLevel !== 0) {
       const visibleRange = timeScale.getVisibleRange();
       
       if (visibleRange && visibleRange.from && visibleRange.to) {
@@ -599,10 +614,11 @@ const Chart: React.FC<ChartProps> = ({
           to: newTo,
         });
       }
-    } else if (chartData.goldCandlestickData.length > 0) {
-      chartRef.current.timeScale().fitContent();
+    } else {
+      // Reset to fit content when zoom level is 0
+      timeScale.fitContent();
     }
-  }, [chartData, currentPrice, prediction, currencyUnit, usdToLkrRate, formatPrice, zoomLevel, isDark]);
+  }, [zoomLevel, chartData.goldCandlestickData.length]);
 
   // Calculate accuracy line price (last value from accuracy line data)
   const accuracyLinePrice = useMemo(() => {

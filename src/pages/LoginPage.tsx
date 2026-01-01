@@ -7,6 +7,7 @@ import { Separator } from '../components/ui/separator';
 import { useApp, UserRole } from '../contexts/AppContext';
 import { Mail, Lock, Eye, EyeOff, Shield, User, Store, Gavel, TrendingUp, Settings } from 'lucide-react';
 import { toast } from 'sonner';
+import { env } from '../utils/env';
 import logoImage from '../assets/28A9A4B0-D00A-4539-82A6-89A2130B5FAF.PNG';
 
 interface LoginPageProps {
@@ -20,7 +21,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const demoPassword = import.meta.env['VITE_DEMO_PASSWORD'] || '';
+  const demoPassword = env.DEMO_PASSWORD;
   
   const demoAccounts = [
     {

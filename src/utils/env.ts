@@ -19,6 +19,9 @@ export const env = {
   // Build Configuration
   BUILD_SOURCEMAP: import.meta.env.VITE_BUILD_SOURCEMAP === 'true',
   
+  // Demo Configuration
+  DEMO_PASSWORD: import.meta.env.VITE_DEMO_PASSWORD || '',
+  
   // Development
   DEV: import.meta.env.DEV,
   PROD: import.meta.env.PROD,

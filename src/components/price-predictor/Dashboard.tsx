@@ -451,53 +451,83 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
           }}
         >
           {/* Price Information Cards */}
-          <Box sx={{ flexShrink: 0 }}>
-            <Box 
-              sx={{ 
-                padding: { xs: '1.25rem', sm: '1.5rem', lg: '1.75rem' },
-              }}
-              className="bg-card text-card-foreground border rounded-xl flex flex-col gap-6"
-            >
-          {/* Grid layout for cards - 2 columns on left sidebar */}
           <Box 
             sx={{ 
-              display: 'grid',
-              gridTemplateColumns: { xs: '1fr 1fr', lg: '1fr 1fr' },
-              gap: { xs: '0.75rem', sm: '1rem' },
+              flexShrink: 0, 
+              marginTop: { xs: 0, sm: 0 },
+              backgroundColor: isDark ? '#1a1a1a' : '#f9fafb',
+              border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : '#e5e7eb'}`,
+              borderRadius: '12px',
+              padding: { xs: '1rem', sm: '1.25rem' },
             }}
+            className="bg-card border rounded-xl"
           >
+            <Typography
+              variant="h6"
+              sx={{
+                fontSize: { xs: '0.875rem', sm: '1rem' },
+                fontWeight: 600,
+                color: isDark ? '#FFFFFF' : '#111827',
+                marginBottom: { xs: '0.5rem', sm: '0.75rem' },
+              }}
+            >
+              Price Information
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{
+                fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                color: isDark ? '#9ca3af' : '#6b7280',
+                marginBottom: { xs: '0.75rem', sm: '1rem' },
+                lineHeight: 1.5,
+              }}
+            >
+              Current gold price, predictions, and expected changes
+            </Typography>
+
+            {/* Grid layout for cards - 2 columns on left sidebar */}
+            <Box 
+              sx={{ 
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr 1fr', lg: '1fr 1fr' },
+                gap: { xs: '0.75rem', sm: '1rem' },
+              }}
+            >
             {/* Current Price Card */}
             <Box 
               sx={{ 
-                backgroundColor: 'var(--muted)',
-                borderRadius: 'var(--radius)',
-                padding: { xs: '1rem', sm: '1.25rem' },
+                backgroundColor: isDark ? 'rgba(245, 211, 0, 0.1)' : 'rgba(245, 211, 0, 0.05)',
+                border: `1px solid ${isDark ? 'rgba(245, 211, 0, 0.3)' : 'rgba(245, 211, 0, 0.2)'}`,
+                borderRadius: '8px',
+                padding: { xs: '0.75rem', sm: '1rem' },
                 minHeight: { xs: '100px', sm: '110px', lg: '120px' },
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'center',
               }}
-              className="bg-muted rounded-lg"
             >
               <Typography 
-                variant="body2" 
+                variant="caption"
                 sx={{ 
-                  color: 'var(--muted-foreground)',
-                  fontSize: { xs: '0.75rem', sm: '0.8125rem', lg: '0.875rem' },
-                  fontWeight: 500,
+                  fontSize: { xs: '0.65rem', sm: '0.7rem' },
+                  color: isDark ? '#fbbf24' : '#d97706',
+                  textTransform: 'uppercase',
+                  fontWeight: 600,
+                  letterSpacing: '0.5px',
                   marginBottom: { xs: '0.25rem', sm: '0.5rem' },
                   lineHeight: 1.3,
                 }}
               >
-                🔴 LIVE PRICE
+                LIVE PRICE
               </Typography>
               <Typography 
                 variant="h5" 
                 sx={{ 
-                  color: 'var(--primary)',
+                  color: isDark ? '#fcd34d' : '#d97706',
                   fontSize: { xs: '1.1rem', sm: '1.25rem', lg: '1.5rem' },
-                  fontWeight: 'bold',
+                  fontWeight: 700,
                   lineHeight: 1.2,
+                  mt: 0.5,
                 }}
               >
                 {convertedCurrentPrice.displayText}
@@ -512,38 +542,39 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
               <>
                 <Box 
                   sx={{ 
-                    backgroundColor: 'var(--muted)',
-                    borderRadius: 'var(--radius)',
-                    padding: '1rem',
+                    backgroundColor: isDark ? 'rgba(38, 212, 180, 0.1)' : 'rgba(38, 212, 180, 0.05)',
+                    border: `1px solid ${isDark ? 'rgba(38, 212, 180, 0.3)' : 'rgba(38, 212, 180, 0.2)'}`,
+                    borderRadius: '8px',
+                    padding: { xs: '0.75rem', sm: '1rem' },
                     minHeight: { xs: '100px', lg: '120px' },
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'center',
                   }}
-                  className="bg-muted rounded-lg"
                 >
                   <Typography 
-                    variant="body2" 
+                    variant="caption"
                     sx={{ 
-                      color: 'var(--muted-foreground)',
-                      fontSize: { xs: '0.8125rem', lg: '0.875rem' },
-                      fontWeight: 500,
+                      fontSize: { xs: '0.65rem', sm: '0.7rem' },
+                      color: isDark ? '#6ee7b7' : '#10b981',
+                      textTransform: 'uppercase',
+                      fontWeight: 600,
+                      letterSpacing: '0.5px',
                       marginBottom: '0.5rem',
                       lineHeight: 1.3,
                     }}
-                    className="text-muted-foreground"
                   >
                     Next Day Prediction
                   </Typography>
                   <Typography 
-                    variant="h6" 
+                    variant="h5" 
                     sx={{ 
-                      color: '#26d4b4',
+                      color: isDark ? '#34d399' : '#059669',
                       fontSize: { xs: '1rem', sm: '1.125rem', lg: '1.375rem' },
-                      fontWeight: 'bold',
+                      fontWeight: 700,
                       lineHeight: 1.2,
+                      mt: 0.5,
                     }}
-                    className="font-bold"
                   >
                     {convertedPredictionPrice?.displayText || 
                       (displayData.prediction?.predicted_price != null && 
@@ -557,40 +588,62 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
                 {/* Expected Change Card */}
                 <Box 
                   sx={{ 
-                    backgroundColor: 'var(--muted)',
-                    borderRadius: 'var(--radius)',
-                    padding: '1rem',
+                    backgroundColor: (() => {
+                      if (!convertedPredictionPrice) return isDark ? 'rgba(107, 114, 128, 0.1)' : 'rgba(107, 114, 128, 0.05)';
+                      const priceChange = convertedPredictionPrice.price - convertedCurrentPrice.price;
+                      return priceChange >= 0 
+                        ? (isDark ? 'rgba(16, 185, 129, 0.1)' : 'rgba(16, 185, 129, 0.05)')
+                        : (isDark ? 'rgba(239, 68, 68, 0.1)' : 'rgba(239, 68, 68, 0.05)');
+                    })(),
+                    border: (() => {
+                      if (!convertedPredictionPrice) return `1px solid ${isDark ? 'rgba(107, 114, 128, 0.3)' : 'rgba(107, 114, 128, 0.2)'}`;
+                      const priceChange = convertedPredictionPrice.price - convertedCurrentPrice.price;
+                      return priceChange >= 0 
+                        ? `1px solid ${isDark ? 'rgba(16, 185, 129, 0.3)' : 'rgba(16, 185, 129, 0.2)'}`
+                        : `1px solid ${isDark ? 'rgba(239, 68, 68, 0.3)' : 'rgba(239, 68, 68, 0.2)'}`;
+                    })(),
+                    borderRadius: '8px',
+                    padding: { xs: '0.75rem', sm: '1rem' },
                     minHeight: { xs: '100px', lg: '120px' },
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'center',
                   }}
-                  className="bg-muted rounded-lg"
                 >
                   <Typography 
-                    variant="body2" 
+                    variant="caption"
                     sx={{ 
-                      color: 'var(--muted-foreground)',
-                      fontSize: { xs: '0.8125rem', lg: '0.875rem' },
-                      fontWeight: 500,
+                      fontSize: { xs: '0.65rem', sm: '0.7rem' },
+                      color: (() => {
+                        if (!convertedPredictionPrice) return isDark ? '#9ca3af' : '#6b7280';
+                        const priceChange = convertedPredictionPrice.price - convertedCurrentPrice.price;
+                        return priceChange >= 0 
+                          ? (isDark ? '#6ee7b7' : '#10b981')
+                          : (isDark ? '#fca5a5' : '#ef4444');
+                      })(),
+                      textTransform: 'uppercase',
+                      fontWeight: 600,
+                      letterSpacing: '0.5px',
                       marginBottom: '0.5rem',
                       lineHeight: 1.3,
                     }}
-                    className="text-muted-foreground"
                   >
                     Expected Change
                   </Typography>
                   <Typography 
-                    variant="body1" 
+                    variant="h6" 
                     sx={{ 
                       color: (() => {
-                        if (!convertedPredictionPrice) return 'var(--muted-foreground)';
+                        if (!convertedPredictionPrice) return isDark ? '#9ca3af' : '#6b7280';
                         const priceChange = convertedPredictionPrice.price - convertedCurrentPrice.price;
-                        return priceChange >= 0 ? 'var(--secondary)' : 'var(--destructive)';
+                        return priceChange >= 0 
+                          ? (isDark ? '#34d399' : '#059669')
+                          : (isDark ? '#f87171' : '#dc2626');
                       })(),
                       fontSize: { xs: '0.8125rem', sm: '0.9375rem', lg: '1.125rem' },
-                      fontWeight: 'bold',
+                      fontWeight: 700,
                       lineHeight: 1.2,
+                      mt: 0.5,
                     }}
                   >
                     {(() => {
@@ -608,50 +661,82 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
                 {/* Method Card */}
                 <Box 
                   sx={{ 
-                    backgroundColor: 'var(--muted)',
-                    borderRadius: 'var(--radius)',
-                    padding: '1rem',
+                    backgroundColor: isDark ? 'rgba(139, 92, 246, 0.1)' : 'rgba(139, 92, 246, 0.05)',
+                    border: `1px solid ${isDark ? 'rgba(139, 92, 246, 0.3)' : 'rgba(139, 92, 246, 0.2)'}`,
+                    borderRadius: '8px',
+                    padding: { xs: '0.75rem', sm: '1rem' },
                     minHeight: { xs: '100px', lg: '120px' },
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'center',
                   }}
-                  className="bg-muted rounded-lg"
                 >
                   <Typography 
-                    variant="body2" 
+                    variant="caption"
                     sx={{ 
-                      color: 'var(--muted-foreground)',
-                      fontSize: { xs: '0.8125rem', lg: '0.875rem' },
-                      fontWeight: 500,
+                      fontSize: { xs: '0.65rem', sm: '0.7rem' },
+                      color: isDark ? '#c4b5fd' : '#7c3aed',
+                      textTransform: 'uppercase',
+                      fontWeight: 600,
+                      letterSpacing: '0.5px',
                       marginBottom: '0.5rem',
                       lineHeight: 1.3,
                     }}
-                    className="text-muted-foreground"
                   >
                     Method
                   </Typography>
                   <Typography 
                     variant="body1" 
                     sx={{ 
-                      color: 'var(--muted-foreground)',
+                      color: isDark ? '#a78bfa' : '#6d28d9',
                       fontSize: { xs: '0.8125rem', sm: '0.875rem', lg: '1rem' },
-                      fontWeight: 'bold',
+                      fontWeight: 700,
                       lineHeight: 1.3,
+                      mt: 0.5,
                     }}
-                    className="text-muted-foreground font-bold"
                   >
                     {currentPredictionMethod}
                   </Typography>
                 </Box>
               </>
             )}
+            </Box>
           </Box>
-        </Box>
-      </Box>
 
           {/* Accuracy Stats */}
-          <Box sx={{ flexShrink: 0, mt: { xs: -1, sm: -1.3, lg: -1.3 } }}>
+          <Box 
+            sx={{ 
+              flexShrink: 0, 
+              marginTop: { xs: 1.5, sm: 2 },
+              backgroundColor: isDark ? '#1a1a1a' : '#f9fafb',
+              border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : '#e5e7eb'}`,
+              borderRadius: '12px',
+              padding: { xs: '1rem', sm: '1.25rem' },
+            }}
+            className="bg-card border rounded-xl"
+          >
+            <Typography
+              variant="h6"
+              sx={{
+                fontSize: { xs: '0.875rem', sm: '1rem' },
+                fontWeight: 600,
+                color: isDark ? '#FFFFFF' : '#111827',
+                marginBottom: { xs: '0.5rem', sm: '0.75rem' },
+              }}
+            >
+              Accuracy Statistics
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{
+                fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                color: isDark ? '#9ca3af' : '#6b7280',
+                marginBottom: { xs: '0.75rem', sm: '1rem' },
+                lineHeight: 1.5,
+              }}
+            >
+              Model performance metrics and prediction evaluation statistics
+            </Typography>
             <Suspense fallback={
               <Box display="flex" justifyContent="center" alignItems="center" minHeight="120px">
                 <CircularProgress size={24} />
@@ -886,6 +971,17 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
                 }}
               >
                 Enhanced Prediction
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{
+                  fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                  color: isDark ? '#9ca3af' : '#6b7280',
+                  marginBottom: { xs: '0.75rem', sm: '1rem' },
+                  lineHeight: 1.5,
+                }}
+              >
+                Detailed prediction with model information, sentiment analysis, and feature insights
               </Typography>
               
               {/* Prediction Details */}
@@ -1129,13 +1225,21 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
                   fontSize: { xs: '0.875rem', sm: '1rem' },
                   fontWeight: 600,
                   color: isDark ? '#FFFFFF' : '#111827',
-                  marginBottom: { xs: '0.75rem', sm: '1rem' },
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1,
+                  marginBottom: { xs: '0.5rem', sm: '0.75rem' },
                 }}
               >
-                📊 Live Model Accuracy
+                Live Model Accuracy
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{
+                  fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                  color: isDark ? '#9ca3af' : '#6b7280',
+                  marginBottom: { xs: '0.75rem', sm: '1rem' },
+                  lineHeight: 1.5,
+                }}
+              >
+                Real-time accuracy metrics from actual predictions and model performance data
               </Typography>
 
               {/* R² Score Comparison */}
@@ -1430,6 +1534,17 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
                 }}
               >
                 Enhanced Prediction
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{
+                  fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                  color: isDark ? '#9ca3af' : '#6b7280',
+                  marginBottom: { xs: '0.75rem', sm: '1rem' },
+                  lineHeight: 1.5,
+                }}
+              >
+                Detailed prediction with model information, sentiment analysis, and feature insights
               </Typography>
               <Alert severity="warning" sx={{ mt: 1 }}>
                 Unable to load enhanced prediction. Please try again later.
@@ -1999,7 +2114,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
             </Box>
           }>
             <Chart
-                key={`chart-${realtimePrice || displayData?.current_price || 0}-${currencyUnit}-${zoomLevel}`}
+                key={`chart-${currencyUnit}-${zoomLevel}`}
               data={chartData}
               {...(displayData?.prediction && 
                    displayData.prediction.predicted_price != null && 

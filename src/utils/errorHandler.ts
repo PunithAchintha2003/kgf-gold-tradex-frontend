@@ -2,6 +2,8 @@
  * Centralized error handling utilities
  */
 
+import { env } from './env';
+
 export interface ErrorInfo {
   message: string;
   code?: string | undefined;
@@ -63,13 +65,13 @@ export class ErrorLogger {
     }
 
     // Log to console in development
-    if (import.meta.env.DEV) {
+    if (env.DEV) {
       console.error('Error logged:', error);
     }
 
     // In production, you might want to send to an error tracking service
     // Example: Sentry, LogRocket, etc.
-    if (import.meta.env.PROD && import.meta.env.VITE_ENABLE_ERROR_LOGGING) {
+    if (env.PROD && env.ENABLE_ERROR_LOGGING) {
       // TODO: Integrate with error tracking service
       // this.sendToErrorTrackingService(error);
     }
