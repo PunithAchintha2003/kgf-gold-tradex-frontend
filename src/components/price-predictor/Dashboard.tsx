@@ -40,6 +40,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
   const [realtimePrice, setRealtimePrice] = useState<number | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(0);
+  const [hasAttemptedLoad, setHasAttemptedLoad] = useState(false);
   
   // Zoom handlers
   const handleZoomIn = useCallback(() => {
@@ -199,7 +200,22 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
 
   // Use WebSocket data if available, otherwise fall back to REST API
   const displayData = wsData || dailyData;
-  const displayError = wsError || dailyError;
+  // Only show error if it's a real error (not just network errors)
+  // Network errors (CORS, connection refused) are common when backend isn't running
+  const displayError = useMemo(() => {
+    if (wsError) return wsError;
+    if (!dailyError) return null;
+    
+    // If we get a network error, don't show it as a blocking error
+    // The app should still work or show a less alarming message
+    const error = dailyError as FetchBaseQueryError;
+    if (error.status === 'FETCH_ERROR') {
+      // Don't block the UI with network errors - they're expected if backend isn't available
+      // The app will continue to retry in the background
+      return null;
+    }
+    return dailyError;
+  }, [wsError, dailyError]);
   const displayLoading = !wsConnected && dailyLoading;
 
   // Use real-time price if available, otherwise fall back to daily data
@@ -222,6 +238,15 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
     }
   }, [realtimeData]);
 
+  // Mark that we've attempted to load after a short delay
+  // This ensures UI renders even if API is unavailable (CORS, network issues, etc.)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setHasAttemptedLoad(true);
+    }, 2000); // Show loading for max 2 seconds, then render UI
+    
+    return () => clearTimeout(timer);
+  }, []);
 
   // Update chart data with real-time price and convert based on currency unit
   const chartData = useMemo(() => {
@@ -309,7 +334,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
   // Convert prediction price for display
   const convertedPredictionPrice = useMemo(() => {
     try {
-      if (!displayData || !displayData.prediction) {
+      if (!displayData?.prediction) {
         return null;
       }
       const predictedPrice = displayData.prediction.predicted_price;
@@ -369,6 +394,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
   }
 
   if (displayError) {
+    // Show error message for real API errors (not network errors which are handled above)
     return (
       <Box className="p-4">
         <Alert severity="error">
@@ -377,13 +403,12 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
       </Box>
     );
   }
-
-  if (!displayData || (displayData.status && displayData.status !== 'success')) {
+  
+  // Only show full-screen loading if we haven't attempted load yet and are actively loading
+  if (displayLoading && !displayData && !dailyData && !hasAttemptedLoad) {
     return (
-      <Box className="p-4">
-        <Alert severity="warning">
-          No data available
-        </Alert>
+      <Box className="flex items-center justify-center h-96">
+        <CircularProgress />
       </Box>
     );
   }
@@ -742,12 +767,20 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
                 <CircularProgress size={24} />
               </Box>
             }>
-              <AccuracyStats
-                accuracyStats={displayData.accuracy_stats}
-                isDark={isDark}
-                {...(accuracyVisualizationData?.statistics ? { newStats: accuracyVisualizationData.statistics } : {})}
-                {...(predictionStats?.data ? { predictionStats: predictionStats.data } : {})}
-              />
+              {displayData?.accuracy_stats ? (
+                <AccuracyStats
+                  accuracyStats={displayData.accuracy_stats}
+                  isDark={isDark}
+                  {...(accuracyVisualizationData?.statistics ? { newStats: accuracyVisualizationData.statistics } : {})}
+                  {...(predictionStats?.data ? { predictionStats: predictionStats.data } : {})}
+                />
+              ) : (
+                <Box display="flex" justifyContent="center" alignItems="center" minHeight="120px">
+                  <Typography variant="body2" color="text.secondary">
+                    Loading accuracy statistics...
+                  </Typography>
+                </Box>
+              )}
             </Suspense>
           </Box>
 

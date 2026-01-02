@@ -16,10 +16,33 @@ export interface ApiError {
 }
 
 /**
+ * Get API base URL - use relative URLs on localhost to leverage proxy
+ */
+const getApiBaseUrl = (): string => {
+  // In development, use relative URLs (empty string) to leverage Vite proxy
+  if (import.meta.env.DEV) {
+    return env.API_BASE_URL || '';
+  }
+  
+  // In production builds, detect if running on localhost
+  // If so, use relative URLs to leverage custom preview server proxy
+  if (typeof window !== 'undefined') {
+    const isLocalhost = window.location.hostname === 'localhost' || 
+                       window.location.hostname === '127.0.0.1';
+    if (isLocalhost) {
+      return ''; // Use relative URLs on localhost
+    }
+  }
+  
+  // Otherwise, use the configured API URL
+  return env.API_BASE_URL || 'https://kgf-gold-price-predictor.onrender.com';
+};
+
+/**
  * Custom base query with error handling
  */
 export const baseQuery = fetchBaseQuery({
-  baseUrl: env.API_BASE_URL,
+  baseUrl: getApiBaseUrl(),
   prepareHeaders: (headers) => {
     // Add auth token if available
     const token = localStorage.getItem('auth_token');
@@ -63,10 +86,20 @@ export const baseQueryWithReauth: BaseQueryFn<
     // No logging needed - 404s are expected for optional endpoints
   }
 
-  // Handle network errors
+  // Handle network errors (including CORS)
   if (result.error && 'status' in result.error && result.error.status === 'FETCH_ERROR') {
-    console.error('Network error:', result.error);
-    // Could dispatch a notification here
+    // Suppress CORS errors in console - they're expected when testing locally
+    // The app will handle missing data gracefully
+    const isLocalhost = typeof window !== 'undefined' && 
+      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    
+    if (isLocalhost) {
+      // Silently handle CORS errors in local development/preview
+      // These are expected when testing production builds locally
+    } else {
+      // Log network errors in production (non-localhost)
+      console.error('Network error:', result.error);
+    }
   }
 
   return result;

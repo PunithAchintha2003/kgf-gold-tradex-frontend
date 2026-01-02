@@ -1,5 +1,5 @@
 import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react-swc';
+import react from '@vitejs/plugin-react';
 import { visualizer } from 'rollup-plugin-visualizer';
 import path from 'path';
 
@@ -18,71 +18,35 @@ export default defineConfig(({ mode }: { mode: string }) => ({
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
+    dedupe: ['react', 'react-dom'], // Ensure single React instance
   },
   server: {
     port: 4000,
     strictPort: true,
     open: true,
+    proxy: {
+      '/api': {
+        target: 'https://kgf-gold-price-predictor.onrender.com',
+        changeOrigin: true,
+        secure: true,
+        rewrite: (path) => path,
+      },
+    },
   },
   build: {
     target: 'esnext',
     outDir: 'build',
-    minify: 'terser' as const,
-    terserOptions: {
-      compress: {
-        drop_console: true,
-        drop_debugger: true,
-        pure_funcs: ['console.log', 'console.info', 'console.debug', 'console.warn'],
-        passes: 2,
-        dead_code: true,
-      },
-      mangle: {
-        safari10: true,
-        properties: {
-          regex: /^_/
-        }
-      },
-      format: {
-        comments: false
-      }
-    },
+    minify: 'esbuild' as const, // Use esbuild minification (better React compatibility)
     cssCodeSplit: true,
     cssMinify: true,
+    commonjsOptions: {
+      include: [/node_modules/],
+      transformMixedEsModules: true,
+    },
     rollupOptions: {
       output: {
-        manualChunks: (id: string) => {
-          // Route-based code splitting for better performance
-          if (id.includes('src/components/dashboards')) {
-            return 'dashboards';
-          }
-          if (id.includes('src/components/price-predictor')) {
-            return 'price-predictor';
-          }
-          if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom')) {
-              return 'react-vendor';
-            }
-            if (id.includes('plotly.js') || id.includes('react-plotly')) {
-              return 'plotly';
-            }
-            if (id.includes('@mui') || id.includes('@emotion')) {
-              return 'mui';
-            }
-            if (id.includes('@reduxjs') || id.includes('redux-persist')) {
-              return 'redux';
-            }
-            if (id.includes('react-router')) {
-              return 'router';
-            }
-            if (id.includes('lucide-react') || id.includes('react-icons')) {
-              return 'icons';
-            }
-            if (id.includes('@radix-ui')) {
-              return 'radix-ui';
-            }
-            return 'vendor';
-          }
-        },
+        // Disable code splitting to ensure React loads before all other code
+        manualChunks: undefined,
         chunkFileNames: 'assets/[name]-[hash].js',
         entryFileNames: 'assets/[name]-[hash].js',
         assetFileNames: 'assets/[name]-[hash].[ext]'
@@ -115,6 +79,6 @@ export default defineConfig(({ mode }: { mode: string }) => ({
     },
   },
   esbuild: {
-    logOverride: { 'this-is-undefined-in-esm': 'silent' as const }
+    logOverride: { 'this-is-undefined-in-esm': 'silent' as const },
   },
 }));

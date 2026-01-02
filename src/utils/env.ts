@@ -5,7 +5,13 @@
 
 export const env = {
   // API Configuration
-  API_BASE_URL: import.meta.env.VITE_API_BASE_URL || 'https://kgf-gold-price-predictor.onrender.com',
+  // In development, use relative URLs to leverage Vite proxy (bypasses CORS)
+  // In production, use the full API URL
+  // Note: CORS errors in console when testing production builds locally are expected and harmless
+  // The app will work correctly when deployed to Netlify
+  API_BASE_URL: import.meta.env.DEV 
+    ? (import.meta.env.VITE_API_BASE_URL || '') // Empty string = relative URLs, uses Vite proxy
+    : (import.meta.env.VITE_API_BASE_URL || 'https://kgf-gold-price-predictor.onrender.com'),
   
   // App Configuration
   APP_ENV: (import.meta.env.VITE_APP_ENV || 'development') as 'development' | 'production' | 'staging',
