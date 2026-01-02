@@ -42,6 +42,8 @@
 
 KGF Gold TradeX is a comprehensive gold marketplace platform that enables users to trade, invest, and manage gold assets. The platform features real-time price tracking, AI-powered price predictions, live auctions, and multi-role dashboards for different user types.
 
+The frontend is built as a modern Single Page Application (SPA) that communicates with a Python-based ML backend for price predictions and data processing. The application supports multiple user roles (buyers, sellers, pawnshops, investors, and administrators) with role-specific dashboards and features.
+
 ### Key Highlights
 
 - 🚀 **Modern Stack**: Built with React 18, TypeScript 5.8, and Vite 7
@@ -59,8 +61,10 @@ KGF Gold TradeX is a comprehensive gold marketplace platform that enables users 
 - **💎 Digital Investment** - Digital gold investment platform with portfolio management
 - **🔨 Live Auctions** - Real-time auction system for gold products
 - **👓 AR Try-On** - Augmented reality jewelry try-on experience
-- **📊 Price Predictor** - AI-powered gold price prediction with accuracy visualization
+- **📊 Price Predictor** - AI-powered gold price prediction with accuracy visualization and historical data
 - **📈 Analytics Dashboard** - Comprehensive analytics and reporting
+- **💬 Chat Support** - Integrated chat modal for customer support
+- **🔐 Authentication** - Secure login and registration system
 
 ### User Management
 
@@ -91,26 +95,30 @@ KGF Gold TradeX is a comprehensive gold marketplace platform that enables users 
 
 ### State Management & Data Fetching
 
-- **[Redux Toolkit](https://redux-toolkit.js.org/)** - State management
+- **[Redux Toolkit](https://redux-toolkit.js.org/)** v2.9 - State management
 - **[RTK Query](https://redux-toolkit.js.org/rtk-query/overview)** - Data fetching and caching
-- **[Redux Persist](https://github.com/rt2zz/redux-persist)** - State persistence
+- **[Redux Persist](https://github.com/rt2zz/redux-persist)** v6.0 - State persistence
+- **[React Hook Form](https://react-hook-form.com/)** - Form state management
 
 ### Routing
 
-- **[React Router](https://reactrouter.com/)** - Client-side routing
+- **[React Router](https://reactrouter.com/)** v7.9 - Client-side routing with lazy loading
 
 ### UI & Styling
 
 - **[Tailwind CSS](https://tailwindcss.com/)** 4.1 - Utility-first CSS framework
 - **[Radix UI](https://www.radix-ui.com/)** - Accessible component primitives
 - **[shadcn/ui](https://ui.shadcn.com/)** - High-quality component library
+- **[Material-UI (MUI)](https://mui.com/)** - Additional UI components
 - **[Lucide React](https://lucide.dev/)** - Icon library
+- **[React Icons](https://react-icons.github.io/react-icons/)** - Additional icon sets
 - **[next-themes](https://github.com/pacocoursey/next-themes)** - Theme management
 
 ### Data Visualization
 
-- **[Plotly.js](https://plotly.com/javascript/)** - Advanced charting
+- **[Plotly.js](https://plotly.com/javascript/)** - Advanced charting for price predictions
 - **[Recharts](https://recharts.org/)** - Composable charting library
+- **[Lightweight Charts](https://www.tradingview.com/lightweight-charts/)** - High-performance financial charts
 
 ### Testing
 
@@ -160,14 +168,17 @@ npm install
 Create a `.env` file in the root directory:
 
 ```bash
-cp .env.example .env
+# Create .env file (if .env.example exists, copy it)
+cp .env.example .env  # or create manually
 ```
 
 Edit `.env` with your configuration:
 
 ```env
 # API Configuration
-VITE_API_BASE_URL=https://kgf-gold-price-predictor.onrender.com
+# In development, leave empty to use Vite proxy (bypasses CORS)
+# In production, use the full API URL
+VITE_API_BASE_URL=
 
 # Application Configuration
 VITE_APP_ENV=development
@@ -180,7 +191,12 @@ VITE_ENABLE_ERROR_LOGGING=true
 
 # Build Configuration
 VITE_BUILD_SOURCEMAP=false
+
+# Demo Configuration (optional)
+VITE_DEMO_PASSWORD=
 ```
+
+**Note**: In development mode, leaving `VITE_API_BASE_URL` empty will use relative URLs and leverage Vite's proxy configuration (see `vite.config.ts`), which helps bypass CORS issues. In production, you should set the full API URL.
 
 ### 4. Start Development Server
 
@@ -235,8 +251,36 @@ kgf-gold-tradex-frontend/
 ├── package.json           # Dependencies & scripts
 ├── tsconfig.json          # TypeScript configuration
 ├── vite.config.ts         # Vite configuration
+├── vercel.json            # Vercel deployment configuration
 └── vitest.config.ts       # Vitest configuration
 ```
+
+## 🗺️ Application Routes
+
+The application uses React Router for client-side routing with lazy-loaded components:
+
+### Public Routes
+
+- `/` - Home page
+- `/products` - Gold products catalog with AR try-on
+- `/auctions` - Live auctions page
+- `/price-predictor` - AI-powered price prediction tool
+- `/login` - User login
+- `/register` - User registration
+
+### Protected Dashboard Routes
+
+All dashboard routes require authentication and specific user roles:
+
+- `/dashboard/customer` - Customer/Buyer dashboard (requires `buyer` role)
+- `/dashboard/seller` - Seller dashboard (requires `seller` role)
+- `/dashboard/pawnshop` - Pawnshop dashboard (requires `pawnshop` role)
+- `/dashboard/investor` - Investor dashboard (requires `investor` role)
+- `/dashboard/admin` - Admin dashboard (requires `admin` role)
+
+### Route Configuration
+
+Routes are centrally configured in `src/core/config/routes.config.ts` with metadata for authentication and role requirements.
 
 ## 📜 Available Scripts
 
@@ -312,7 +356,11 @@ Vite configuration includes:
 - Tree shaking
 - Asset optimization
 - Source maps (development only)
-- Terser minification
+- esbuild minification (optimized for React)
+- Proxy configuration for API requests in development
+- Optimized dependency pre-bundling
+
+**Development Proxy**: The Vite dev server includes a proxy configuration that routes `/api` requests to the backend API, helping bypass CORS issues during development.
 
 See `vite.config.ts` for full configuration.
 
@@ -325,6 +373,8 @@ Environment variables are type-safe and validated. All Vite environment variable
 | Variable            | Description  | Default                                         | Required               |
 | ------------------- | ------------ | ----------------------------------------------- | ---------------------- |
 | `VITE_API_BASE_URL` | API base URL | `https://kgf-gold-price-predictor.onrender.com` | ✅ Yes (in production) |
+
+**Development Note**: In development mode, you can leave `VITE_API_BASE_URL` empty to use Vite's proxy configuration, which automatically routes `/api` requests to the backend and bypasses CORS issues.
 
 #### Optional Variables
 
@@ -340,9 +390,10 @@ Environment variables are type-safe and validated. All Vite environment variable
 
 #### Example `.env` File
 
+**Development (uses Vite proxy):**
 ```env
-# API Configuration
-VITE_API_BASE_URL=https://kgf-gold-price-predictor.onrender.com
+# API Configuration - Leave empty to use Vite proxy in development
+VITE_API_BASE_URL=
 
 # Application Configuration
 VITE_APP_ENV=development
@@ -351,6 +402,24 @@ VITE_APP_VERSION=0.1.0
 
 # Feature Flags
 VITE_ENABLE_ANALYTICS=false
+VITE_ENABLE_ERROR_LOGGING=true
+
+# Build Configuration
+VITE_BUILD_SOURCEMAP=false
+```
+
+**Production:**
+```env
+# API Configuration
+VITE_API_BASE_URL=https://kgf-gold-price-predictor.onrender.com
+
+# Application Configuration
+VITE_APP_ENV=production
+VITE_APP_NAME=KGF Gold TradeX
+VITE_APP_VERSION=0.1.0
+
+# Feature Flags
+VITE_ENABLE_ANALYTICS=true
 VITE_ENABLE_ERROR_LOGGING=true
 
 # Build Configuration
@@ -457,6 +526,25 @@ npm run preview
 
 ## 🚀 Deployment
 
+### Backend Integration
+
+This frontend application connects to a Python-based ML backend API. The backend is located in the `kgf-gold-price-predictor-ml-backend/` directory and provides:
+
+- **Gold Price Prediction**: ML-powered price forecasting with accuracy metrics
+- **User Authentication**: Login, registration, and session management
+- **Product Management**: Gold product catalog and inventory
+- **Auction System**: Real-time auction data and bidding
+- **Analytics**: User analytics and reporting endpoints
+- **News Integration**: Gold market news and updates
+
+**Backend API Base URL**: `https://kgf-gold-price-predictor.onrender.com`
+
+**Development Proxy**: In development mode, the Vite dev server proxies `/api/*` requests to the backend, allowing you to use relative URLs and bypass CORS issues.
+
+**API Communication**: The frontend uses RTK Query for API calls, providing automatic caching, request deduplication, and optimistic updates.
+
+For backend setup and documentation, see `kgf-gold-price-predictor-ml-backend/README.md`.
+
 ### Build for Production
 
 ```bash
@@ -485,7 +573,7 @@ The application can be deployed to:
 
 ### Deploying to Vercel
 
-Vercel automatically detects Vite projects and configures the build settings. However, you can manually configure if needed.
+Vercel automatically detects Vite projects and configures the build settings. The project includes a `vercel.json` configuration file that handles routing and caching.
 
 #### Vercel Configuration Settings
 
@@ -496,8 +584,13 @@ When setting up your Vercel project, use these settings:
 | **Root Directory**   | `./`            | Project root (default)                                  |
 | **Framework Preset** | `Vite`          | Auto-detected, but can be set manually                  |
 | **Build Command**    | `npm run build` | Production build command                                |
-| **Output Directory** | `build`         | Build output directory (configured in `vite.config.js`) |
+| **Output Directory** | `build`         | Build output directory (configured in `vite.config.ts`) |
 | **Install Command**  | `npm install`   | Default npm install                                     |
+
+**Note**: The `vercel.json` file is already configured with:
+- SPA routing (all routes redirect to `index.html`)
+- Cache headers for assets (long-term caching)
+- No-cache headers for `index.html` (ensures fresh app loads)
 
 #### Setup Steps
 
@@ -661,8 +754,15 @@ vercel --prod
 
 **Build Output Directory Issues:**
 
-- The build outputs to `build/` directory (configured in `vite.config.js`)
+- The build outputs to `build/` directory (configured in `vite.config.ts`)
 - Ensure Vercel's Output Directory is set to `build`
+- The `vercel.json` file already configures this, so Vercel should auto-detect it
+
+**CORS Issues in Production:**
+
+- If you see CORS errors when testing production builds locally, this is expected
+- The app will work correctly when deployed to Vercel or other hosting platforms
+- Ensure your backend API has proper CORS headers configured for your production domain
 
 ### Environment Variables Reference
 
@@ -754,11 +854,13 @@ npm audit fix
 
 ### Performance Optimizations
 
-- **Code Splitting**: Route-based and vendor-based
-- **Lazy Loading**: Components loaded on demand
+- **Code Splitting**: Route-based lazy loading for all major pages and dashboards
+- **Lazy Loading**: Components loaded on demand using React.lazy()
 - **Tree Shaking**: Dead code elimination
-- **Asset Optimization**: Image and asset optimization
-- **Bundle Optimization**: Optimized chunk sizes
+- **Asset Optimization**: Image and asset optimization with inlining for small assets
+- **Bundle Optimization**: Optimized chunk sizes with esbuild minification
+- **Redux Persist**: State persistence reduces API calls
+- **RTK Query Caching**: Automatic caching of API responses
 
 ### Performance Metrics
 
