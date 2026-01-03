@@ -14,6 +14,11 @@ interface ChartProps {
   currencyUnit: CurrencyUnit;
   usdToLkrRate: number;
   zoomLevel?: number | undefined;
+  buyPrice?: number | undefined;
+  sellPrice?: number | undefined;
+  showAccuracyLine?: boolean | undefined;
+  showPredictionLine?: boolean | undefined;
+  realtimePriceAlreadyConverted?: boolean | undefined; // If true, realtimePrice is already in the target currency unit
 }
 
 const Chart: React.FC<ChartProps> = ({
@@ -26,6 +31,11 @@ const Chart: React.FC<ChartProps> = ({
   currencyUnit,
   usdToLkrRate,
   zoomLevel = 0,
+  buyPrice,
+  sellPrice,
+  showAccuracyLine = true,
+  showPredictionLine = true,
+  realtimePriceAlreadyConverted = false,
 }) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -35,6 +45,8 @@ const Chart: React.FC<ChartProps> = ({
   const currentPriceMarkerRef = useRef<ISeriesApi<'Line'> | null>(null);
   const currentPriceLineRef = useRef<ReturnType<ISeriesApi<'Candlestick'>['createPriceLine']> | null>(null);
   const predictedPriceLineRef = useRef<ReturnType<ISeriesApi<'Line'>['createPriceLine']> | null>(null);
+  const buyPriceLineRef = useRef<ReturnType<ISeriesApi<'Candlestick'>['createPriceLine']> | null>(null);
+  const sellPriceLineRef = useRef<ReturnType<ISeriesApi<'Candlestick'>['createPriceLine']> | null>(null);
 
   // Helper function to format price values
   const formatPrice = useCallback((value: number | null | undefined): string => {
@@ -56,20 +68,26 @@ const Chart: React.FC<ChartProps> = ({
   }, [currencyUnit]);
 
   // Convert realtime price
+  // Note: If realtimePriceAlreadyConverted is true, realtimePrice is already in the target currency unit
+  // Otherwise, realtimePrice is in USD per troy ounce and needs conversion
   const convertedRealtimePrice = useMemo(() => {
     if (realtimePrice == null || isNaN(realtimePrice)) {
       return null;
     }
     
+    // If already converted, return as-is
+    if (realtimePriceAlreadyConverted) {
+      return realtimePrice;
+    }
+    
+    // Otherwise, convert from USD per troy ounce to the target unit
     try {
-      return currencyUnit === 'pawn' 
-        ? convertPrice(realtimePrice, currencyUnit, usdToLkrRate).price 
-        : realtimePrice;
+      return convertPrice(realtimePrice, currencyUnit, usdToLkrRate).price;
     } catch (_error) {
       console.error('Error converting realtime price:', _error);
       return null;
     }
-  }, [realtimePrice, currencyUnit, usdToLkrRate]);
+  }, [realtimePrice, currencyUnit, usdToLkrRate, realtimePriceAlreadyConverted]);
   
   // Calculate current price
   const currentPrice = useMemo(() => {
@@ -124,41 +142,43 @@ const Chart: React.FC<ChartProps> = ({
         d.close != null && isFinite(d.close)
       );
 
-    // Prepare accuracy line (historical predictions)
+    // Prepare accuracy line (historical predictions) - only if showAccuracyLine is true
     const allPredictions: HistoricalPrediction[] = [];
     
-    // Add predictions from data array
-    if (sortedData && sortedData.length > 0) {
-      sortedData.forEach(d => {
-        if (d.predicted_price != null && typeof d.predicted_price === 'number' && isFinite(d.predicted_price) && d.date) {
-          const exists = allPredictions.some(p => p.date === d.date);
-          if (!exists) {
-            allPredictions.push({
-              date: d.date,
-              predicted_price: d.predicted_price,
-            });
+    if (showAccuracyLine) {
+      // Add predictions from data array
+      if (sortedData && sortedData.length > 0) {
+        sortedData.forEach(d => {
+          if (d.predicted_price != null && typeof d.predicted_price === 'number' && isFinite(d.predicted_price) && d.date) {
+            const exists = allPredictions.some(p => p.date === d.date);
+            if (!exists) {
+              allPredictions.push({
+                date: d.date,
+                predicted_price: d.predicted_price,
+              });
+            }
           }
-        }
-      });
+        });
+      }
+      
+      // Add historical predictions
+      if (historicalPredictions && historicalPredictions.length > 0) {
+        historicalPredictions.forEach(p => {
+          if (p && p.predicted_price != null && typeof p.predicted_price === 'number' && isFinite(p.predicted_price) && p.date) {
+            const exists = allPredictions.some(existing => existing.date === p.date);
+            if (!exists) {
+              allPredictions.push({
+                date: p.date,
+                predicted_price: p.predicted_price,
+              });
+            }
+          }
+        });
+      }
     }
     
-    // Add historical predictions
-    if (historicalPredictions && historicalPredictions.length > 0) {
-      historicalPredictions.forEach(p => {
-        if (p && p.predicted_price != null && typeof p.predicted_price === 'number' && isFinite(p.predicted_price) && p.date) {
-          const exists = allPredictions.some(existing => existing.date === p.date);
-          if (!exists) {
-            allPredictions.push({
-              date: p.date,
-              predicted_price: p.predicted_price,
-            });
-          }
-        }
-      });
-    }
-    
-    // Add main prediction
-    if (prediction && 
+    // Add main prediction - only if showPredictionLine is true
+    if (showPredictionLine && prediction && 
         prediction.predicted_price != null && 
         typeof prediction.predicted_price === 'number' && 
         isFinite(prediction.predicted_price) && 
@@ -211,9 +231,9 @@ const Chart: React.FC<ChartProps> = ({
       })
       .filter(d => d.value != null && isFinite(d.value));
 
-    // Prepare prediction line (from current to future prediction)
+    // Prepare prediction line (from current to future prediction) - only if showPredictionLine is true
     let predictionLineData: Array<{ time: Time; value: number }> = [];
-    if (prediction && prediction.predicted_price != null && typeof prediction.predicted_price === 'number' && isFinite(prediction.predicted_price) && prediction.next_day) {
+    if (showPredictionLine && prediction && prediction.predicted_price != null && typeof prediction.predicted_price === 'number' && isFinite(prediction.predicted_price) && prediction.next_day) {
       // Only create prediction line if we have actual candlestick data displayed
       // Use the last date from the gold candlestick data (what's actually displayed)
       if (goldCandlestickData.length > 0) {
@@ -248,7 +268,7 @@ const Chart: React.FC<ChartProps> = ({
       accuracyLineData,
       predictionLineData,
     };
-  }, [data, historicalPredictions, prediction, currencyUnit, usdToLkrRate, currentPrice]);
+  }, [data, historicalPredictions, prediction, currencyUnit, usdToLkrRate, currentPrice, showAccuracyLine, showPredictionLine]);
 
   // Initialize chart - only create once, don't recreate on data changes
   useEffect(() => {
@@ -495,7 +515,7 @@ const Chart: React.FC<ChartProps> = ({
           lineVisible: true,
           axisLabelColor: '#F5D300',
           axisLabelTextColor: isDark ? '#FFFFFF' : '#000000',
-          title: `Current: ${formatPrice(currentPrice)}`,
+          title: `Current (8g): ${formatPrice(currentPrice)}`,
         };
         currentPriceLineRef.current = goldPriceSeriesRef.current.createPriceLine(priceLine);
       } else {
@@ -505,26 +525,86 @@ const Chart: React.FC<ChartProps> = ({
           currentPriceLineRef.current = null;
         }
       }
-    }
 
-    // Update accuracy line data
-    if (accuracyLineSeriesRef.current) {
-      if (chartData.accuracyLineData.length > 0) {
-        accuracyLineSeriesRef.current.setData(chartData.accuracyLineData);
+      // Update buy/sell price lines (spread lines)
+      if (buyPrice != null || sellPrice != null) {
+        // Remove existing buy price line
+        if (buyPriceLineRef.current) {
+          goldPriceSeriesRef.current.removePriceLine(buyPriceLineRef.current);
+          buyPriceLineRef.current = null;
+        }
+
+        // Remove existing sell price line
+        if (sellPriceLineRef.current) {
+          goldPriceSeriesRef.current.removePriceLine(sellPriceLineRef.current);
+          sellPriceLineRef.current = null;
+        }
+
+        // Add buy price line
+        if (buyPrice != null && isFinite(buyPrice) && buyPrice > 0) {
+          const buyPriceLine: PriceLineOptions = {
+            price: buyPrice,
+            color: '#4caf50',
+            lineWidth: 2,
+            lineStyle: LineStyle.Dashed,
+            axisLabelVisible: false,
+            lineVisible: true,
+            axisLabelColor: '#4caf50',
+            axisLabelTextColor: isDark ? '#FFFFFF' : '#000000',
+            title: 'Buy Price (8g)',
+          };
+          buyPriceLineRef.current = goldPriceSeriesRef.current.createPriceLine(buyPriceLine);
+        }
+
+        // Add sell price line
+        if (sellPrice != null && isFinite(sellPrice) && sellPrice > 0) {
+          const sellPriceLine: PriceLineOptions = {
+            price: sellPrice,
+            color: '#f44336',
+            lineWidth: 2,
+            lineStyle: LineStyle.Dashed,
+            axisLabelVisible: false,
+            lineVisible: true,
+            axisLabelColor: '#f44336',
+            axisLabelTextColor: isDark ? '#FFFFFF' : '#000000',
+            title: 'Sell Price (8g)',
+          };
+          sellPriceLineRef.current = goldPriceSeriesRef.current.createPriceLine(sellPriceLine);
+        }
+      } else {
+        // Clean up if buyPrice/sellPrice are removed
+        if (buyPriceLineRef.current) {
+          goldPriceSeriesRef.current.removePriceLine(buyPriceLineRef.current);
+          buyPriceLineRef.current = null;
+        }
+        if (sellPriceLineRef.current) {
+          goldPriceSeriesRef.current.removePriceLine(sellPriceLineRef.current);
+          sellPriceLineRef.current = null;
+        }
       }
     }
 
-    // Update prediction line data
+    // Update accuracy line data - only if showAccuracyLine is true
+    if (accuracyLineSeriesRef.current) {
+      if (showAccuracyLine && chartData.accuracyLineData.length > 0) {
+        accuracyLineSeriesRef.current.setData(chartData.accuracyLineData);
+      } else {
+        // Clear accuracy line if disabled or no data
+        accuracyLineSeriesRef.current.setData([]);
+      }
+    }
+
+    // Update prediction line data - only if showPredictionLine is true
     if (predictionSeriesRef.current) {
-      if (chartData.predictionLineData.length > 0) {
+      if (showPredictionLine && chartData.predictionLineData.length > 0) {
         predictionSeriesRef.current.setData(chartData.predictionLineData);
       } else {
-        // Clear prediction line if no data
+        // Clear prediction line if disabled or no data
         predictionSeriesRef.current.setData([]);
       }
       
       // Update prediction price line - remove existing one first
-      if (prediction && prediction.predicted_price != null && typeof prediction.predicted_price === 'number' && isFinite(prediction.predicted_price)) {
+      if (showPredictionLine && prediction && prediction.predicted_price != null && typeof prediction.predicted_price === 'number' && isFinite(prediction.predicted_price)) {
         try {
           let predPrice: number;
           if (usdToLkrRate && usdToLkrRate > 0 && isFinite(usdToLkrRate)) {
@@ -580,7 +660,7 @@ const Chart: React.FC<ChartProps> = ({
         }
       }
     }
-  }, [chartData, currentPrice, prediction, currencyUnit, usdToLkrRate, formatPrice, isDark]);
+  }, [chartData, currentPrice, prediction, currencyUnit, usdToLkrRate, formatPrice, isDark, buyPrice, sellPrice]);
 
   // Separate effect for zoom level changes to avoid unnecessary updates
   useEffect(() => {
@@ -691,7 +771,7 @@ const Chart: React.FC<ChartProps> = ({
                 color: isDark ? '#D1D5DB' : '#374151',
               }}
             >
-              Current:
+              Current (8g):
             </span>
             <span
               style={{

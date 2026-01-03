@@ -22,6 +22,7 @@ const AdminDashboard = lazy(() => import('../components/dashboards/AdminDashboar
 const ARTryOnModal = lazy(() => import('../shared/components/ARTryOnModal').then(module => ({ default: module.ARTryOnModal })));
 const ChatModal = lazy(() => import('../shared/components/ChatModal').then(module => ({ default: module.ChatModal })));
 const PricePredictorPage = lazy(() => import('../components/price-predictor/PricePredictorPage'));
+const TradePage = lazy(() => import('../pages/TradePage'));
 
 /**
  * App routes component
@@ -71,6 +72,7 @@ const AppRoutes: React.FC = () => {
               />
               <Route path={ROUTES.AUCTIONS} element={<AuctionsPage onNavigate={handleNavigate} />} />
               <Route path={ROUTES.PRICE_PREDICTOR} element={<PricePredictorPage onNavigate={handleNavigate} />} />
+              <Route path={ROUTES.TRADE} element={<TradePage onNavigate={handleNavigate} />} />
               <Route path={ROUTES.LOGIN} element={<LoginPage onNavigate={handleNavigate} />} />
               <Route path={ROUTES.REGISTER} element={<RegisterPage onNavigate={handleNavigate} />} />
               
