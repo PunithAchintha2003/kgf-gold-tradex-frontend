@@ -8,6 +8,7 @@ export { LoginPage } from './LoginPage';
 export { RegisterPage } from './RegisterPage';
 export { ProductsPage } from './ProductsPage';
 export { AuctionsPage } from './AuctionsPage';
+export { default as TradePage } from './TradePage';
 
 
 

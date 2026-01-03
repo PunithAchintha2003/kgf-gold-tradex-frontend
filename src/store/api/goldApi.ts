@@ -244,10 +244,85 @@ export interface UpdatePendingPredictionsResponse {
   total_pending?: number;
 }
 
+// Spot Trading Interfaces
+export interface SpotTradePriceResponse {
+  symbol: string;
+  current_price_lkr: number;
+  current_price_usd: number;
+  spread_lkr: number;
+  buy_price_lkr: number;
+  sell_price_lkr: number;
+  exchange_rate: number;
+  timestamp: string;
+}
+
+export interface BuyOrderRequest {
+  quantity: number;
+}
+
+export interface SellOrderRequest {
+  quantity: number;
+}
+
+export interface TradeResponse {
+  trade_id: number;
+  user_id: string;
+  order_type: string;
+  quantity: number;
+  price: number;
+  total_value: number;
+  status: string;
+  message: string;
+  created_at: string;
+}
+
+export interface BalanceResponse {
+  user_id: string;
+  lkr_balance: number;
+  gold_balance: number;
+  total_value_lkr: number;
+}
+
+export interface TradeHistoryItem {
+  id: number;
+  user_id: string;
+  order_type: string;
+  quantity: number;
+  price: number;
+  total_value: number;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TradeHistoryResponse {
+  trades: TradeHistoryItem[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface OpenOrderItem {
+  id: number;
+  user_id: string;
+  order_type: string;
+  quantity: number;
+  price: number;
+  total_value: number;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OpenOrdersResponse {
+  orders: OpenOrderItem[];
+  total: number;
+}
+
 export const goldApi = createApi({
   reducerPath: 'goldApi',
   baseQuery: baseQueryWithReauth,
-  tagTypes: ['DailyData', 'RealtimePrice', 'ExchangeRate', 'AccuracyVisualization', 'PredictionHistory', 'EnhancedPrediction', 'ModelInfo', 'PredictionStats', 'PendingPredictions', 'PredictionReasons'],
+  tagTypes: ['DailyData', 'RealtimePrice', 'ExchangeRate', 'AccuracyVisualization', 'PredictionHistory', 'EnhancedPrediction', 'ModelInfo', 'PredictionStats', 'PendingPredictions', 'PredictionReasons', 'SpotTradePrice', 'SpotTradeBalance', 'SpotTradeHistory', 'SpotTradeOrders'],
   endpoints: (builder) => ({
     getDailyData: builder.query<DailyDataResponse, { days?: number; start_date?: string; end_date?: string } | void>({
       query: (params) => {
@@ -314,6 +389,45 @@ export const goldApi = createApi({
       query: () => '/api/v1/xauusd/prediction-reasons',
       providesTags: ['PredictionReasons'],
     }),
+    // Spot Trading Endpoints
+    getSpotTradePrice: builder.query<SpotTradePriceResponse, void>({
+      query: () => '/api/v1/spot-trade/price',
+      providesTags: ['SpotTradePrice'],
+    }),
+    placeBuyOrder: builder.mutation<TradeResponse, BuyOrderRequest>({
+      query: (body) => ({
+        url: '/api/v1/spot-trade/buy',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['SpotTradeBalance', 'SpotTradeHistory', 'SpotTradeOrders'],
+    }),
+    placeSellOrder: builder.mutation<TradeResponse, SellOrderRequest>({
+      query: (body) => ({
+        url: '/api/v1/spot-trade/sell',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['SpotTradeBalance', 'SpotTradeHistory', 'SpotTradeOrders'],
+    }),
+    getSpotTradeBalance: builder.query<BalanceResponse, void>({
+      query: () => '/api/v1/spot-trade/balance',
+      providesTags: ['SpotTradeBalance'],
+    }),
+    getSpotTradeHistory: builder.query<TradeHistoryResponse, { limit?: number; offset?: number }>({
+      query: (params) => {
+        const searchParams = new URLSearchParams();
+        if (params?.limit) searchParams.append('limit', params.limit.toString());
+        if (params?.offset) searchParams.append('offset', params.offset.toString());
+        const queryString = searchParams.toString();
+        return `/api/v1/spot-trade/history${queryString ? `?${queryString}` : ''}`;
+      },
+      providesTags: ['SpotTradeHistory'],
+    }),
+    getSpotTradeOrders: builder.query<OpenOrdersResponse, void>({
+      query: () => '/api/v1/spot-trade/orders',
+      providesTags: ['SpotTradeOrders'],
+    }),
   }),
 });
 
@@ -328,5 +442,12 @@ export const {
   useGetPredictionStatsQuery,
   useGetPendingPredictionsQuery,
   useUpdatePendingPredictionsMutation,
-  useGetPredictionReasonsQuery
+  useGetPredictionReasonsQuery,
+  // Spot Trading Hooks
+  useGetSpotTradePriceQuery,
+  usePlaceBuyOrderMutation,
+  usePlaceSellOrderMutation,
+  useGetSpotTradeBalanceQuery,
+  useGetSpotTradeHistoryQuery,
+  useGetSpotTradeOrdersQuery,
 } = goldApi;

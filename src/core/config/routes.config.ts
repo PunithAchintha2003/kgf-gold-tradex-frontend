@@ -8,6 +8,7 @@ export const ROUTES = {
   PRODUCTS: '/products',
   AUCTIONS: '/auctions',
   PRICE_PREDICTOR: '/price-predictor',
+  TRADE: '/trade',
   LOGIN: '/login',
   REGISTER: '/register',
   DASHBOARD: {
@@ -46,6 +47,10 @@ export const ROUTE_CONFIG: Record<string, RouteConfig> = {
   [ROUTES.PRICE_PREDICTOR]: {
     path: ROUTES.PRICE_PREDICTOR,
     title: 'Price Predictor',
+  },
+  [ROUTES.TRADE]: {
+    path: ROUTES.TRADE,
+    title: 'Trade',
   },
   [ROUTES.LOGIN]: {
     path: ROUTES.LOGIN,
