@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Checkbox } from '../components/ui/checkbox';
 import { useApp } from '../contexts/AppContext';
 import { Mail, Lock, User, Phone, MapPin, Eye, EyeOff } from 'lucide-react';
@@ -19,7 +18,6 @@ interface FormData {
   phone: string;
   password: string;
   confirmPassword: string;
-  role: string;
   address: string;
   agreeTerms: boolean;
   agreeMarketing: boolean;
@@ -33,7 +31,6 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
     phone: '',
     password: '',
     confirmPassword: '',
-    role: '',
     address: '',
     agreeTerms: false,
     agreeMarketing: false
@@ -77,10 +74,6 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
       newErrors['address'] = 'Address is required';
     }
 
-    if (!formData['role']) {
-      newErrors['role'] = 'Please select an account type';
-    }
-
     if (!formData['password']) {
       newErrors['password'] = 'Password is required';
     } else if (formData['password'].length < 8) {
@@ -122,13 +115,6 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
       onNavigate('/login');
     }, 1500);
   };
-
-  const roleOptions = [
-    { value: 'buyer', label: 'Customer - Buy gold jewelry and products' },
-    { value: 'seller', label: 'Gold Seller - Sell verified gold products' },
-    { value: 'pawnshop', label: 'Pawnshop - Create auctions for gold items' },
-    { value: 'investor', label: 'Digital Gold Investor - Trade digital gold' }
-  ];
 
   return (
     <div className="min-h-screen py-12 bg-muted/50">
@@ -228,30 +214,6 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                   </div>
                   {errors['address'] && (
                     <p className="text-sm text-destructive mt-1">{errors['address']}</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Account Type */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">Account Type</h3>
-                
-                <div>
-                  <label className="block text-sm font-medium mb-2">I want to:</label>
-                  <Select value={formData.role} onValueChange={(value) => handleInputChange('role', value)}>
-                    <SelectTrigger className={errors['role'] ? 'border-destructive' : ''}>
-                      <SelectValue placeholder="Select your account type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {roleOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {errors['role'] && (
-                    <p className="text-sm text-destructive mt-1">{errors['role']}</p>
                   )}
                 </div>
               </div>
