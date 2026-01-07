@@ -213,7 +213,9 @@ export const Header: React.FC<HeaderProps> = React.memo(({ onNavigate, currentPa
                     >
                       <Avatar className="h-10 w-10">
                         <AvatarImage src={user.avatar} alt={user.name} />
-                        <AvatarFallback>{user.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+                        <AvatarFallback>
+                          <User className="h-5 w-5" />
+                        </AvatarFallback>
                       </Avatar>
                     </Button>
                   </DropdownMenuTrigger>
@@ -221,12 +223,14 @@ export const Header: React.FC<HeaderProps> = React.memo(({ onNavigate, currentPa
                     <div className="flex flex-col space-y-1 p-2">
                       <p className="text-sm font-medium">{user.name}</p>
                       <p className="text-xs text-muted-foreground">{user.email}</p>
-                      <Badge className={`text-xs w-fit ${roleColors[user.role]}`}>
-                        {user.role}
-                      </Badge>
+                      {user.role !== 'buyer' && (
+                        <Badge className={`text-xs w-fit ${roleColors[user.role]}`}>
+                          {user.role}
+                        </Badge>
+                      )}
                     </div>
                     <DropdownMenuSeparator />
-                    {roleBasedDashboard && (
+                    {roleBasedDashboard && user.role !== 'buyer' && (
                       <>
                         <DropdownMenuItem onClick={() => onNavigate(roleBasedDashboard.path)}>
                           <Settings className="mr-2 h-4 w-4" />

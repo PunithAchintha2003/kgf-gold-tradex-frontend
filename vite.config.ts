@@ -25,10 +25,25 @@ export default defineConfig(({ mode }: { mode: string }) => ({
     strictPort: true,
     open: true,
     proxy: {
-      '/api': {
-        target: 'https://kgf-gold-price-predictor.onrender.com',
+      // Route auth and user endpoints to Node.js backend (port 5001)
+      // These must come BEFORE the general /api proxy to match first
+      '/api/v1/auth': {
+        target: 'http://localhost:5001',
         changeOrigin: true,
-        secure: true,
+        secure: false,
+        rewrite: (path) => path,
+      },
+      '/api/v1/users': {
+        target: 'http://localhost:5001',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path,
+      },
+      // Route all other API endpoints (including spot-trade, xauusd, etc.) to Python backend (port 8001)
+      '/api': {
+        target: 'http://localhost:8001',
+        changeOrigin: true,
+        secure: false,
         rewrite: (path) => path,
       },
     },
