@@ -6,6 +6,7 @@ import { Checkbox } from '../components/ui/checkbox';
 import { useApp } from '../contexts/AppContext';
 import { Mail, Lock, User, Phone, MapPin, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
+import { ApiRequestError } from '../services/authService';
 import logoImage from '../assets/28A9A4B0-D00A-4539-82A6-89A2130B5FAF.PNG';
 
 interface RegisterPageProps {
@@ -24,7 +25,7 @@ interface FormData {
 }
 
 export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
-  const { t: _t } = useApp();
+  const { register } = useApp();
   const [formData, setFormData] = useState<FormData>({
     name: '',
     email: '',
@@ -51,7 +52,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
     }
   };
 
-  const validateForm = (): boolean => {
+  const validateForm = (): { isValid: boolean; errors: Record<string, string> } => {
     const newErrors: Record<string, string> = {};
 
     if (!formData['name'].trim()) {
@@ -91,29 +92,94 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
     }
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return { isValid: Object.keys(newErrors).length === 0, errors: newErrors };
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateForm()) {
+    // Validate form first - this returns errors directly
+    const validation = validateForm();
+    
+    if (!validation.isValid) {
+      // Show specific validation errors in toast
+      const errorFields = Object.keys(validation.errors);
+      const errorMessages = errorFields.map(field => {
+        const fieldLabel = field === 'agreeTerms' ? 'Terms and conditions' : 
+                          field === 'confirmPassword' ? 'Confirm password' :
+                          field.charAt(0).toUpperCase() + field.slice(1).replace(/([A-Z])/g, ' $1');
+        return `${fieldLabel}: ${validation.errors[field]}`;
+      }).join('; ');
+      
       toast.error('Please fix the errors in the form', {
-        description: 'Check all fields and try again.',
+        description: errorMessages,
+        duration: 5000,
       });
       return;
     }
 
     setIsLoading(true);
     
-    // Simulate registration
-    setTimeout(() => {
-      toast.success('Account created successfully!', {
-        description: 'You can now sign in with your credentials.',
+    try {
+      await register({
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        password: formData.password,
+        address: formData.address,
       });
+      
+      toast.success('Account created successfully!', {
+        description: 'You have been automatically signed in.',
+      });
+      onNavigate('/');
+    } catch (error: unknown) {
+      // Handle API errors with field-specific messages
+      let errorMessage = 'Please check your information and try again.';
+      const fieldErrors: Record<string, string> = {};
+      
+      if (error instanceof ApiRequestError) {
+        errorMessage = error.message;
+        if (error.errors && Array.isArray(error.errors)) {
+        // Map API field errors to form fields
+        error.errors.forEach((err: { field: string; message: string }) => {
+          fieldErrors[err.field] = err.message;
+        });
+        
+        // Create a summary message
+        const errorSummary = error.errors
+          .map((err: { field: string; message: string }) => {
+            const fieldLabel = err.field === 'email' ? 'Email' :
+                             err.field === 'password' ? 'Password' :
+                             err.field === 'name' ? 'Name' :
+                             err.field === 'phone' ? 'Phone' :
+                             err.field === 'address' ? 'Address' :
+                             err.field.charAt(0).toUpperCase() + err.field.slice(1);
+            return `${fieldLabel}: ${err.message}`;
+          })
+          .join('; ');
+        
+          errorMessage = errorSummary;
+          setErrors(fieldErrors);
+        }
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+        // Generic error - try to extract field from message
+        if (error.message.toLowerCase().includes('email')) {
+          fieldErrors['email'] = error.message;
+        } else if (error.message.toLowerCase().includes('password')) {
+          fieldErrors['password'] = error.message;
+        }
+        setErrors(fieldErrors);
+      }
+      
+      toast.error('Registration failed', {
+        description: errorMessage,
+        duration: 5000,
+      });
+    } finally {
       setIsLoading(false);
-      onNavigate('/login');
-    }, 1500);
+    }
   };
 
   return (

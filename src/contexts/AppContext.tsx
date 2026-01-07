@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { store } from '../store';
 import { setTheme as setReduxTheme } from '../store/slices/themeSlice';
+import * as authService from '../services/authService';
 
 // Types
 export type UserRole = 'visitor' | 'buyer' | 'seller' | 'pawnshop' | 'investor' | 'admin';
@@ -28,9 +29,11 @@ interface AppContextType {
   // User
   user: User | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => void;
-  logout: () => void;
+  login: (email: string, password: string) => Promise<void>;
+  register: (data: { name: string; email: string; phone: string; password: string; address: string }) => Promise<void>;
+  logout: () => Promise<void>;
   switchRole: (role: UserRole) => void;
+  isLoading: boolean;
 }
 
 // Translations
@@ -167,6 +170,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [language, setLanguage] = useState<Language>('en');
   const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Initialize theme from localStorage or system preference
   useEffect(() => {
@@ -201,6 +205,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem('kgf-language', language);
   }, [language]);
 
+  // Check for existing session on mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const accessToken = localStorage.getItem('accessToken');
+        if (accessToken) {
+          const response = await authService.getCurrentUser();
+          if (response.success && response.data.user) {
+            const userData = response.data.user;
+            setUser({
+              id: userData.id,
+              name: userData.name,
+              email: userData.email,
+              role: 'buyer', // Default role, can be updated later
+              isVerified: userData.isActive,
+            });
+          }
+        }
+      } catch (error) {
+        // Clear invalid tokens
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        console.error('Auth check failed:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkAuth();
+  }, []);
+
   const toggleTheme = useCallback(() => {
     setTheme((prevTheme) => {
       const newTheme = prevTheme === 'light' ? 'dark' : 'light';
@@ -214,21 +249,50 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return translations[language][key as keyof typeof translations['en']] || key;
   }, [language]);
 
-  const login = useCallback((email: string, _password: string) => {
-    // Mock login - in real app this would call an API
-    const mockUser: User = {
-      id: '1',
-      name: 'John Doe',
-      email,
-      role: 'buyer',
-      isVerified: true,
-      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face'
-    };
-    setUser(mockUser);
+  const login = useCallback(async (email: string, password: string) => {
+    try {
+      const response = await authService.login({ email, password });
+      if (response.success && response.data.user) {
+        const userData = response.data.user;
+        setUser({
+          id: userData.id,
+          name: userData.name,
+          email: userData.email,
+          role: 'buyer', // Default role, can be updated later
+          isVerified: true,
+        });
+      }
+    } catch (error) {
+      throw error;
+    }
   }, []);
 
-  const logout = useCallback(() => {
-    setUser(null);
+  const register = useCallback(async (data: { name: string; email: string; phone: string; password: string; address: string }) => {
+    try {
+      const response = await authService.register(data);
+      if (response.success && response.data.user) {
+        const userData = response.data.user;
+        setUser({
+          id: userData.id,
+          name: userData.name,
+          email: userData.email,
+          role: 'buyer', // Default role, can be updated later
+          isVerified: true,
+        });
+      }
+    } catch (error) {
+      throw error;
+    }
+  }, []);
+
+  const logout = useCallback(async () => {
+    try {
+      await authService.logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      setUser(null);
+    }
   }, []);
 
   const switchRole = useCallback((role: UserRole) => {
@@ -253,9 +317,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     user,
     isAuthenticated: !!user,
     login,
+    register,
     logout,
     switchRole,
-  }), [theme, toggleTheme, language, setLanguageCallback, t, user, login, logout, switchRole]);
+    isLoading,
+  }), [theme, toggleTheme, language, setLanguageCallback, t, user, login, register, logout, switchRole, isLoading]);
 
   return (
     <AppContext.Provider value={value}>

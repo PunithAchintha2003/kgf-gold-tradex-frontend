@@ -6,6 +6,7 @@ import { Checkbox } from '../components/ui/checkbox';
 import { useApp } from '../contexts/AppContext';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
+import { ApiRequestError } from '../services/authService';
 import logoImage from '../assets/28A9A4B0-D00A-4539-82A6-89A2130B5FAF.PNG';
 
 interface LoginPageProps {
@@ -37,7 +38,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
     }
   };
 
-  const validateForm = (): boolean => {
+  const validateForm = (): { isValid: boolean; errors: Record<string, string> } => {
     const newErrors: Record<string, string> = {};
 
     if (!email.trim()) {
@@ -51,15 +52,26 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
     }
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return { isValid: Object.keys(newErrors).length === 0, errors: newErrors };
   };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateForm()) {
+    // Validate form first - this returns errors directly
+    const validation = validateForm();
+    
+    if (!validation.isValid) {
+      // Show specific validation errors in toast
+      const errorFields = Object.keys(validation.errors);
+      const errorMessages = errorFields.map(field => {
+        const fieldLabel = field === 'email' ? 'Email' : 'Password';
+        return `${fieldLabel}: ${validation.errors[field]}`;
+      }).join('; ');
+      
       toast.error('Please fix the errors in the form', {
-        description: 'Check all fields and try again.',
+        description: errorMessages,
+        duration: 5000,
       });
       return;
     }
@@ -72,13 +84,31 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
         description: 'You have successfully signed in.',
       });
       onNavigate('/');
-    } catch (_error) {
+    } catch (error: unknown) {
+      let errorMessage = 'Please check your credentials and try again.';
+      const fieldErrors: Record<string, string> = {};
+      
+      if (error instanceof ApiRequestError) {
+        errorMessage = error.message;
+        if (error.errors && Array.isArray(error.errors)) {
+          error.errors.forEach((err: { field: string; message: string }) => {
+            fieldErrors[err.field] = err.message;
+          });
+        } else {
+          // Generic authentication error
+          fieldErrors['email'] = 'Invalid email or password';
+          fieldErrors['password'] = 'Invalid email or password';
+        }
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+        fieldErrors['email'] = 'Invalid email or password';
+        fieldErrors['password'] = 'Invalid email or password';
+      }
+      
+      setErrors(fieldErrors);
       toast.error('Login failed', {
-        description: 'Please check your credentials and try again.',
-      });
-      setErrors({
-        email: 'Invalid email or password',
-        password: 'Invalid email or password',
+        description: errorMessage,
+        duration: 5000,
       });
     } finally {
       setIsLoading(false);
