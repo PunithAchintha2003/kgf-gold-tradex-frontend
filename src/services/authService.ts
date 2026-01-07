@@ -69,8 +69,12 @@ export class ApiRequestError extends Error {
   constructor(message: string, errors?: Array<{ field: string; message: string }>, status?: number) {
     super(message);
     this.name = 'ApiRequestError';
-    this.errors = errors;
-    this.status = status;
+    if (errors !== undefined) {
+      this.errors = errors;
+    }
+    if (status !== undefined) {
+      this.status = status;
+    }
   }
 }
 
@@ -137,12 +141,9 @@ const apiRequest = async <T>(
   
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
-    ...options.headers,
+    ...(options.headers as Record<string, string> | undefined),
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
   };
-
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
 
   // Ensure endpoint starts with / if API_BASE_URL doesn't end with /
   const baseUrl = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
