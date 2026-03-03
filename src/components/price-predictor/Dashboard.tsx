@@ -371,6 +371,17 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
     return method; // Fallback to original if pattern doesn't match
   };
 
+  // Helper to safely format accuracy-style percentages (supports 0–1 and 0–100+ inputs)
+  const formatAccuracyPercent = (value?: number | null): string => {
+    if (value == null || !isFinite(value)) {
+      return 'N/A';
+    }
+    const numeric = Number(value);
+    if (!isFinite(numeric)) return 'N/A';
+    const percentValue = numeric <= 1 ? numeric * 100 : numeric;
+    return `${percentValue.toFixed(2)}%`;
+  };
+
   // Get the current prediction method dynamically
   const currentPredictionMethod = useMemo(() => {
     // Try enhanced prediction first (more detailed)
@@ -683,46 +694,101 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
                   </Typography>
                 </Box>
 
-                {/* Method Card */}
-                <Box 
+            {/* Method Card */}
+            <Box 
+              sx={{ 
+                backgroundColor: isDark ? 'rgba(139, 92, 246, 0.1)' : 'rgba(139, 92, 246, 0.05)',
+                border: `1px solid ${isDark ? 'rgba(139, 92, 246, 0.3)' : 'rgba(139, 92, 246, 0.2)'}`,
+                borderRadius: '8px',
+                padding: { xs: '0.75rem', sm: '1rem' },
+                minHeight: { xs: '100px', lg: '120px' },
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+              }}
+            >
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 0.5,
+                  marginBottom: '0.5rem',
+                }}
+              >
+                <Typography 
+                  variant="caption"
                   sx={{ 
-                    backgroundColor: isDark ? 'rgba(139, 92, 246, 0.1)' : 'rgba(139, 92, 246, 0.05)',
-                    border: `1px solid ${isDark ? 'rgba(139, 92, 246, 0.3)' : 'rgba(139, 92, 246, 0.2)'}`,
-                    borderRadius: '8px',
-                    padding: { xs: '0.75rem', sm: '1rem' },
-                    minHeight: { xs: '100px', lg: '120px' },
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
+                    fontSize: { xs: '0.65rem', sm: '0.7rem' },
+                    color: isDark ? '#c4b5fd' : '#7c3aed',
+                    textTransform: 'uppercase',
+                    fontWeight: 600,
+                    letterSpacing: '0.5px',
+                    lineHeight: 1.3,
                   }}
                 >
-                  <Typography 
-                    variant="caption"
-                    sx={{ 
-                      fontSize: { xs: '0.65rem', sm: '0.7rem' },
-                      color: isDark ? '#c4b5fd' : '#7c3aed',
-                      textTransform: 'uppercase',
-                      fontWeight: 600,
-                      letterSpacing: '0.5px',
-                      marginBottom: '0.5rem',
-                      lineHeight: 1.3,
+                  Method
+                </Typography>
+                <Tooltip
+                  title={
+                    <Box sx={{ p: 0.5 }}>
+                      <Typography variant="body2" sx={{ mb: 0.5, fontWeight: 600 }}>
+                        Method Abbreviations:
+                      </Typography>
+                      <Typography variant="body2" sx={{ mb: 0.5 }}>
+                        <strong>NELR (P)</strong> = News-Enhanced Lasso Regression (Primary)
+                      </Typography>
+                      <Typography variant="body2">
+                        <strong>LR (F)</strong> = Lasso Regression (Fallback)
+                      </Typography>
+                    </Box>
+                  }
+                  arrow
+                  placement="top"
+                  componentsProps={{
+                    tooltip: {
+                      sx: {
+                        backgroundColor: isDark ? 'rgba(26, 26, 26, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+                        color: isDark ? '#e5e7eb' : '#111827',
+                        border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : '#e5e7eb'}`,
+                        boxShadow: isDark 
+                          ? '0 4px 6px rgba(0, 0, 0, 0.3)' 
+                          : '0 4px 6px rgba(0, 0, 0, 0.1)',
+                        '& .MuiTooltip-arrow': {
+                          color: isDark ? 'rgba(26, 26, 26, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+                        },
+                      },
+                    },
+                  }}
+                >
+                  <IconButton
+                    size="small"
+                    sx={{
+                      color: isDark ? '#9ca3af' : '#6b7280',
+                      padding: '4px',
+                      '&:hover': {
+                        color: isDark ? '#d1d5db' : '#374151',
+                        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)',
+                      },
                     }}
                   >
-                    Method
-                  </Typography>
-                  <Typography 
-                    variant="body1" 
-                    sx={{ 
-                      color: isDark ? '#a78bfa' : '#6d28d9',
-                      fontSize: { xs: '0.8125rem', sm: '0.875rem', lg: '1rem' },
-                      fontWeight: 700,
-                      lineHeight: 1.3,
-                      mt: 0.5,
-                    }}
-                  >
-                    {currentPredictionMethod}
-                  </Typography>
-                </Box>
+                    <Info sx={{ fontSize: { xs: '1rem', sm: '1.125rem' } }} />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+              <Typography 
+                variant="body1" 
+                sx={{ 
+                  color: isDark ? '#a78bfa' : '#6d28d9',
+                  fontSize: { xs: '0.8125rem', sm: '0.875rem', lg: '1rem' },
+                  fontWeight: 700,
+                  lineHeight: 1.3,
+                  mt: 0.5,
+                }}
+              >
+                {currentPredictionMethod}
+              </Typography>
+            </Box>
               </>
             )}
             </Box>
@@ -1024,11 +1090,20 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
                   sx={{
                     fontSize: { xs: '1.5rem', sm: '2rem' },
                     fontWeight: 700,
-                    color: enhancedPrediction.prediction.change >= 0 ? '#10b981' : '#ef4444',
+                    color: (() => {
+                      // Use the same notion of expected change as the Price Information cards
+                      if (!convertedPredictionPrice) {
+                        return enhancedPrediction.prediction.change >= 0 ? '#10b981' : '#ef4444';
+                      }
+                      const priceChange = convertedPredictionPrice.price - convertedCurrentPrice.price;
+                      return priceChange >= 0 ? '#10b981' : '#ef4444';
+                    })(),
                     mb: 0.5,
                   }}
                 >
-                  ${enhancedPrediction.prediction.next_day_price.toFixed(2)}
+                  {convertedPredictionPrice
+                    ? convertedPredictionPrice.displayText
+                    : `$${enhancedPrediction.prediction.next_day_price.toFixed(2)}`}
                 </Typography>
                 <Typography
                   variant="body2"
@@ -1037,20 +1112,40 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
                     color: isDark ? '#9ca3af' : '#6b7280',
                   }}
                 >
-                  Current: ${enhancedPrediction.prediction.current_price.toFixed(2)}
+                  Current: {convertedCurrentPrice.displayText}
                 </Typography>
                 <Typography
                   variant="body2"
                   sx={{
                     fontSize: { xs: '0.75rem', sm: '0.8125rem' },
-                    color: enhancedPrediction.prediction.change >= 0 ? '#10b981' : '#ef4444',
+                    color: (() => {
+                      if (!convertedPredictionPrice) {
+                        return enhancedPrediction.prediction.change >= 0 ? '#10b981' : '#ef4444';
+                      }
+                      const priceChange = convertedPredictionPrice.price - convertedCurrentPrice.price;
+                      return priceChange >= 0 ? '#10b981' : '#ef4444';
+                    })(),
                     fontWeight: 600,
                   }}
                 >
-                  {enhancedPrediction.prediction.change >= 0 ? '+' : ''}
-                  {enhancedPrediction.prediction.change.toFixed(2)} (
-                  {enhancedPrediction.prediction.change >= 0 ? '+' : ''}
-                  {enhancedPrediction.prediction.change_percentage.toFixed(2)}%)
+                  {(() => {
+                    // Mirror the Expected Change logic from Price Information
+                    if (!convertedPredictionPrice) {
+                      const isPositive = enhancedPrediction.prediction.change >= 0;
+                      return `${isPositive ? '+' : ''}${enhancedPrediction.prediction.change.toFixed(2)} (${isPositive ? '+' : ''}${enhancedPrediction.prediction.change_percentage.toFixed(2)}%)`;
+                    }
+                    const priceChange = convertedPredictionPrice.price - convertedCurrentPrice.price;
+                    const priceChangePct =
+                      convertedCurrentPrice.price > 0
+                        ? (priceChange / convertedCurrentPrice.price) * 100
+                        : 0;
+                    const isPositive = priceChange >= 0;
+                    const trendSymbol = isPositive ? '↗' : '↘';
+                    const currencySymbol = currencyUnit === 'pawn' ? 'LKR ' : '$';
+                    return `${trendSymbol} ${currencySymbol}${Math.abs(priceChange).toFixed(
+                      currencyUnit === 'pawn' ? 0 : 2
+                    )} (${priceChangePct >= 0 ? '+' : ''}${priceChangePct.toFixed(2)}%)`;
+                  })()}
                 </Typography>
                 <Typography
                   variant="caption"
@@ -1147,7 +1242,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
                         mb: 0.5,
                       }}
                     >
-                      Avg Accuracy: {(enhancedPrediction.model.live_accuracy_stats.average_accuracy * 100).toFixed(2)}% ({enhancedPrediction.model.live_accuracy_stats.evaluated_predictions}/{enhancedPrediction.model.live_accuracy_stats.total_predictions} evaluated)
+                      Avg Accuracy: {formatAccuracyPercent(enhancedPrediction.model.live_accuracy_stats.average_accuracy)} ({enhancedPrediction.model.live_accuracy_stats.evaluated_predictions}/{enhancedPrediction.model.live_accuracy_stats.total_predictions} evaluated)
                     </Typography>
                   )}
                   <Typography
@@ -1425,9 +1520,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
                     >
                       <strong>Avg Accuracy:</strong>{' '}
                       <span style={{ color: isDark ? '#34d399' : '#059669', fontWeight: 600 }}>
-                        {modelInfo.model.live_accuracy_stats.average_accuracy != null 
-                          ? `${modelInfo.model.live_accuracy_stats.average_accuracy.toFixed(2)}%` 
-                          : 'N/A'}
+                        {formatAccuracyPercent(modelInfo.model.live_accuracy_stats.average_accuracy)}
                       </span>
                     </Typography>
                   </Box>
