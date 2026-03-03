@@ -201,11 +201,11 @@ const PredictionHistoryTable: React.FC<PredictionHistoryTableProps> = ({
             size="small"
             sx={{
               color: isDark ? '#9ca3af' : '#6b7280',
+              padding: '4px',
               '&:hover': {
                 color: isDark ? '#d1d5db' : '#374151',
                 backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)',
               },
-              padding: '4px',
             }}
           >
             <Info sx={{ fontSize: { xs: '1rem', sm: '1.125rem' } }} />
