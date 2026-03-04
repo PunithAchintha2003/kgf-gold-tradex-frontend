@@ -23,6 +23,7 @@ import {
   CssBaseline,
 } from '@mui/material';
 import { TrendingUp, TrendingDown, AccountBalance, AttachMoney, ShowChart, History, Add, Remove } from '@mui/icons-material';
+import { toast } from 'sonner';
 import { useTheme } from '../hooks/useTheme';
 import { createAppTheme } from '../theme/theme';
 import Sidebar from '../components/price-predictor/Sidebar';
@@ -36,7 +37,7 @@ import {
   useGetExchangeRateQuery,
 } from '../store/api/goldApi';
 import Chart from '../components/price-predictor/Chart';
-import { convertChartData } from '../utils/currencyConverter';
+import { convertChartData, PAWN_GRAMS } from '../utils/currencyConverter';
 
 interface TradePageProps {
   onNavigate: (path: string) => void;
@@ -124,24 +125,31 @@ const TradePage: React.FC<TradePageProps> = ({ onNavigate: _onNavigate }) => {
 
   const usdToLkrRate = exchangeRateData?.exchange_rate || 300;
 
-  // Calculate order total
+  // Calculate order total (quantity entered in grams; API price is per pawn)
   const orderTotal = useMemo(() => {
     if (!quantity || !priceData) return 0;
-    const qty = parseFloat(quantity);
-    if (isNaN(qty) || qty <= 0) return 0;
-    return qty * priceData.current_price_lkr;
+    const grams = parseFloat(quantity);
+    if (Number.isNaN(grams) || grams <= 0) return 0;
+    // Use buy price per pawn to estimate order total; convert to per-gram price
+    const buyPricePerPawn = priceData.buy_price_lkr || priceData.current_price_lkr;
+    if (!buyPricePerPawn || buyPricePerPawn <= 0) return 0;
+    const pricePerGram = buyPricePerPawn / PAWN_GRAMS;
+    return grams * pricePerGram;
   }, [quantity, priceData]);
 
-  // Calculate max buyable quantity
+  // Calculate max buyable quantity (in grams)
   const maxBuyable = useMemo(() => {
     if (!balanceData || !priceData) return 0;
-    return balanceData.lkr_balance / priceData.current_price_lkr;
+    const buyPricePerPawn = priceData.buy_price_lkr || priceData.current_price_lkr;
+    if (!buyPricePerPawn || buyPricePerPawn <= 0) return 0;
+    const pricePerGram = buyPricePerPawn / PAWN_GRAMS;
+    return balanceData.lkr_balance / pricePerGram;
   }, [balanceData, priceData]);
 
-  // Calculate max sellable quantity
+  // Calculate max sellable quantity (in grams; balance is returned in pawn)
   const maxSellable = useMemo(() => {
     if (!balanceData) return 0;
-    return balanceData.gold_balance;
+    return balanceData.gold_balance * PAWN_GRAMS;
   }, [balanceData]);
 
   // Quick fill functions
@@ -161,20 +169,49 @@ const TradePage: React.FC<TradePageProps> = ({ onNavigate: _onNavigate }) => {
 
   // Handle BUY order
   const handleBuy = useCallback(async () => {
-    if (!quantity || parseFloat(quantity) <= 0) {
+    if (!quantity) {
       setSnackbar({
         open: true,
-        message: 'Please enter a valid quantity',
+        message: 'Please enter a valid quantity in grams',
         severity: 'error',
       });
       return;
     }
 
-    const qty = parseFloat(quantity);
-    if (qty > maxBuyable) {
+    const grams = parseFloat(quantity);
+    if (Number.isNaN(grams) || grams <= 0) {
       setSnackbar({
         open: true,
-        message: `Insufficient LKR balance. Maximum: ${maxBuyable.toFixed(4)} pawn`,
+        message: 'Please enter a valid quantity in grams',
+        severity: 'error',
+      });
+      return;
+    }
+
+    // Enforce 0.5–50 g range
+    if (grams < 0.5 || grams > 50) {
+      toast.error('Quantity must be between 0.5 and 50 grams');
+      return;
+    }
+
+    // Enforce 0.5g step (circular numbers like 0.5, 1.0, 1.5, ...)
+    const multipleOfHalfSell = Math.round(grams * 2) / 2;
+    if (Math.abs(grams - multipleOfHalfSell) > 1e-6) {
+      toast.error('Quantity must be in steps of 0.5 grams (e.g. 0.5, 1.0, 1.5, ..., 50)');
+      return;
+    }
+
+    // Enforce 0.5g step (circular numbers like 0.5, 1.0, 1.5, ...)
+    const multipleOfHalfBuy = Math.round(grams * 2) / 2;
+    if (Math.abs(grams - multipleOfHalfBuy) > 1e-6) {
+      toast.error('Quantity must be in steps of 0.5 grams (e.g. 0.5, 1.0, 1.5, ..., 50)');
+      return;
+    }
+
+    if (grams > maxBuyable) {
+      setSnackbar({
+        open: true,
+        message: `Insufficient LKR balance. Maximum: ${maxBuyable.toFixed(2)} grams`,
         severity: 'error',
       });
       return;
@@ -190,10 +227,13 @@ const TradePage: React.FC<TradePageProps> = ({ onNavigate: _onNavigate }) => {
     }
 
     try {
-      await placeBuyOrder({ quantity: qty }).unwrap();
+      const quantityPawn = grams / PAWN_GRAMS;
+      await placeBuyOrder({ quantity: quantityPawn }).unwrap();
+      const buyPricePerPawn = priceData?.buy_price_lkr || priceData?.current_price_lkr || 0;
+      const buyPricePerGram = buyPricePerPawn > 0 ? buyPricePerPawn / PAWN_GRAMS : 0;
       setSnackbar({
         open: true,
-        message: `✅ Successfully bought ${qty.toFixed(4)} pawn at ${formatCurrency(priceData?.buy_price_lkr || 0)}/pawn`,
+        message: `✅ Successfully bought ${grams.toFixed(2)} grams at ${formatCurrency(buyPricePerGram)}/g`,
         severity: 'success',
       });
       setQuantity('');
@@ -214,40 +254,59 @@ const TradePage: React.FC<TradePageProps> = ({ onNavigate: _onNavigate }) => {
 
   // Handle SELL order
   const handleSell = useCallback(async () => {
-    if (!quantity || parseFloat(quantity) <= 0) {
+    if (!quantity) {
       setSnackbar({
         open: true,
-        message: 'Please enter a valid quantity',
+        message: 'Please enter a valid quantity in grams',
         severity: 'error',
       });
       return;
     }
 
-    const qty = parseFloat(quantity);
-    if (qty > maxSellable) {
+    const grams = parseFloat(quantity);
+    if (Number.isNaN(grams) || grams <= 0) {
       setSnackbar({
         open: true,
-        message: `Insufficient gold balance. Maximum: ${maxSellable.toFixed(4)} pawn`,
+        message: 'Please enter a valid quantity in grams',
         severity: 'error',
       });
       return;
     }
 
-    if (!balanceData || balanceData.gold_balance < qty) {
+    // Enforce 0.5–50 g range
+    if (grams < 0.5 || grams > 50) {
+      toast.error('Quantity must be between 0.5 and 50 grams');
+      return;
+    }
+
+    if (grams > maxSellable) {
       setSnackbar({
         open: true,
-        message: `Insufficient gold balance. Required: ${qty.toFixed(4)} pawn, Available: ${balanceData?.gold_balance.toFixed(4)} pawn`,
+        message: `Insufficient gold balance. Maximum: ${maxSellable.toFixed(2)} grams`,
+        severity: 'error',
+      });
+      return;
+    }
+
+    const quantityPawn = grams / PAWN_GRAMS;
+    if (!balanceData || balanceData.gold_balance < quantityPawn) {
+      const availableGrams = (balanceData?.gold_balance ?? 0) * PAWN_GRAMS;
+      setSnackbar({
+        open: true,
+        message: `Insufficient gold balance. Required: ${grams.toFixed(2)} grams, Available: ${availableGrams.toFixed(2)} grams`,
         severity: 'error',
       });
       return;
     }
 
     try {
-      await placeSellOrder({ quantity: qty }).unwrap();
-      const sellValue = qty * (priceData?.sell_price_lkr || 0);
+      await placeSellOrder({ quantity: quantityPawn }).unwrap();
+      const sellPricePerPawn = priceData?.sell_price_lkr || priceData?.current_price_lkr || 0;
+      const sellPricePerGram = sellPricePerPawn > 0 ? sellPricePerPawn / PAWN_GRAMS : 0;
+      const sellValue = grams * sellPricePerGram;
       setSnackbar({
         open: true,
-        message: `✅ Successfully sold ${qty.toFixed(4)} pawn at ${formatCurrency(priceData?.sell_price_lkr || 0)}/pawn for ${formatCurrency(sellValue)}`,
+        message: `✅ Successfully sold ${grams.toFixed(2)} grams at ${formatCurrency(sellPricePerGram)}/g for ${formatCurrency(sellValue)}`,
         severity: 'success',
       });
       setQuantity('');
@@ -266,7 +325,7 @@ const TradePage: React.FC<TradePageProps> = ({ onNavigate: _onNavigate }) => {
     }
   }, [quantity, balanceData, maxSellable, placeSellOrder, refetchBalance, priceData]);
 
-  // Format currency
+  // Format currency with compact suffix (K/M)
   const formatCurrency = (value: number) => {
     if (value >= 1000000) {
       return `LKR ${(value / 1000000).toFixed(2)}M`;
@@ -276,12 +335,23 @@ const TradePage: React.FC<TradePageProps> = ({ onNavigate: _onNavigate }) => {
     return `LKR ${value.toFixed(2)}`;
   };
 
-  // Format gold quantity (in pawn)
+  // Format currency with full amount (no K/M suffix)
+  const formatCurrencyFull = (value: number) => {
+    if (value === null || value === undefined || Number.isNaN(value)) return 'LKR 0';
+    return `LKR ${Math.round(value).toLocaleString('en-LK')}`;
+  };
+
+  // Format currency for order total in Place Order (no K/M suffix, always rounded up)
+  const formatCurrencyOrderTotal = (value: number) => {
+    if (value === null || value === undefined || Number.isNaN(value)) return 'LKR 0';
+    const rounded = Math.ceil(value);
+    return `LKR ${rounded.toLocaleString('en-LK', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+  };
+
+  // Format gold quantity (in grams)
   const formatGold = (value: number) => {
-    if (value >= 1) {
-      return `${value.toFixed(4)} pawn`;
-    }
-    return `${value.toFixed(8)} pawn`;
+    if (value === null || value === undefined || Number.isNaN(value)) return '0.000 g';
+    return `${value.toFixed(3)} g`;
   };
 
 
@@ -433,20 +503,6 @@ const TradePage: React.FC<TradePageProps> = ({ onNavigate: _onNavigate }) => {
                 justifyContent: 'center',
               }}
             >
-              <Typography 
-                variant="caption"
-                sx={{ 
-                  fontSize: { xs: '0.65rem', sm: '0.7rem' },
-                  color: isDark ? '#fbbf24' : '#d97706',
-                  textTransform: 'uppercase',
-                  fontWeight: 600,
-                  letterSpacing: '0.5px',
-                  marginBottom: { xs: '0.25rem', sm: '0.5rem' },
-                  lineHeight: 1.3,
-                }}
-              >
-                LIVE PRICE
-              </Typography>
                 {priceLoading ? (
                   <Skeleton variant="text" width="60%" height={40} />
                 ) : priceData ? (
@@ -455,7 +511,7 @@ const TradePage: React.FC<TradePageProps> = ({ onNavigate: _onNavigate }) => {
                       Current Market Price
                     </Typography>
                     <Typography variant="h4" sx={{ color: '#F5D300', fontWeight: 700, marginY: 1 }}>
-                      {formatCurrency(priceData.current_price_lkr)} / pawn
+                      {formatCurrencyFull(priceData.current_price_lkr)} / 8 grams
                     </Typography>
                     <Box sx={{ display: 'flex', gap: 2, marginTop: 1.5, flexWrap: 'wrap' }}>
                       <Box>
@@ -463,7 +519,7 @@ const TradePage: React.FC<TradePageProps> = ({ onNavigate: _onNavigate }) => {
                           Buy Price
                         </Typography>
                         <Typography variant="body2" sx={{ color: isDark ? '#34d399' : '#10b981', fontWeight: 600, fontSize: '0.875rem' }}>
-                          {formatCurrency(priceData.buy_price_lkr)}
+                          {formatCurrencyFull(priceData.buy_price_lkr)}
                         </Typography>
                       </Box>
                       <Box>
@@ -471,7 +527,7 @@ const TradePage: React.FC<TradePageProps> = ({ onNavigate: _onNavigate }) => {
                           Sell Price
                         </Typography>
                         <Typography variant="body2" sx={{ color: isDark ? '#fca5a5' : '#ef4444', fontWeight: 600, fontSize: '0.875rem' }}>
-                          {formatCurrency(priceData.sell_price_lkr)}
+                          {formatCurrencyFull(priceData.sell_price_lkr)}
                         </Typography>
                       </Box>
                       <Box>
@@ -479,7 +535,7 @@ const TradePage: React.FC<TradePageProps> = ({ onNavigate: _onNavigate }) => {
                           Spread
                         </Typography>
                         <Typography variant="body2" sx={{ color: isDark ? '#888888' : '#999999', fontWeight: 600 }}>
-                          {formatCurrency(priceData.spread_lkr)}
+                          {formatCurrencyFull(priceData.spread_lkr)}
                         </Typography>
                       </Box>
                     </Box>
@@ -541,7 +597,7 @@ const TradePage: React.FC<TradePageProps> = ({ onNavigate: _onNavigate }) => {
                     </Typography>
                   </Box>
                   <Typography variant="body1" sx={{ color: '#F5D300', fontWeight: 700, fontSize: '1rem' }}>
-                    {formatGold(balanceData.gold_balance)}
+                    {formatGold(balanceData.gold_balance * PAWN_GRAMS)}
                   </Typography>
                 </Box>
                 <Divider sx={{ marginY: 1.5, borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)' }} />
@@ -592,7 +648,7 @@ const TradePage: React.FC<TradePageProps> = ({ onNavigate: _onNavigate }) => {
               <Box sx={{ marginBottom: 2 }}>
                 <TextField
                   fullWidth
-                  label="Quantity (pawn)"
+                  label="Quantity (grams)"
                   type="number"
                   value={quantity}
                   onChange={(e) => {
@@ -602,16 +658,20 @@ const TradePage: React.FC<TradePageProps> = ({ onNavigate: _onNavigate }) => {
                     }
                   }}
                   InputProps={{
-                    inputProps: { min: 0, step: 0.0001 },
+                    inputProps: { min: 0.5, max: 50, step: 0.5 },
                     endAdornment: (
                       <InputAdornment position="end">
                         <Typography variant="caption" sx={{ color: isDark ? '#888888' : '#999999' }}>
-                          pawn
+                          g
                         </Typography>
                       </InputAdornment>
                     ),
                   }}
-                  helperText={quantity && parseFloat(quantity) > 0 ? `Total: ${formatCurrency(orderTotal)}` : 'Enter quantity to trade'}
+                  helperText={
+                    quantity && parseFloat(quantity) > 0
+                      ? `Total: ${formatCurrencyOrderTotal(orderTotal)}`
+                      : 'Enter quantity between 0.5 and 50 grams (steps of 0.5g)'
+                  }
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       backgroundColor: isDark ? '#2a2a2a' : '#FFFFFF',
@@ -768,7 +828,13 @@ const TradePage: React.FC<TradePageProps> = ({ onNavigate: _onNavigate }) => {
                   size="large"
                   startIcon={sellLoading ? <CircularProgress size={20} color="inherit" /> : <TrendingDown />}
                   onClick={handleSell}
-                  disabled={Boolean(buyLoading || sellLoading || !quantity || parseFloat(quantity) <= 0 || (balanceData && balanceData.gold_balance < parseFloat(quantity || '0')))}
+                  disabled={Boolean(
+                    buyLoading ||
+                      sellLoading ||
+                      !quantity ||
+                      parseFloat(quantity) <= 0 ||
+                      (balanceData && balanceData.gold_balance < parseFloat(quantity || '0') / PAWN_GRAMS)
+                  )}
                   sx={{
                     backgroundColor: isDark ? '#ef4444' : '#ef4444',
                     color: '#FFFFFF',
@@ -855,7 +921,7 @@ const TradePage: React.FC<TradePageProps> = ({ onNavigate: _onNavigate }) => {
                             />
                           </TableCell>
                           <TableCell sx={{ color: isDark ? '#FFFFFF' : '#111827', fontSize: '0.875rem', borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#e5e7eb' }}>
-                            {formatGold(trade.quantity)}
+                            {formatGold(trade.quantity * PAWN_GRAMS)}
                           </TableCell>
                           <TableCell sx={{ color: isDark ? '#FFFFFF' : '#111827', fontSize: '0.875rem', borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#e5e7eb' }}>
                             {formatCurrency(trade.price)}
