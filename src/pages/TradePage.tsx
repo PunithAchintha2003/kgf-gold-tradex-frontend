@@ -34,6 +34,7 @@ import {
   usePlaceSellOrderMutation,
   useGetSpotTradeBalanceQuery,
   useGetSpotTradeHistoryQuery,
+  useGetSpotTradeWalletTransactionsQuery,
   useGetDailyDataQuery,
   useGetExchangeRateQuery,
   useDepositFundsMutation,
@@ -54,7 +55,7 @@ const TradePage: React.FC = () => {
   // State
   const [quantity, setQuantity] = useState<string>('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarType, setSidebarType] = useState<'deposit' | 'withdraw' | null>(null);
+  const [sidebarType, setSidebarType] = useState<'deposit' | 'withdraw' | 'transactions' | null>(null);
   const [depositAmount, setDepositAmount] = useState<string>('');
   const [withdrawAmount, setWithdrawAmount] = useState<string>('');
   const [bankName, setBankName] = useState<string>('');
@@ -78,6 +79,13 @@ const TradePage: React.FC = () => {
 
   const { data: historyData, isLoading: historyLoading } = useGetSpotTradeHistoryQuery(
     { limit: 20, offset: 0 },
+    {
+      skip: !isAuthenticated,
+    },
+  );
+
+  const { data: walletTransactionData, isLoading: walletTransactionLoading } = useGetSpotTradeWalletTransactionsQuery(
+    { limit: 50, offset: 0 },
     {
       skip: !isAuthenticated,
     },
@@ -420,6 +428,18 @@ const TradePage: React.FC = () => {
   const formatGold = (value: number) => {
     if (value === null || value === undefined || Number.isNaN(value)) return '0.000 g';
     return `${value.toFixed(3)} g`;
+  };
+
+  const formatDateTime = (dateValue: string) => {
+    const date = new Date(dateValue);
+    if (Number.isNaN(date.getTime())) return 'N/A';
+    return date.toLocaleString('en-LK', {
+      year: 'numeric',
+      month: 'short',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   };
 
 
@@ -1061,6 +1081,32 @@ const TradePage: React.FC = () => {
                 variant="outlined"
                 onClick={() => {
                   if (!isAuthenticated) {
+                    toast.error('You need to register or login to view transaction history.');
+                    return;
+                  }
+                  setSidebarType('transactions');
+                  setSidebarOpen(true);
+                }}
+                sx={{
+                  color: isDark ? '#93c5fd' : '#2563eb',
+                  borderColor: isDark ? 'rgba(59, 130, 246, 0.3)' : 'rgba(59, 130, 246, 0.3)',
+                  backgroundColor: isDark ? 'rgba(59, 130, 246, 0.1)' : 'rgba(59, 130, 246, 0.1)',
+                  padding: { xs: '4px 8px', sm: '6px 12px' },
+                  fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                  textTransform: 'none',
+                  '&:hover': {
+                    backgroundColor: isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.2)',
+                    borderColor: isDark ? 'rgba(59, 130, 246, 0.5)' : 'rgba(59, 130, 246, 0.5)',
+                  },
+                }}
+              >
+                Transactions
+              </Button>
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() => {
+                  if (!isAuthenticated) {
                     toast.error('You need to register or login to deposit funds.');
                     return;
                   }
@@ -1156,7 +1202,15 @@ const TradePage: React.FC = () => {
           setBankAccountNumber('');
           setBankAccountName('');
         }}
-        title={sidebarType === 'deposit' ? 'Deposit Funds' : sidebarType === 'withdraw' ? 'Withdraw Funds' : 'Transaction'}
+        title={
+          sidebarType === 'deposit'
+            ? 'Deposit Funds'
+            : sidebarType === 'withdraw'
+            ? 'Withdraw Funds'
+            : sidebarType === 'transactions'
+            ? 'Transaction History'
+            : 'Transaction'
+        }
         width={400}
       >
         {sidebarType === 'deposit' && (
@@ -1420,6 +1474,104 @@ const TradePage: React.FC = () => {
             >
               Withdraw
             </Button>
+          </Box>
+        )}
+        {sidebarType === 'transactions' && (
+          <Box>
+            <Typography
+              variant="body2"
+              sx={{
+                color: isDark ? '#9ca3af' : '#6b7280',
+                marginBottom: 2,
+                fontSize: '0.875rem',
+                lineHeight: 1.6,
+              }}
+            >
+              View your deposit and withdraw fund history.
+            </Typography>
+            {walletTransactionLoading ? (
+              <Box>
+                <Skeleton variant="rectangular" height={56} sx={{ marginBottom: 1, borderRadius: 1 }} />
+                <Skeleton variant="rectangular" height={56} sx={{ marginBottom: 1, borderRadius: 1 }} />
+                <Skeleton variant="rectangular" height={56} sx={{ borderRadius: 1 }} />
+              </Box>
+            ) : (() => {
+              const transactions = (walletTransactionData?.transactions || []).filter(
+                (transaction) =>
+                  transaction.transaction_type === 'DEPOSIT' || transaction.transaction_type === 'WITHDRAW',
+              );
+              if (transactions.length === 0) {
+                return (
+                  <Box sx={{ textAlign: 'center', padding: 3 }}>
+                    <Typography variant="body2" sx={{ color: isDark ? '#9ca3af' : '#6b7280', fontSize: '0.875rem' }}>
+                      No deposit or withdrawal transactions yet
+                    </Typography>
+                  </Box>
+                );
+              }
+              return (
+                <TableContainer>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell sx={{ color: isDark ? '#FFFFFF' : '#111827', fontWeight: 600, fontSize: '0.8rem' }}>Type</TableCell>
+                        <TableCell sx={{ color: isDark ? '#FFFFFF' : '#111827', fontWeight: 600, fontSize: '0.8rem' }}>Amount</TableCell>
+                        <TableCell sx={{ color: isDark ? '#FFFFFF' : '#111827', fontWeight: 600, fontSize: '0.8rem' }}>Status</TableCell>
+                        <TableCell sx={{ color: isDark ? '#FFFFFF' : '#111827', fontWeight: 600, fontSize: '0.8rem' }}>Date</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {transactions.map((transaction) => (
+                        <TableRow key={transaction.id} hover>
+                          <TableCell sx={{ color: isDark ? '#FFFFFF' : '#111827', fontSize: '0.8rem' }}>
+                            {transaction.transaction_type === 'DEPOSIT' ? 'Deposit' : 'Withdraw'}
+                          </TableCell>
+                          <TableCell sx={{ color: isDark ? '#FFFFFF' : '#111827', fontSize: '0.8rem', fontWeight: 600 }}>
+                            {formatCurrency(transaction.amount)}
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              label={transaction.status}
+                              size="small"
+                              sx={{
+                                textTransform: 'capitalize',
+                                backgroundColor:
+                                  transaction.status === 'COMPLETED'
+                                    ? isDark
+                                      ? 'rgba(16, 185, 129, 0.2)'
+                                      : '#d1fae5'
+                                    : transaction.status === 'PENDING'
+                                    ? isDark
+                                      ? 'rgba(245, 158, 11, 0.2)'
+                                      : '#fef3c7'
+                                    : isDark
+                                    ? 'rgba(239, 68, 68, 0.2)'
+                                    : '#fee2e2',
+                                color:
+                                  transaction.status === 'COMPLETED'
+                                    ? isDark
+                                      ? '#34d399'
+                                      : '#065f46'
+                                    : transaction.status === 'PENDING'
+                                    ? isDark
+                                      ? '#fbbf24'
+                                      : '#92400e'
+                                    : isDark
+                                    ? '#fca5a5'
+                                    : '#991b1b',
+                              }}
+                            />
+                          </TableCell>
+                          <TableCell sx={{ color: isDark ? '#9ca3af' : '#6b7280', fontSize: '0.75rem' }}>
+                            {formatDateTime(transaction.created_at)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              );
+            })()}
           </Box>
         )}
       </Sidebar>

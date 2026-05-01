@@ -307,6 +307,31 @@ export interface WithdrawRequest {
   bank_account_name: string;
 }
 
+export interface WalletTransactionItem {
+  id: number;
+  user_id: string;
+  transaction_type: string;
+  amount: number;
+  status: string;
+  payment_method?: string | null;
+  stripe_session_id?: string | null;
+  bank_name?: string | null;
+  bank_account_number?: string | null;
+  bank_account_name?: string | null;
+  notes?: string | null;
+  approved_by?: string | null;
+  approved_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WalletTransactionsResponse {
+  transactions: WalletTransactionItem[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
 export interface TradeHistoryItem {
   id: number;
   user_id: string;
@@ -346,7 +371,7 @@ export interface OpenOrdersResponse {
 export const goldApi = createApi({
   reducerPath: 'goldApi',
   baseQuery: baseQueryWithReauth,
-  tagTypes: ['DailyData', 'RealtimePrice', 'ExchangeRate', 'AccuracyVisualization', 'PredictionHistory', 'EnhancedPrediction', 'ModelInfo', 'PredictionStats', 'PendingPredictions', 'PredictionReasons', 'SpotTradePrice', 'SpotTradeBalance', 'SpotTradeHistory', 'SpotTradeOrders'],
+  tagTypes: ['DailyData', 'RealtimePrice', 'ExchangeRate', 'AccuracyVisualization', 'PredictionHistory', 'EnhancedPrediction', 'ModelInfo', 'PredictionStats', 'PendingPredictions', 'PredictionReasons', 'SpotTradePrice', 'SpotTradeBalance', 'SpotTradeHistory', 'SpotTradeOrders', 'SpotTradeWalletTransactions'],
   endpoints: (builder) => ({
     getDailyData: builder.query<DailyDataResponse, { days?: number; start_date?: string; end_date?: string } | void>({
       query: (params) => {
@@ -444,7 +469,7 @@ export const goldApi = createApi({
         method: 'POST',
         body,
       }),
-      invalidatesTags: ['SpotTradeBalance', 'SpotTradeHistory'],
+      invalidatesTags: ['SpotTradeBalance', 'SpotTradeHistory', 'SpotTradeWalletTransactions'],
     }),
     confirmDeposit: builder.mutation<DepositConfirmResponse, { session_id: string }>({
       query: (body) => ({
@@ -452,7 +477,7 @@ export const goldApi = createApi({
         method: 'POST',
         body,
       }),
-      invalidatesTags: ['SpotTradeBalance', 'SpotTradeHistory'],
+      invalidatesTags: ['SpotTradeBalance', 'SpotTradeHistory', 'SpotTradeWalletTransactions'],
     }),
     withdrawFunds: builder.mutation<unknown, WithdrawRequest>({
       query: (body) => ({
@@ -460,7 +485,7 @@ export const goldApi = createApi({
         method: 'POST',
         body,
       }),
-      invalidatesTags: ['SpotTradeBalance', 'SpotTradeHistory'],
+      invalidatesTags: ['SpotTradeBalance', 'SpotTradeHistory', 'SpotTradeWalletTransactions'],
     }),
     getSpotTradeHistory: builder.query<TradeHistoryResponse, { limit?: number; offset?: number }>({
       query: (params) => {
@@ -475,6 +500,16 @@ export const goldApi = createApi({
     getSpotTradeOrders: builder.query<OpenOrdersResponse, void>({
       query: () => '/api/v1/spot-trade/orders',
       providesTags: ['SpotTradeOrders'],
+    }),
+    getSpotTradeWalletTransactions: builder.query<WalletTransactionsResponse, { limit?: number; offset?: number }>({
+      query: (params) => {
+        const searchParams = new URLSearchParams();
+        if (params?.limit) searchParams.append('limit', params.limit.toString());
+        if (params?.offset) searchParams.append('offset', params.offset.toString());
+        const queryString = searchParams.toString();
+        return `/api/v1/spot-trade/wallet-transactions${queryString ? `?${queryString}` : ''}`;
+      },
+      providesTags: ['SpotTradeWalletTransactions'],
     }),
   }),
 });
@@ -498,6 +533,7 @@ export const {
   useGetSpotTradeBalanceQuery,
   useGetSpotTradeHistoryQuery,
   useGetSpotTradeOrdersQuery,
+  useGetSpotTradeWalletTransactionsQuery,
   useDepositFundsMutation,
   useConfirmDepositMutation,
   useWithdrawFundsMutation,
