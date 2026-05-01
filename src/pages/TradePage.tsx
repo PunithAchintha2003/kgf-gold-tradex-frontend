@@ -43,11 +43,7 @@ import {
 import Chart from '../components/price-predictor/Chart';
 import { convertChartData, PAWN_GRAMS } from '../utils/currencyConverter';
 
-interface TradePageProps {
-  onNavigate: (path: string) => void;
-}
-
-const TradePage: React.FC<TradePageProps> = ({ onNavigate }) => {
+const TradePage: React.FC = () => {
   const { isDark, mode } = useTheme();
   const { isAuthenticated } = useApp();
   const muiTheme = useMuiTheme();
