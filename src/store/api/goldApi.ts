@@ -283,6 +283,30 @@ export interface BalanceResponse {
   total_value_lkr: number;
 }
 
+export interface DepositCheckoutResponse {
+  checkout_url: string;
+  session_id: string;
+  transaction_id: number;
+  status: string;
+}
+
+export interface DepositConfirmResponse {
+  id: number;
+  user_id: string;
+  transaction_type: string;
+  amount: number;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WithdrawRequest {
+  amount: number;
+  bank_name: string;
+  bank_account_number: string;
+  bank_account_name: string;
+}
+
 export interface TradeHistoryItem {
   id: number;
   user_id: string;
@@ -414,6 +438,30 @@ export const goldApi = createApi({
       query: () => '/api/v1/spot-trade/balance',
       providesTags: ['SpotTradeBalance'],
     }),
+    depositFunds: builder.mutation<DepositCheckoutResponse, { amount: number }>({
+      query: (body) => ({
+        url: '/api/v1/spot-trade/deposit',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['SpotTradeBalance', 'SpotTradeHistory'],
+    }),
+    confirmDeposit: builder.mutation<DepositConfirmResponse, { session_id: string }>({
+      query: (body) => ({
+        url: '/api/v1/spot-trade/deposit/confirm',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['SpotTradeBalance', 'SpotTradeHistory'],
+    }),
+    withdrawFunds: builder.mutation<unknown, WithdrawRequest>({
+      query: (body) => ({
+        url: '/api/v1/spot-trade/withdraw',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['SpotTradeBalance', 'SpotTradeHistory'],
+    }),
     getSpotTradeHistory: builder.query<TradeHistoryResponse, { limit?: number; offset?: number }>({
       query: (params) => {
         const searchParams = new URLSearchParams();
@@ -450,4 +498,7 @@ export const {
   useGetSpotTradeBalanceQuery,
   useGetSpotTradeHistoryQuery,
   useGetSpotTradeOrdersQuery,
+  useDepositFundsMutation,
+  useConfirmDepositMutation,
+  useWithdrawFundsMutation,
 } = goldApi;

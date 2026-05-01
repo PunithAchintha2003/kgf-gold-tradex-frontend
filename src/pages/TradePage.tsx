@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { 
   Box, 
   Typography, 
@@ -26,6 +26,7 @@ import { TrendingUp, TrendingDown, AccountBalance, AttachMoney, ShowChart, Histo
 import { toast } from 'sonner';
 import { useTheme } from '../hooks/useTheme';
 import { createAppTheme } from '../theme/theme';
+import { useApp } from '../contexts/AppContext';
 import Sidebar from '../components/price-predictor/Sidebar';
 import { 
   useGetSpotTradePriceQuery,
@@ -35,6 +36,9 @@ import {
   useGetSpotTradeHistoryQuery,
   useGetDailyDataQuery,
   useGetExchangeRateQuery,
+  useDepositFundsMutation,
+  useConfirmDepositMutation,
+  useWithdrawFundsMutation,
 } from '../store/api/goldApi';
 import Chart from '../components/price-predictor/Chart';
 import { convertChartData, PAWN_GRAMS } from '../utils/currencyConverter';
@@ -43,8 +47,9 @@ interface TradePageProps {
   onNavigate: (path: string) => void;
 }
 
-const TradePage: React.FC<TradePageProps> = ({ onNavigate: _onNavigate }) => {
+const TradePage: React.FC<TradePageProps> = ({ onNavigate }) => {
   const { isDark, mode } = useTheme();
+  const { isAuthenticated } = useApp();
   const muiTheme = useMuiTheme();
   const theme = createAppTheme(mode);
   const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
@@ -54,6 +59,11 @@ const TradePage: React.FC<TradePageProps> = ({ onNavigate: _onNavigate }) => {
   const [quantity, setQuantity] = useState<string>('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarType, setSidebarType] = useState<'deposit' | 'withdraw' | null>(null);
+  const [depositAmount, setDepositAmount] = useState<string>('');
+  const [withdrawAmount, setWithdrawAmount] = useState<string>('');
+  const [bankName, setBankName] = useState<string>('');
+  const [bankAccountNumber, setBankAccountNumber] = useState<string>('');
+  const [bankAccountName, setBankAccountName] = useState<string>('');
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
     message: '',
@@ -66,10 +76,16 @@ const TradePage: React.FC<TradePageProps> = ({ onNavigate: _onNavigate }) => {
   });
 
   const { data: balanceData, isLoading: balanceLoading, refetch: refetchBalance } = useGetSpotTradeBalanceQuery(undefined, {
+    skip: !isAuthenticated,
     pollingInterval: 10000, // Poll every 10 seconds
   });
 
-  const { data: historyData, isLoading: historyLoading } = useGetSpotTradeHistoryQuery({ limit: 20, offset: 0 });
+  const { data: historyData, isLoading: historyLoading } = useGetSpotTradeHistoryQuery(
+    { limit: 20, offset: 0 },
+    {
+      skip: !isAuthenticated,
+    },
+  );
 
   // Fetch daily data for the last 30 days - for trade page chart
   // Calculate date 30 days ago
@@ -96,6 +112,49 @@ const TradePage: React.FC<TradePageProps> = ({ onNavigate: _onNavigate }) => {
   // Mutations
   const [placeBuyOrder, { isLoading: buyLoading }] = usePlaceBuyOrderMutation();
   const [placeSellOrder, { isLoading: sellLoading }] = usePlaceSellOrderMutation();
+  const [depositFunds, { isLoading: depositLoading }] = useDepositFundsMutation();
+  const [confirmDeposit] = useConfirmDepositMutation();
+  const [withdrawFunds, { isLoading: withdrawLoading }] = useWithdrawFundsMutation();
+
+  // Handle redirect from Stripe success/cancel pages.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const depositStatus = params.get('deposit');
+    const sessionId = params.get('session_id');
+
+    if (!depositStatus) return;
+
+    const cleanupUrl = () => {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('deposit');
+      url.searchParams.delete('session_id');
+      window.history.replaceState({}, '', url.toString());
+    };
+
+    if (depositStatus === 'cancelled') {
+      toast.error('Deposit was cancelled');
+      cleanupUrl();
+      return;
+    }
+
+    if (depositStatus === 'success' && sessionId) {
+      void (async () => {
+        try {
+          await confirmDeposit({ session_id: sessionId }).unwrap();
+          toast.success('Deposit completed successfully');
+          refetchBalance();
+        } catch (err: unknown) {
+          const message =
+            err && typeof err === 'object' && 'data' in err && err.data && typeof err.data === 'object' && 'detail' in err.data
+              ? String((err.data as { detail: unknown }).detail)
+              : 'Deposit confirmation pending. Balance will update shortly.';
+          toast.error(message);
+        } finally {
+          cleanupUrl();
+        }
+      })();
+    }
+  }, [confirmDeposit, refetchBalance]);
 
 
   // Chart data - update last point with real-time price like predictor page
@@ -152,6 +211,9 @@ const TradePage: React.FC<TradePageProps> = ({ onNavigate: _onNavigate }) => {
     return balanceData.gold_balance * PAWN_GRAMS;
   }, [balanceData]);
 
+  // Minimum buy is 0.5 g (for "You can buy up to" only when >= this)
+  const MIN_GOLD_GRAMS = 0.5;
+
   // Quick fill functions
   const fillMaxBuy = useCallback(() => {
     if (maxBuyable > 0) {
@@ -169,6 +231,11 @@ const TradePage: React.FC<TradePageProps> = ({ onNavigate: _onNavigate }) => {
 
   // Handle BUY order
   const handleBuy = useCallback(async () => {
+    if (!isAuthenticated) {
+      toast.error('You need to register or login to trade.');
+      return;
+    }
+
     if (!quantity) {
       setSnackbar({
         open: true,
@@ -250,10 +317,15 @@ const TradePage: React.FC<TradePageProps> = ({ onNavigate: _onNavigate }) => {
         severity: 'error',
       });
     }
-  }, [quantity, balanceData, orderTotal, maxBuyable, placeBuyOrder, refetchBalance, priceData]);
+  }, [isAuthenticated, quantity, balanceData, orderTotal, maxBuyable, placeBuyOrder, refetchBalance, priceData]);
 
   // Handle SELL order
   const handleSell = useCallback(async () => {
+    if (!isAuthenticated) {
+      toast.error('You need to register or login to trade.');
+      return;
+    }
+
     if (!quantity) {
       setSnackbar({
         open: true,
@@ -323,7 +395,7 @@ const TradePage: React.FC<TradePageProps> = ({ onNavigate: _onNavigate }) => {
         severity: 'error',
       });
     }
-  }, [quantity, balanceData, maxSellable, placeSellOrder, refetchBalance, priceData]);
+  }, [isAuthenticated, quantity, balanceData, maxSellable, placeSellOrder, refetchBalance, priceData]);
 
   // Format currency with compact suffix (K/M)
   const formatCurrency = (value: number) => {
@@ -571,7 +643,11 @@ const TradePage: React.FC<TradePageProps> = ({ onNavigate: _onNavigate }) => {
                 Your Balance
               </Typography>
             </Box>
-            {balanceLoading ? (
+            {!isAuthenticated ? (
+              <Typography variant="body2" sx={{ color: isDark ? '#9ca3af' : '#6b7280' }}>
+                Sign in to view your balance
+              </Typography>
+            ) : balanceLoading ? (
               <Box>
                 <Skeleton variant="text" width="80%" height={30} />
                 <Skeleton variant="text" width="60%" height={30} />
@@ -609,7 +685,7 @@ const TradePage: React.FC<TradePageProps> = ({ onNavigate: _onNavigate }) => {
                     {formatCurrency(balanceData.total_value_lkr)}
                   </Typography>
                 </Box>
-                {maxBuyable > 0 && (
+                {maxBuyable >= MIN_GOLD_GRAMS && (
                   <Typography variant="caption" sx={{ color: isDark ? '#9ca3af' : '#6b7280', display: 'block', marginTop: 1, fontSize: '0.75rem' }}>
                     You can buy up to {formatGold(maxBuyable)}
                   </Typography>
@@ -881,7 +957,13 @@ const TradePage: React.FC<TradePageProps> = ({ onNavigate: _onNavigate }) => {
                 Recent Trades
               </Typography>
             </Box>
-              {historyLoading ? (
+              {!isAuthenticated ? (
+                <Box sx={{ textAlign: 'center', padding: 3 }}>
+                  <Typography variant="body2" sx={{ color: isDark ? '#9ca3af' : '#6b7280', fontSize: '0.875rem' }}>
+                    Sign in to view your trade history
+                  </Typography>
+                </Box>
+              ) : historyLoading ? (
                 <Box>
                   <Skeleton variant="rectangular" height={60} sx={{ marginBottom: 1, borderRadius: 1 }} />
                   <Skeleton variant="rectangular" height={60} sx={{ marginBottom: 1, borderRadius: 1 }} />
@@ -982,6 +1064,10 @@ const TradePage: React.FC<TradePageProps> = ({ onNavigate: _onNavigate }) => {
                 size="small"
                 variant="outlined"
                 onClick={() => {
+                  if (!isAuthenticated) {
+                    toast.error('You need to register or login to deposit funds.');
+                    return;
+                  }
                   setSidebarType('deposit');
                   setSidebarOpen(true);
                 }}
@@ -1004,6 +1090,10 @@ const TradePage: React.FC<TradePageProps> = ({ onNavigate: _onNavigate }) => {
                 size="small"
                 variant="outlined"
                 onClick={() => {
+                  if (!isAuthenticated) {
+                    toast.error('You need to register or login to withdraw funds.');
+                    return;
+                  }
                   setSidebarType('withdraw');
                   setSidebarOpen(true);
                 }}
@@ -1064,6 +1154,11 @@ const TradePage: React.FC<TradePageProps> = ({ onNavigate: _onNavigate }) => {
         onClose={() => {
           setSidebarOpen(false);
           setSidebarType(null);
+          setDepositAmount('');
+          setWithdrawAmount('');
+          setBankName('');
+          setBankAccountNumber('');
+          setBankAccountName('');
         }}
         title={sidebarType === 'deposit' ? 'Deposit Funds' : sidebarType === 'withdraw' ? 'Withdraw Funds' : 'Transaction'}
         width={400}
@@ -1079,13 +1174,16 @@ const TradePage: React.FC<TradePageProps> = ({ onNavigate: _onNavigate }) => {
                 lineHeight: 1.6,
               }}
             >
-              Deposit LKR to your trading account to buy gold.
+              Deposit LKR to your trading account to buy gold. Minimum deposit amount is LKR 5,000.
             </Typography>
             <TextField
               fullWidth
               label="Deposit Amount (LKR)"
               type="number"
               placeholder="Enter amount"
+              value={depositAmount}
+              onChange={(e) => setDepositAmount(e.target.value)}
+              inputProps={{ min: 5000, step: 500 }}
               sx={{
                 marginBottom: 2,
                 '& .MuiOutlinedInput-root': {
@@ -1115,7 +1213,36 @@ const TradePage: React.FC<TradePageProps> = ({ onNavigate: _onNavigate }) => {
               fullWidth
               variant="contained"
               size="large"
-              startIcon={<Add />}
+              disabled={depositLoading || !depositAmount || parseFloat(depositAmount) < 5000}
+              startIcon={depositLoading ? <CircularProgress size={20} color="inherit" /> : <Add />}
+              onClick={async () => {
+                if (!isAuthenticated) {
+                  toast.error('You need to register or login to deposit funds.');
+                  return;
+                }
+                const amount = parseFloat(depositAmount);
+                if (Number.isNaN(amount) || amount < 5000) {
+                  toast.error('Please enter at least 5,000 LKR');
+                  return;
+                }
+                try {
+                  const checkout = await depositFunds({ amount }).unwrap();
+                  if (!checkout?.checkout_url) {
+                    throw new Error('Unable to initiate Stripe checkout');
+                  }
+                  toast.success('Redirecting to secure Stripe checkout...');
+                  window.location.href = checkout.checkout_url;
+                  setDepositAmount('');
+                  refetchBalance();
+                  setSidebarOpen(false);
+                  setSidebarType(null);
+                } catch (err: unknown) {
+                  const message = err && typeof err === 'object' && 'data' in err && err.data && typeof err.data === 'object' && 'detail' in err.data
+                    ? String((err.data as { detail: unknown }).detail)
+                    : 'Deposit failed';
+                  toast.error(message);
+                }
+              }}
               sx={{
                 backgroundColor: isDark ? '#10b981' : '#10b981',
                 color: '#FFFFFF',
@@ -1173,6 +1300,9 @@ const TradePage: React.FC<TradePageProps> = ({ onNavigate: _onNavigate }) => {
               label="Withdraw Amount (LKR)"
               type="number"
               placeholder="Enter amount"
+              value={withdrawAmount}
+              onChange={(e) => setWithdrawAmount(e.target.value)}
+              inputProps={{ min: 0, step: 100, max: balanceData?.lkr_balance ?? 0 }}
               sx={{
                 marginBottom: 2,
                 '& .MuiOutlinedInput-root': {
@@ -1198,11 +1328,87 @@ const TradePage: React.FC<TradePageProps> = ({ onNavigate: _onNavigate }) => {
                 },
               }}
             />
+            <TextField
+              fullWidth
+              label="Bank Name"
+              placeholder="Enter bank name"
+              value={bankName}
+              onChange={(e) => setBankName(e.target.value)}
+              sx={{ marginBottom: 2 }}
+            />
+            <TextField
+              fullWidth
+              label="Bank Account Number"
+              placeholder="Enter account number"
+              value={bankAccountNumber}
+              onChange={(e) => setBankAccountNumber(e.target.value)}
+              sx={{ marginBottom: 2 }}
+            />
+            <TextField
+              fullWidth
+              label="Bank Account Name"
+              placeholder="Enter account holder name"
+              value={bankAccountName}
+              onChange={(e) => setBankAccountName(e.target.value)}
+              sx={{ marginBottom: 2 }}
+            />
+            <Typography variant="caption" sx={{ color: isDark ? '#9ca3af' : '#6b7280', display: 'block', mb: 2 }}>
+              Withdrawals are processed after admin approval and may take up to 3 days.
+            </Typography>
             <Button
               fullWidth
               variant="contained"
               size="large"
-              startIcon={<Remove />}
+              disabled={
+                withdrawLoading ||
+                !withdrawAmount ||
+                parseFloat(withdrawAmount) <= 0 ||
+                (balanceData != null && parseFloat(withdrawAmount) > balanceData.lkr_balance) ||
+                !bankName.trim() ||
+                !bankAccountNumber.trim() ||
+                !bankAccountName.trim()
+              }
+              startIcon={withdrawLoading ? <CircularProgress size={20} color="inherit" /> : <Remove />}
+              onClick={async () => {
+                if (!isAuthenticated) {
+                  toast.error('You need to register or login to withdraw funds.');
+                  return;
+                }
+                const amount = parseFloat(withdrawAmount);
+                if (Number.isNaN(amount) || amount <= 0) {
+                  toast.error('Please enter a valid amount');
+                  return;
+                }
+                if (balanceData != null && amount > balanceData.lkr_balance) {
+                  toast.error('Insufficient balance');
+                  return;
+                }
+                if (!bankName.trim() || !bankAccountNumber.trim() || !bankAccountName.trim()) {
+                  toast.error('Please enter bank name, account number, and account name');
+                  return;
+                }
+                try {
+                  await withdrawFunds({
+                    amount,
+                    bank_name: bankName.trim(),
+                    bank_account_number: bankAccountNumber.trim(),
+                    bank_account_name: bankAccountName.trim(),
+                  }).unwrap();
+                  toast.success(`Withdrawal request for ${formatCurrency(amount)} is pending approval`);
+                  setWithdrawAmount('');
+                  setBankName('');
+                  setBankAccountNumber('');
+                  setBankAccountName('');
+                  refetchBalance();
+                  setSidebarOpen(false);
+                  setSidebarType(null);
+                } catch (err: unknown) {
+                  const message = err && typeof err === 'object' && 'data' in err && err.data && typeof err.data === 'object' && 'detail' in err.data
+                    ? String((err.data as { detail: unknown }).detail)
+                    : 'Withdraw failed';
+                  toast.error(message);
+                }
+              }}
               sx={{
                 backgroundColor: isDark ? '#ef4444' : '#ef4444',
                 color: '#FFFFFF',

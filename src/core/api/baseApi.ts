@@ -45,7 +45,7 @@ export const baseQuery = fetchBaseQuery({
   baseUrl: getApiBaseUrl(),
   prepareHeaders: (headers) => {
     // Add auth token if available
-    const token = localStorage.getItem('auth_token');
+    const token = localStorage.getItem('accessToken') || localStorage.getItem('auth_token');
     if (token) {
       headers.set('authorization', `Bearer ${token}`);
     }
@@ -71,6 +71,8 @@ export const baseQueryWithReauth: BaseQueryFn<
   // Handle 401 Unauthorized - redirect to login
   if (result.error && result.error.status === 401) {
     // Clear auth token
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
     localStorage.removeItem('auth_token');
     
     // Redirect to login if not already there
