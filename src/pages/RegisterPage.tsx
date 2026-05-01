@@ -3,8 +3,9 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Checkbox } from '../components/ui/checkbox';
+import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
 import { useApp } from '../contexts/AppContext';
-import { Mail, Lock, User, Phone, MapPin, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, User, Phone, MapPin, Eye, EyeOff, CircleAlert } from 'lucide-react';
 import { toast } from 'sonner';
 import { ApiRequestError } from '../services/authService';
 import logoImage from '../assets/28A9A4B0-D00A-4539-82A6-89A2130B5FAF.PNG';
@@ -39,6 +40,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   const handleInputChange = <K extends keyof FormData>(field: K, value: FormData[K]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -50,6 +52,27 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
         return newErrors;
       });
     }
+  };
+
+  const handleBlur = (field: keyof FormData) => {
+    setTouched(prev => ({ ...prev, [field]: true }));
+  };
+
+  const getPasswordStrength = (password: string): { label: string; score: number } => {
+    if (!password) {
+      return { label: 'No password entered', score: 0 };
+    }
+
+    let score = 0;
+    if (password.length >= 8) score += 1;
+    if (/[A-Z]/.test(password)) score += 1;
+    if (/[a-z]/.test(password)) score += 1;
+    if (/\d/.test(password)) score += 1;
+    if (/[^A-Za-z0-9]/.test(password)) score += 1;
+
+    if (score <= 2) return { label: 'Weak', score };
+    if (score === 3 || score === 4) return { label: 'Medium', score };
+    return { label: 'Strong', score };
   };
 
   const validateForm = (): { isValid: boolean; errors: Record<string, string> } => {
@@ -95,8 +118,22 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
     return { isValid: Object.keys(newErrors).length === 0, errors: newErrors };
   };
 
+  const passwordStrength = getPasswordStrength(formData.password);
+  const visibleErrors = Object.fromEntries(
+    Object.entries(errors).filter(([field]) => touched[field] || isLoading)
+  );
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setTouched({
+      name: true,
+      email: true,
+      phone: true,
+      password: true,
+      confirmPassword: true,
+      address: true,
+      agreeTerms: true,
+    });
     
     // Validate form first - this returns errors directly
     const validation = validateForm();
@@ -203,102 +240,146 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
           <CardHeader>
             <CardTitle>Account Registration</CardTitle>
             <CardDescription>
-              Fill in your details to create your KGF account
+              Create your account in less than 2 minutes. Required fields are marked with *
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+              {Object.keys(visibleErrors).length > 0 && (
+                <Alert variant="destructive">
+                  <CircleAlert />
+                  <AlertTitle>Please review highlighted fields</AlertTitle>
+                  <AlertDescription>
+                    <ul className="list-disc pl-4 space-y-0.5">
+                      {Object.entries(visibleErrors).map(([field, message]) => (
+                        <li key={field}>{message}</li>
+                      ))}
+                    </ul>
+                  </AlertDescription>
+                </Alert>
+              )}
+
               {/* Personal Information */}
-              <div className="space-y-4">
+              <div className="space-y-4 rounded-lg border bg-card p-4">
                 <h3 className="text-lg font-medium">Personal Information</h3>
                 
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium mb-2">Full Name</label>
+                    <label htmlFor="register-name" className="block text-sm font-medium mb-2">Full Name *</label>
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                       <Input
+                        id="register-name"
+                        autoComplete="name"
                         placeholder="Enter your full name"
                         value={formData['name']}
                         onChange={(e) => handleInputChange('name', e.target.value)}
-                        className={`pl-10 ${errors['name'] ? 'border-destructive' : ''}`}
+                        onBlur={() => handleBlur('name')}
+                        aria-invalid={Boolean(visibleErrors['name'])}
+                        aria-describedby={visibleErrors['name'] ? 'name-error' : undefined}
+                        className="pl-10"
                         required
                       />
                     </div>
-                    {errors['name'] && (
-                      <p className="text-sm text-destructive mt-1">{errors['name']}</p>
+                    {visibleErrors['name'] && (
+                      <p id="name-error" className="text-sm text-destructive mt-1">{visibleErrors['name']}</p>
                     )}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-2">Phone Number</label>
+                    <label htmlFor="register-phone" className="block text-sm font-medium mb-2">Phone Number *</label>
                     <div className="relative">
                       <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                       <Input
+                        id="register-phone"
+                        autoComplete="tel"
                         placeholder="+94 XX XXX XXXX"
                         value={formData['phone']}
                         onChange={(e) => handleInputChange('phone', e.target.value)}
-                        className={`pl-10 ${errors['phone'] ? 'border-destructive' : ''}`}
+                        onBlur={() => handleBlur('phone')}
+                        aria-invalid={Boolean(visibleErrors['phone'])}
+                        aria-describedby={visibleErrors['phone'] ? 'phone-error' : 'phone-hint'}
+                        className="pl-10"
                         required
                       />
                     </div>
-                    {errors['phone'] && (
-                      <p className="text-sm text-destructive mt-1">{errors['phone']}</p>
+                    {!visibleErrors['phone'] && (
+                      <p id="phone-hint" className="text-xs text-muted-foreground mt-1">
+                        Include country code for faster verification.
+                      </p>
+                    )}
+                    {visibleErrors['phone'] && (
+                      <p id="phone-error" className="text-sm text-destructive mt-1">{visibleErrors['phone']}</p>
                     )}
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Email Address</label>
+                  <label htmlFor="register-email" className="block text-sm font-medium mb-2">Email Address *</label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                     <Input
+                      id="register-email"
                       type="email"
-                      placeholder="Enter your email address"
+                      autoComplete="email"
+                      placeholder="name@example.com"
                       value={formData['email']}
                       onChange={(e) => handleInputChange('email', e.target.value)}
-                      className={`pl-10 ${errors['email'] ? 'border-destructive' : ''}`}
+                      onBlur={() => handleBlur('email')}
+                      aria-invalid={Boolean(visibleErrors['email'])}
+                      aria-describedby={visibleErrors['email'] ? 'register-email-error' : undefined}
+                      className="pl-10"
                       required
                     />
                   </div>
-                  {errors['email'] && (
-                    <p className="text-sm text-destructive mt-1">{errors['email']}</p>
+                  {visibleErrors['email'] && (
+                    <p id="register-email-error" className="text-sm text-destructive mt-1">{visibleErrors['email']}</p>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Address</label>
+                  <label htmlFor="register-address" className="block text-sm font-medium mb-2">Address *</label>
                   <div className="relative">
                     <MapPin className="absolute left-3 top-3 text-muted-foreground h-4 w-4" />
                     <Input
+                      id="register-address"
+                      autoComplete="street-address"
                       placeholder="Enter your full address"
                       value={formData['address']}
                       onChange={(e) => handleInputChange('address', e.target.value)}
-                      className={`pl-10 ${errors['address'] ? 'border-destructive' : ''}`}
+                      onBlur={() => handleBlur('address')}
+                      aria-invalid={Boolean(visibleErrors['address'])}
+                      aria-describedby={visibleErrors['address'] ? 'address-error' : undefined}
+                      className="pl-10"
                       required
                     />
                   </div>
-                  {errors['address'] && (
-                    <p className="text-sm text-destructive mt-1">{errors['address']}</p>
+                  {visibleErrors['address'] && (
+                    <p id="address-error" className="text-sm text-destructive mt-1">{visibleErrors['address']}</p>
                   )}
                 </div>
               </div>
 
               {/* Security */}
-              <div className="space-y-4">
+              <div className="space-y-4 rounded-lg border bg-card p-4">
                 <h3 className="text-lg font-medium">Security</h3>
                 
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium mb-2">Password</label>
+                    <label htmlFor="register-password" className="block text-sm font-medium mb-2">Password *</label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                       <Input
+                        id="register-password"
                         type={showPassword ? 'text' : 'password'}
+                        autoComplete="new-password"
                         placeholder="Create a strong password (min. 8 characters)"
                         value={formData.password}
                         onChange={(e) => handleInputChange('password', e.target.value)}
-                        className={`pl-10 pr-10 ${errors['password'] ? 'border-destructive' : ''}`}
+                        onBlur={() => handleBlur('password')}
+                        aria-invalid={Boolean(visibleErrors['password'])}
+                        aria-describedby={visibleErrors['password'] ? 'password-error' : 'password-hint'}
+                        className="pl-10 pr-10"
                         required
                       />
                       <button
@@ -310,39 +391,68 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                         {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
                     </div>
-                    {errors['password'] && (
-                      <p className="text-sm text-destructive mt-1">{errors['password']}</p>
+                    {!visibleErrors['password'] && (
+                      <div id="password-hint" className="mt-2 space-y-1">
+                        <p className="text-xs text-muted-foreground">
+                          Strength: <span className="font-medium">{passwordStrength.label}</span>
+                        </p>
+                        <div className="h-1.5 rounded bg-muted overflow-hidden">
+                          <div
+                            className={`h-full transition-all ${
+                              passwordStrength.score <= 2
+                                ? 'bg-destructive'
+                                : passwordStrength.score <= 4
+                                  ? 'bg-yellow-500'
+                                  : 'bg-green-600'
+                            }`}
+                            style={{ width: `${(passwordStrength.score / 5) * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                    {visibleErrors['password'] && (
+                      <p id="password-error" className="text-sm text-destructive mt-1">{visibleErrors['password']}</p>
                     )}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-2">Confirm Password</label>
+                    <label htmlFor="register-confirm-password" className="block text-sm font-medium mb-2">Confirm Password *</label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                       <Input
+                        id="register-confirm-password"
                         type="password"
+                        autoComplete="new-password"
                         placeholder="Confirm your password"
                         value={formData.confirmPassword}
                         onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                        className={`pl-10 ${errors['confirmPassword'] ? 'border-destructive' : ''}`}
+                        onBlur={() => handleBlur('confirmPassword')}
+                        aria-invalid={Boolean(visibleErrors['confirmPassword'])}
+                        aria-describedby={visibleErrors['confirmPassword'] ? 'confirm-password-error' : undefined}
+                        className="pl-10"
                         required
                       />
                     </div>
-                    {errors['confirmPassword'] && (
-                      <p className="text-sm text-destructive mt-1">{errors['confirmPassword']}</p>
+                    {visibleErrors['confirmPassword'] && (
+                      <p id="confirm-password-error" className="text-sm text-destructive mt-1">{visibleErrors['confirmPassword']}</p>
                     )}
                   </div>
                 </div>
               </div>
 
               {/* Terms and Conditions */}
-              <div className="space-y-4">
+              <div className="space-y-4 rounded-lg border bg-card p-4">
+                <h3 className="text-lg font-medium">Consent</h3>
                 <div className="flex items-start space-x-2">
                   <Checkbox
                     id="terms"
                     checked={formData.agreeTerms}
-                    onCheckedChange={(checked) => handleInputChange('agreeTerms', checked === true)}
-                    className={errors['agreeTerms'] ? 'border-destructive' : ''}
+                    onCheckedChange={(checked) => {
+                      handleInputChange('agreeTerms', checked === true);
+                      setTouched(prev => ({ ...prev, agreeTerms: true }));
+                    }}
+                    aria-invalid={Boolean(visibleErrors['agreeTerms'])}
+                    className={visibleErrors['agreeTerms'] ? 'border-destructive' : ''}
                   />
                   <label htmlFor="terms" className="text-sm leading-5">
                     I agree to the{' '}
@@ -351,8 +461,8 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                     <a href="#" className="text-primary hover:underline">Privacy Policy</a>
                   </label>
                 </div>
-                {errors['agreeTerms'] && (
-                  <p className="text-sm text-destructive mt-1 ml-6">{errors['agreeTerms']}</p>
+                {visibleErrors['agreeTerms'] && (
+                  <p className="text-sm text-destructive mt-1 ml-6">{visibleErrors['agreeTerms']}</p>
                 )}
 
                 <div className="flex items-start space-x-2">
@@ -362,7 +472,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                     onCheckedChange={(checked) => handleInputChange('agreeMarketing', checked === true)}
                   />
                   <label htmlFor="marketing" className="text-sm leading-5">
-                    I want to receive marketing communications and updates about new features
+                    Send me product updates and offers (optional)
                   </label>
                 </div>
               </div>

@@ -72,7 +72,7 @@ const AppRoutes: React.FC = () => {
               />
               <Route path={ROUTES.AUCTIONS} element={<AuctionsPage onNavigate={handleNavigate} />} />
               <Route path={ROUTES.PRICE_PREDICTOR} element={<PricePredictorPage onNavigate={handleNavigate} />} />
-              <Route path={ROUTES.TRADE} element={<TradePage onNavigate={handleNavigate} />} />
+              <Route path={ROUTES.TRADE} element={<TradePage />} />
               <Route path={ROUTES.LOGIN} element={<LoginPage onNavigate={handleNavigate} />} />
               <Route path={ROUTES.REGISTER} element={<RegisterPage onNavigate={handleNavigate} />} />
               

@@ -3,8 +3,9 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Checkbox } from '../components/ui/checkbox';
+import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
 import { useApp } from '../contexts/AppContext';
-import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, CircleAlert } from 'lucide-react';
 import { toast } from 'sonner';
 import { ApiRequestError } from '../services/authService';
 import logoImage from '../assets/28A9A4B0-D00A-4539-82A6-89A2130B5FAF.PNG';
@@ -21,6 +22,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   const handleInputChange = (field: 'email' | 'password', value: string) => {
     if (field === 'email') {
@@ -36,6 +38,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
         return newErrors;
       });
     }
+  };
+
+  const handleBlur = (field: 'email' | 'password') => {
+    setTouched(prev => ({ ...prev, [field]: true }));
   };
 
   const validateForm = (): { isValid: boolean; errors: Record<string, string> } => {
@@ -55,8 +61,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
     return { isValid: Object.keys(newErrors).length === 0, errors: newErrors };
   };
 
+  const visibleErrors = Object.fromEntries(
+    Object.entries(errors).filter(([field]) => touched[field] || isLoading)
+  );
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setTouched({ email: true, password: true });
     
     // Validate form first - this returns errors directly
     const validation = validateForm();
@@ -136,43 +147,67 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
           <CardHeader>
             <CardTitle>Sign In</CardTitle>
             <CardDescription>
-              Enter your credentials to access your account
+              Use your registered email and password to continue
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleLogin} className="space-y-6">
+            <form onSubmit={handleLogin} className="space-y-6" noValidate>
+              {Object.keys(visibleErrors).length > 0 && (
+                <Alert variant="destructive">
+                  <CircleAlert />
+                  <AlertTitle>There are issues with your input</AlertTitle>
+                  <AlertDescription>
+                    <ul className="list-disc pl-4 space-y-0.5">
+                      {Object.entries(visibleErrors).map(([field, message]) => (
+                        <li key={field}>{message}</li>
+                      ))}
+                    </ul>
+                  </AlertDescription>
+                </Alert>
+              )}
+
               {/* Login Information */}
               <div className="space-y-4">
-                <h3 className="text-lg font-medium">Login Information</h3>
+                <h3 className="text-lg font-medium">Account credentials</h3>
                 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Email Address</label>
+                  <label htmlFor="login-email" className="block text-sm font-medium mb-2">Email Address</label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                     <Input
+                      id="login-email"
                       type="email"
-                      placeholder="Enter your email address"
+                      autoComplete="email"
+                      placeholder="name@example.com"
                       value={email}
                       onChange={(e) => handleInputChange('email', e.target.value)}
-                      className={`pl-10 ${errors['email'] ? 'border-destructive' : ''}`}
+                      onBlur={() => handleBlur('email')}
+                      aria-invalid={Boolean(visibleErrors['email'])}
+                      aria-describedby={visibleErrors['email'] ? 'email-error' : undefined}
+                      className="pl-10"
                       required
                     />
                   </div>
-                  {errors['email'] && (
-                    <p className="text-sm text-destructive mt-1">{errors['email']}</p>
+                  {visibleErrors['email'] && (
+                    <p id="email-error" className="text-sm text-destructive mt-1">{visibleErrors['email']}</p>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Password</label>
+                  <label htmlFor="login-password" className="block text-sm font-medium mb-2">Password</label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                     <Input
+                      id="login-password"
                       type={showPassword ? 'text' : 'password'}
+                      autoComplete="current-password"
                       placeholder="Enter your password"
                       value={password}
                       onChange={(e) => handleInputChange('password', e.target.value)}
-                      className={`pl-10 pr-10 ${errors['password'] ? 'border-destructive' : ''}`}
+                      onBlur={() => handleBlur('password')}
+                      aria-invalid={Boolean(visibleErrors['password'])}
+                      aria-describedby={visibleErrors['password'] ? 'password-error' : undefined}
+                      className="pl-10 pr-10"
                       required
                     />
                     <button
@@ -184,8 +219,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
-                  {errors['password'] && (
-                    <p className="text-sm text-destructive mt-1">{errors['password']}</p>
+                  {visibleErrors['password'] && (
+                    <p id="password-error" className="text-sm text-destructive mt-1">{visibleErrors['password']}</p>
                   )}
                 </div>
               </div>
