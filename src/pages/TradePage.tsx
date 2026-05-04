@@ -44,6 +44,31 @@ import {
 import Chart from '../components/price-predictor/Chart';
 import { convertChartData, PAWN_GRAMS } from '../utils/currencyConverter';
 
+/** Status chip colors for wallet transactions in Transaction History sidebar */
+function getWalletTransactionStatusChipSx(
+  status: string,
+  isDark: boolean,
+): { backgroundColor: string; color: string } {
+  switch (status) {
+    case 'APPROVED':
+      return isDark
+        ? { backgroundColor: 'rgba(16, 185, 129, 0.2)', color: '#34d399' }
+        : { backgroundColor: '#d1fae5', color: '#065f46' };
+    case 'COMPLETED':
+      return isDark
+        ? { backgroundColor: 'rgba(59, 130, 246, 0.2)', color: '#93c5fd' }
+        : { backgroundColor: '#dbeafe', color: '#1e40af' };
+    case 'PENDING':
+      return isDark
+        ? { backgroundColor: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24' }
+        : { backgroundColor: '#fef3c7', color: '#92400e' };
+    default:
+      return isDark
+        ? { backgroundColor: 'rgba(239, 68, 68, 0.2)', color: '#fca5a5' }
+        : { backgroundColor: '#fee2e2', color: '#991b1b' };
+  }
+}
+
 const TradePage: React.FC = () => {
   const { isDark, mode } = useTheme();
   const { isAuthenticated } = useApp();
@@ -1352,7 +1377,7 @@ const TradePage: React.FC = () => {
               placeholder="Enter amount"
               value={withdrawAmount}
               onChange={(e) => setWithdrawAmount(e.target.value)}
-              inputProps={{ min: 0, step: 100, max: balanceData?.lkr_balance ?? 0 }}
+              inputProps={{ min: 5000, step: 100, max: balanceData?.lkr_balance ?? 0 }}
               sx={{
                 marginBottom: 2,
                 '& .MuiOutlinedInput-root': {
@@ -1402,6 +1427,9 @@ const TradePage: React.FC = () => {
               onChange={(e) => setBankAccountName(e.target.value)}
               sx={{ marginBottom: 2 }}
             />
+            <Typography variant="caption" sx={{ color: isDark ? '#9ca3af' : '#6b7280', display: 'block', mb: 1 }}>
+              Minimum withdrawal amount is LKR 5,000. Withdrawal fee: LKR 100.
+            </Typography>
             <Typography variant="caption" sx={{ color: isDark ? '#9ca3af' : '#6b7280', display: 'block', mb: 2 }}>
               Withdrawals are processed after admin approval and may take up to 3 days.
             </Typography>
@@ -1412,7 +1440,7 @@ const TradePage: React.FC = () => {
               disabled={
                 withdrawLoading ||
                 !withdrawAmount ||
-                parseFloat(withdrawAmount) <= 0 ||
+                parseFloat(withdrawAmount) < 5000 ||
                 (balanceData != null && parseFloat(withdrawAmount) > balanceData.lkr_balance) ||
                 !bankName.trim() ||
                 !bankAccountNumber.trim() ||
@@ -1425,8 +1453,8 @@ const TradePage: React.FC = () => {
                   return;
                 }
                 const amount = parseFloat(withdrawAmount);
-                if (Number.isNaN(amount) || amount <= 0) {
-                  toast.error('Please enter a valid amount');
+                if (Number.isNaN(amount) || amount < 5000) {
+                  toast.error('Please enter at least 5,000 LKR');
                   return;
                 }
                 if (balanceData != null && amount > balanceData.lkr_balance) {
@@ -1498,7 +1526,7 @@ const TradePage: React.FC = () => {
             ) : (() => {
               const transactions = (walletTransactionData?.transactions || []).filter(
                 (transaction) =>
-                  transaction.transaction_type === 'DEPOSIT' || transaction.transaction_type === 'WITHDRAW',
+                  transaction.transaction_type === 'DEPOSIT' || transaction.transaction_type === 'WITHDRAWAL',
               );
               if (transactions.length === 0) {
                 return (
@@ -1535,30 +1563,7 @@ const TradePage: React.FC = () => {
                               size="small"
                               sx={{
                                 textTransform: 'capitalize',
-                                backgroundColor:
-                                  transaction.status === 'COMPLETED'
-                                    ? isDark
-                                      ? 'rgba(16, 185, 129, 0.2)'
-                                      : '#d1fae5'
-                                    : transaction.status === 'PENDING'
-                                    ? isDark
-                                      ? 'rgba(245, 158, 11, 0.2)'
-                                      : '#fef3c7'
-                                    : isDark
-                                    ? 'rgba(239, 68, 68, 0.2)'
-                                    : '#fee2e2',
-                                color:
-                                  transaction.status === 'COMPLETED'
-                                    ? isDark
-                                      ? '#34d399'
-                                      : '#065f46'
-                                    : transaction.status === 'PENDING'
-                                    ? isDark
-                                      ? '#fbbf24'
-                                      : '#92400e'
-                                    : isDark
-                                    ? '#fca5a5'
-                                    : '#991b1b',
+                                ...getWalletTransactionStatusChipSx(transaction.status, isDark),
                               }}
                             />
                           </TableCell>
