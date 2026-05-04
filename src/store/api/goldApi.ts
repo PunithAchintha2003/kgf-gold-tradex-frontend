@@ -339,6 +339,7 @@ export interface TradeHistoryItem {
   quantity: number;
   price: number;
   total_value: number;
+  fee: number;
   status: string;
   created_at: string;
   updated_at: string;
@@ -358,6 +359,7 @@ export interface OpenOrderItem {
   quantity: number;
   price: number;
   total_value: number;
+  fee: number;
   status: string;
   created_at: string;
   updated_at: string;

@@ -42,7 +42,7 @@ import {
   useWithdrawFundsMutation,
 } from '../store/api/goldApi';
 import Chart from '../components/price-predictor/Chart';
-import { convertChartData, PAWN_GRAMS } from '../utils/currencyConverter';
+import { convertChartData, PAWN_GRAMS, TRANSACTION_FEE_PER_GRAM } from '../utils/currencyConverter';
 
 /** Status chip colors for wallet transactions in Transaction History sidebar */
 function getWalletTransactionStatusChipSx(
@@ -213,32 +213,60 @@ const TradePage: React.FC = () => {
 
   const usdToLkrRate = exchangeRateData?.exchange_rate || 300;
 
-  // Calculate order total (quantity entered in grams; API price is per pawn)
-  const orderTotal = useMemo(() => {
+  // Buy: gold at buy price (per gram from pawn price); fee matches backend per-gram fee
+  const orderBuyGoldValue = useMemo(() => {
     if (!quantity || !priceData) return 0;
     const grams = parseFloat(quantity);
     if (Number.isNaN(grams) || grams <= 0) return 0;
-    // Use buy price per pawn to estimate order total; convert to per-gram price
     const buyPricePerPawn = priceData.buy_price_lkr || priceData.current_price_lkr;
     if (!buyPricePerPawn || buyPricePerPawn <= 0) return 0;
     const pricePerGram = buyPricePerPawn / PAWN_GRAMS;
     return grams * pricePerGram;
   }, [quantity, priceData]);
 
-  // Calculate max buyable quantity (in grams)
+  const orderFee = useMemo(() => {
+    if (!quantity) return 0;
+    const grams = parseFloat(quantity);
+    if (Number.isNaN(grams) || grams <= 0) return 0;
+    return grams * TRANSACTION_FEE_PER_GRAM;
+  }, [quantity]);
+
+  const orderBuyTotalPayable = useMemo(() => orderBuyGoldValue + orderFee, [orderBuyGoldValue, orderFee]);
+
+  const orderSellGoldValue = useMemo(() => {
+    if (!quantity || !priceData) return 0;
+    const grams = parseFloat(quantity);
+    if (Number.isNaN(grams) || grams <= 0) return 0;
+    const sellPricePerPawn = priceData.sell_price_lkr || priceData.current_price_lkr;
+    if (!sellPricePerPawn || sellPricePerPawn <= 0) return 0;
+    return grams * (sellPricePerPawn / PAWN_GRAMS);
+  }, [quantity, priceData]);
+
+  const orderSellNet = useMemo(() => orderSellGoldValue - orderFee, [orderSellGoldValue, orderFee]);
+
+  // Calculate max buyable quantity (in grams), including per-gram transaction fee
   const maxBuyable = useMemo(() => {
     if (!balanceData || !priceData) return 0;
     const buyPricePerPawn = priceData.buy_price_lkr || priceData.current_price_lkr;
     if (!buyPricePerPawn || buyPricePerPawn <= 0) return 0;
     const pricePerGram = buyPricePerPawn / PAWN_GRAMS;
-    return balanceData.lkr_balance / pricePerGram;
+    const costPerGram = pricePerGram + TRANSACTION_FEE_PER_GRAM;
+    return balanceData.lkr_balance / costPerGram;
   }, [balanceData, priceData]);
 
   // Calculate max sellable quantity (in grams; balance is returned in pawn)
   const maxSellable = useMemo(() => {
     if (!balanceData) return 0;
-    return balanceData.gold_balance * PAWN_GRAMS;
+    // Round to avoid floating-point precision issues
+    return Math.round(balanceData.gold_balance * PAWN_GRAMS * 10000) / 10000;
   }, [balanceData]);
+
+  // Calculate total gold value in LKR (real-time with current market price)
+  const totalGoldValueLKR = useMemo(() => {
+    if (!balanceData || !priceData) return 0;
+    // gold_balance is in pawn, current_price_lkr is per pawn
+    return balanceData.gold_balance * priceData.current_price_lkr;
+  }, [balanceData, priceData]);
 
   // Minimum buy is 0.5 g (for "You can buy up to" only when >= this)
   const MIN_GOLD_GRAMS = 0.5;
@@ -313,10 +341,12 @@ const TradePage: React.FC = () => {
       return;
     }
 
-    if (!balanceData || balanceData.lkr_balance < orderTotal) {
+    // Add epsilon tolerance to handle floating-point precision issues
+    const EPSILON = 0.01; // Use 0.01 for LKR (1 cent tolerance)
+    if (!balanceData || balanceData.lkr_balance < orderBuyTotalPayable - EPSILON) {
       setSnackbar({
         open: true,
-        message: `Insufficient LKR balance. Required: ${formatCurrency(orderTotal)}, Available: ${formatCurrency(balanceData?.lkr_balance || 0)}`,
+        message: `Insufficient LKR balance. Required: ${formatCurrency(orderBuyTotalPayable)} (incl. fee), Available: ${formatCurrency(balanceData?.lkr_balance || 0)}`,
         severity: 'error',
       });
       return;
@@ -346,7 +376,7 @@ const TradePage: React.FC = () => {
         severity: 'error',
       });
     }
-  }, [isAuthenticated, quantity, balanceData, orderTotal, maxBuyable, placeBuyOrder, refetchBalance, priceData]);
+  }, [isAuthenticated, quantity, balanceData, orderBuyTotalPayable, maxBuyable, placeBuyOrder, refetchBalance, priceData]);
 
   // Handle SELL order
   const handleSell = useCallback(async () => {
@@ -380,7 +410,9 @@ const TradePage: React.FC = () => {
       return;
     }
 
-    if (grams > maxSellable) {
+    // Add epsilon tolerance for floating-point precision
+    const EPSILON = 1e-6;
+    if (grams > maxSellable + EPSILON) {
       setSnackbar({
         open: true,
         message: `Insufficient gold balance. Maximum: ${maxSellable.toFixed(2)} grams`,
@@ -389,9 +421,9 @@ const TradePage: React.FC = () => {
       return;
     }
 
-    const quantityPawn = grams / PAWN_GRAMS;
-    if (!balanceData || balanceData.gold_balance < quantityPawn) {
-      const availableGrams = (balanceData?.gold_balance ?? 0) * PAWN_GRAMS;
+    // Do comparison in grams for clarity
+    const availableGrams = (balanceData?.gold_balance ?? 0) * PAWN_GRAMS;
+    if (!balanceData || availableGrams < grams - EPSILON) {
       setSnackbar({
         open: true,
         message: `Insufficient gold balance. Required: ${grams.toFixed(2)} grams, Available: ${availableGrams.toFixed(2)} grams`,
@@ -399,6 +431,8 @@ const TradePage: React.FC = () => {
       });
       return;
     }
+
+    const quantityPawn = grams / PAWN_GRAMS;
 
     try {
       await placeSellOrder({ quantity: quantityPawn }).unwrap();
@@ -600,7 +634,7 @@ const TradePage: React.FC = () => {
                 lineHeight: 1.5,
               }}
             >
-              Current gold price and trading spread
+              Current gold price and trading fee
             </Typography>
 
             {/* Current Price Card */}
@@ -645,10 +679,10 @@ const TradePage: React.FC = () => {
                       </Box>
                       <Box>
                         <Typography variant="caption" sx={{ color: isDark ? '#cccccc' : '#666666', display: 'block' }}>
-                          Spread
+                          Fee
                         </Typography>
                         <Typography variant="body2" sx={{ color: isDark ? '#888888' : '#999999', fontWeight: 600 }}>
-                          {formatCurrencyFull(priceData.spread_lkr)}
+                          {formatCurrencyFull(priceData.spread_lkr)} / 1g
                         </Typography>
                       </Box>
                     </Box>
@@ -703,7 +737,7 @@ const TradePage: React.FC = () => {
                     </Typography>
                   </Box>
                   <Typography variant="body1" sx={{ color: isDark ? '#34d399' : '#10b981', fontWeight: 700, fontSize: '1rem' }}>
-                    {formatCurrency(balanceData.lkr_balance)}
+                    {formatCurrencyFull(balanceData.lkr_balance)}
                   </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 1.5 }}>
@@ -717,13 +751,24 @@ const TradePage: React.FC = () => {
                     {formatGold(balanceData.gold_balance * PAWN_GRAMS)}
                   </Typography>
                 </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 1.5 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <TrendingUp sx={{ marginRight: 1, color: isDark ? '#fbbf24' : '#f59e0b', fontSize: 20 }} />
+                    <Typography variant="body2" sx={{ color: isDark ? '#FFFFFF' : '#111827', fontSize: '0.875rem' }}>
+                      Total Gold Value
+                    </Typography>
+                  </Box>
+                  <Typography variant="body1" sx={{ color: isDark ? '#fbbf24' : '#f59e0b', fontWeight: 700, fontSize: '1rem' }}>
+                    {formatCurrencyFull(totalGoldValueLKR)}
+                  </Typography>
+                </Box>
                 <Divider sx={{ marginY: 1.5, borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)' }} />
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Typography variant="body2" sx={{ color: isDark ? '#9ca3af' : '#6b7280', fontWeight: 600, fontSize: '0.875rem' }}>
                     Total Portfolio Value
                   </Typography>
                   <Typography variant="body1" sx={{ color: '#F5D300', fontWeight: 700, fontSize: '1rem' }}>
-                    {formatCurrency(balanceData.total_value_lkr)}
+                    {formatCurrencyFull(balanceData.total_value_lkr)}
                   </Typography>
                 </Box>
                 {maxBuyable >= MIN_GOLD_GRAMS && (
@@ -785,9 +830,9 @@ const TradePage: React.FC = () => {
                     ),
                   }}
                   helperText={
-                    quantity && parseFloat(quantity) > 0
-                      ? `Total: ${formatCurrencyOrderTotal(orderTotal)}`
-                      : 'Enter quantity between 0.5 and 50 grams (steps of 0.5g)'
+                    !quantity || parseFloat(quantity) <= 0 || Number.isNaN(parseFloat(quantity))
+                      ? 'Enter quantity between 0.5 and 50 grams (steps of 0.5g)'
+                      : undefined
                   }
                   sx={{
                     '& .MuiOutlinedInput-root': {
@@ -816,7 +861,44 @@ const TradePage: React.FC = () => {
                     },
                   }}
                 />
-                
+                {quantity && parseFloat(quantity) > 0 && !Number.isNaN(parseFloat(quantity)) && (
+                  <Box
+                    sx={{
+                      mt: 1,
+                      mb: 0.5,
+                      p: 1.25,
+                      borderRadius: 1,
+                      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.03)',
+                      border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.08)' : '#e5e7eb'}`,
+                    }}
+                  >
+                    <Typography variant="caption" sx={{ display: 'block', fontWeight: 700, color: isDark ? '#e5e7eb' : '#374151', mb: 0.75 }}>
+                      Buy (estimate)
+                    </Typography>
+                    <Typography variant="caption" sx={{ display: 'block', color: isDark ? '#d1d5db' : '#4b5563', lineHeight: 1.6 }}>
+                      Price: {formatCurrencyOrderTotal(orderBuyGoldValue)}
+                    </Typography>
+                    <Typography variant="caption" sx={{ display: 'block', color: isDark ? '#d1d5db' : '#4b5563', lineHeight: 1.6 }}>
+                      Fee: {formatCurrencyOrderTotal(orderFee)}
+                    </Typography>
+                    <Typography variant="caption" sx={{ display: 'block', color: isDark ? '#d1d5db' : '#4b5563', lineHeight: 1.6, fontWeight: 600 }}>
+                      Total: {formatCurrencyOrderTotal(orderBuyTotalPayable)}
+                    </Typography>
+                    <Typography variant="caption" sx={{ display: 'block', fontWeight: 700, color: isDark ? '#e5e7eb' : '#374151', mt: 1.25, mb: 0.75 }}>
+                      Sell (estimate)
+                    </Typography>
+                    <Typography variant="caption" sx={{ display: 'block', color: isDark ? '#d1d5db' : '#4b5563', lineHeight: 1.6 }}>
+                      Price: {formatCurrencyOrderTotal(orderSellGoldValue)}
+                    </Typography>
+                    <Typography variant="caption" sx={{ display: 'block', color: isDark ? '#d1d5db' : '#4b5563', lineHeight: 1.6 }}>
+                      Fee: {formatCurrencyOrderTotal(orderFee)}
+                    </Typography>
+                    <Typography variant="caption" sx={{ display: 'block', color: isDark ? '#d1d5db' : '#4b5563', lineHeight: 1.6, fontWeight: 600 }}>
+                      Total: {formatCurrencyOrderTotal(orderSellNet)}
+                    </Typography>
+                  </Box>
+                )}
+
                 {/* Quick Fill Buttons */}
                 <Box sx={{ display: 'flex', gap: 1, marginTop: 1.5, flexWrap: 'wrap' }}>
                   <Button
@@ -918,7 +1000,7 @@ const TradePage: React.FC = () => {
                   size="large"
                   startIcon={buyLoading ? <CircularProgress size={20} color="inherit" /> : <TrendingUp />}
                   onClick={handleBuy}
-                  disabled={!!(buyLoading || sellLoading || !quantity || parseFloat(quantity) <= 0 || (balanceData && balanceData.lkr_balance < orderTotal))}
+                  disabled={!!(buyLoading || sellLoading || !quantity || parseFloat(quantity) <= 0 || (balanceData && balanceData.lkr_balance < orderBuyTotalPayable - 0.01))}
                   sx={{
                     backgroundColor: isDark ? '#10b981' : '#10b981',
                     color: '#FFFFFF',
@@ -950,7 +1032,7 @@ const TradePage: React.FC = () => {
                       sellLoading ||
                       !quantity ||
                       parseFloat(quantity) <= 0 ||
-                      (balanceData && balanceData.gold_balance < parseFloat(quantity || '0') / PAWN_GRAMS)
+                      (balanceData && (balanceData.gold_balance * PAWN_GRAMS) < parseFloat(quantity || '0') - 1e-6)
                   )}
                   sx={{
                     backgroundColor: isDark ? '#ef4444' : '#ef4444',
@@ -1017,12 +1099,22 @@ const TradePage: React.FC = () => {
                       <TableRow>
                         <TableCell sx={{ color: isDark ? '#FFFFFF' : '#111827', fontWeight: 600, fontSize: '0.875rem', borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#e5e7eb' }}>Type</TableCell>
                         <TableCell sx={{ color: isDark ? '#FFFFFF' : '#111827', fontWeight: 600, fontSize: '0.875rem', borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#e5e7eb' }}>Quantity</TableCell>
-                        <TableCell sx={{ color: isDark ? '#FFFFFF' : '#111827', fontWeight: 600, fontSize: '0.875rem', borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#e5e7eb' }}>Price</TableCell>
+                        <TableCell sx={{ color: isDark ? '#FFFFFF' : '#111827', fontWeight: 600, fontSize: '0.875rem', borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#e5e7eb' }}>Price (8g)</TableCell>
+                        <TableCell sx={{ color: isDark ? '#FFFFFF' : '#111827', fontWeight: 600, fontSize: '0.875rem', borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#e5e7eb' }}>Trade value</TableCell>
+                        <TableCell sx={{ color: isDark ? '#FFFFFF' : '#111827', fontWeight: 600, fontSize: '0.875rem', borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#e5e7eb' }}>Fee</TableCell>
                         <TableCell sx={{ color: isDark ? '#FFFFFF' : '#111827', fontWeight: 600, fontSize: '0.875rem', borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#e5e7eb' }}>Total</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {historyData.trades.slice(0, 5).map((trade) => (
+                      {historyData.trades.slice(0, 5).map((trade) => {
+                        const fee = trade.fee ?? 0;
+                        // Metal leg (LKR): price per 8g × quantity in pawn; matches API total_value
+                        const tradeValue = trade.total_value;
+                        const totalLkr =
+                          trade.order_type === 'BUY'
+                            ? fee + tradeValue
+                            : tradeValue - fee;
+                        return (
                         <TableRow key={trade.id} hover>
                           <TableCell>
                             <Chip
@@ -1047,13 +1139,20 @@ const TradePage: React.FC = () => {
                             {formatGold(trade.quantity * PAWN_GRAMS)}
                           </TableCell>
                           <TableCell sx={{ color: isDark ? '#FFFFFF' : '#111827', fontSize: '0.875rem', borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#e5e7eb' }}>
-                            {formatCurrency(trade.price)}
+                            {formatCurrencyFull(trade.price)}
+                          </TableCell>
+                          <TableCell sx={{ color: isDark ? '#FFFFFF' : '#111827', fontSize: '0.875rem', borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#e5e7eb' }}>
+                            {formatCurrencyFull(tradeValue)}
+                          </TableCell>
+                          <TableCell sx={{ color: isDark ? '#FFFFFF' : '#111827', fontSize: '0.875rem', borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#e5e7eb' }}>
+                            {formatCurrencyFull(fee)}
                           </TableCell>
                           <TableCell sx={{ color: isDark ? '#FFFFFF' : '#111827', fontWeight: 600, fontSize: '0.875rem', borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#e5e7eb' }}>
-                            {formatCurrency(trade.total_value)}
+                            {formatCurrencyFull(totalLkr)}
                           </TableCell>
                         </TableRow>
-                      ))}
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </TableContainer>
@@ -1367,7 +1466,7 @@ const TradePage: React.FC = () => {
                   fontSize: '1.25rem',
                 }}
               >
-                {balanceData ? formatCurrency(balanceData.lkr_balance) : 'Loading...'}
+                {balanceData ? formatCurrencyFull(balanceData.lkr_balance) : 'Loading...'}
               </Typography>
             </Box>
             <TextField
@@ -1472,7 +1571,7 @@ const TradePage: React.FC = () => {
                     bank_account_number: bankAccountNumber.trim(),
                     bank_account_name: bankAccountName.trim(),
                   }).unwrap();
-                  toast.success(`Withdrawal request for ${formatCurrency(amount)} is pending approval`);
+                  toast.success(`Withdrawal request for ${formatCurrencyFull(amount)} is pending approval`);
                   setWithdrawAmount('');
                   setBankName('');
                   setBankAccountNumber('');
@@ -1555,7 +1654,7 @@ const TradePage: React.FC = () => {
                             {transaction.transaction_type === 'DEPOSIT' ? 'Deposit' : 'Withdraw'}
                           </TableCell>
                           <TableCell sx={{ color: isDark ? '#FFFFFF' : '#111827', fontSize: '0.8rem', fontWeight: 600 }}>
-                            {formatCurrency(transaction.amount)}
+                            {formatCurrencyFull(transaction.amount)}
                           </TableCell>
                           <TableCell>
                             <Chip

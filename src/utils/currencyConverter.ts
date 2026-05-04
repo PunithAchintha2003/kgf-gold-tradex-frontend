@@ -2,6 +2,9 @@
 export const TROY_OUNCE_GRAMS = 31.1035;
 export const PAWN_GRAMS = 8;
 
+/** LKR per gram; keep in sync with spot_trade/service.py TRANSACTION_FEE_PER_GRAM */
+export const TRANSACTION_FEE_PER_GRAM = 1000;
+
 export interface ConvertedPrice {
   price: number;
   currency: string;
