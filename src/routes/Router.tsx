@@ -1,6 +1,8 @@
 import React, { Suspense, lazy, useState, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
+import { CartProvider } from '../contexts/CartContext';
+import { CartSheet } from '../components/cart/CartSheet';
 import { Header } from '../layouts/Header';
 import { ErrorBoundary } from '../shared/components/ErrorBoundary';
 import { PageLoader } from '../shared/components/LoadingSpinner';
@@ -171,7 +173,10 @@ const AppRoutes: React.FC = () => {
 export const Router: React.FC = () => {
   return (
     <BrowserRouter>
-      <AppRoutes />
+      <CartProvider>
+        <AppRoutes />
+        <CartSheet />
+      </CartProvider>
     </BrowserRouter>
   );
 };

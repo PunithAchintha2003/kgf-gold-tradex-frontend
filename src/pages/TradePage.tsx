@@ -1,4 +1,5 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef, useLayoutEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Box, 
   Typography, 
@@ -32,6 +33,7 @@ import { useTheme } from '../hooks/useTheme';
 import { createAppTheme } from '../theme/theme';
 import { useApp } from '../contexts/AppContext';
 import Sidebar from '../components/price-predictor/Sidebar';
+import { PublicSiteNavInline } from '../components/layout/PublicSiteNavInline';
 import { 
   useGetSpotTradePriceQuery,
   usePlaceBuyOrderMutation,
@@ -74,12 +76,18 @@ function getWalletTransactionStatusChipSx(
 }
 
 const TradePage: React.FC = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const handleSiteNavigate = useCallback((path: string) => {
+    navigate(path);
+  }, [navigate]);
   const { isDark, mode } = useTheme();
   const { isAuthenticated, user } = useApp();
   const muiTheme = useMuiTheme();
   const theme = createAppTheme(mode);
   const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(muiTheme.breakpoints.down('md'));
+  const isLgUp = useMediaQuery(muiTheme.breakpoints.up('lg'));
 
   // State
   const [quantity, setQuantity] = useState<string>('');
@@ -534,6 +542,41 @@ const TradePage: React.FC = () => {
     return Math.max(600, sidebarHeight);
   }, [isMobile, isTablet]);
 
+  /** Measured height of the chart flex slot so the plot matches the right column (desktop). */
+  const chartAreaRef = useRef<HTMLDivElement | null>(null);
+  const [measuredChartPlotHeight, setMeasuredChartPlotHeight] = useState<number | null>(null);
+
+  const fallbackChartPlotHeight =
+    chartHeight - (isMobile ? 50 : isTablet ? 60 : 70);
+
+  useLayoutEffect(() => {
+    if (!isLgUp) {
+      setMeasuredChartPlotHeight(null);
+      return;
+    }
+    const el = chartAreaRef.current;
+    if (!el) return;
+
+    const update = () => {
+      const h = el.getBoundingClientRect().height;
+      if (h > 0) {
+        setMeasuredChartPlotHeight(Math.floor(h));
+      }
+    };
+
+    update();
+    const ro = new ResizeObserver(() => {
+      update();
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [isLgUp, chartHeight]);
+
+  const chartPlotHeight =
+    isLgUp && measuredChartPlotHeight != null && measuredChartPlotHeight > 0
+      ? measuredChartPlotHeight
+      : Math.max(280, fallbackChartPlotHeight);
+
   return (
     <div className="h-screen overflow-hidden pt-8 pb-0">
       <div className="container mx-auto px-4 h-full flex flex-col">
@@ -543,6 +586,12 @@ const TradePage: React.FC = () => {
           <p className="text-muted-foreground">
             Trade gold at live market prices in LKR
           </p>
+          <div className="mt-4 min-w-0 border-t border-border pt-4">
+            <PublicSiteNavInline
+              onNavigate={handleSiteNavigate}
+              currentPath={location.pathname}
+            />
+          </div>
         </div>
         
         {/* Wrap Dashboard with MUI ThemeProvider for its internal MUI components */}
@@ -1194,6 +1243,7 @@ const TradePage: React.FC = () => {
           </Box>
           
           <Box
+            ref={chartAreaRef}
             sx={{
               flex: 1,
               minHeight: 0,
@@ -1205,7 +1255,7 @@ const TradePage: React.FC = () => {
               <Chart
                 data={chartData}
                 isDark={isDark}
-                height={chartHeight - (isMobile ? 50 : isTablet ? 60 : 70)}
+                height={chartPlotHeight}
                 realtimePrice={priceData?.current_price_lkr}
                 currencyUnit="pawn"
                 usdToLkrRate={usdToLkrRate}
