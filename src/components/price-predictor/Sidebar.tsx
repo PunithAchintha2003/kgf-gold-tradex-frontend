@@ -9,6 +9,8 @@ interface SidebarProps {
   children?: React.ReactNode;
   title?: string;
   width?: number;
+  /** Pinned below the scroll region (e.g. cart subtotal + checkout). */
+  footer?: React.ReactNode;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -17,6 +19,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   children,
   title = 'Sidebar',
   width = 400,
+  footer,
 }) => {
   const { isDark } = useTheme();
   const muiTheme = useMuiTheme();
@@ -97,6 +100,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         <Box
           sx={{
             flex: 1,
+            minHeight: 0,
             overflow: 'auto',
             padding: { xs: '1rem', sm: '1.5rem' },
             backgroundColor: isDark ? '#121212' : '#FFFFFF',
@@ -129,6 +133,19 @@ const Sidebar: React.FC<SidebarProps> = ({
             </Typography>
           )}
         </Box>
+
+        {footer != null ? (
+          <Box
+            sx={{
+              flexShrink: 0,
+              borderTop: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : '#E0E0E0'}`,
+              padding: { xs: '1rem', sm: '1.5rem' },
+              backgroundColor: isDark ? '#121212' : '#FFFFFF',
+            }}
+          >
+            {footer}
+          </Box>
+        ) : null}
       </Box>
     </Drawer>
   );

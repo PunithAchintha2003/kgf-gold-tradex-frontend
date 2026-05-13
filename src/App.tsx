@@ -5,6 +5,7 @@ import { Router } from './routes/Router';
 import { ErrorBoundary } from './shared/components/ErrorBoundary';
 import { PageLoader } from './shared/components/LoadingSpinner';
 import { Toaster } from './components/ui/sonner';
+import { TooltipProvider } from './components/ui/tooltip';
 import { store, persistor } from './store';
 
 export default function App() {
@@ -13,8 +14,10 @@ export default function App() {
       <Provider store={store}>
         <PersistGate loading={<PageLoader />} persistor={persistor}>
           <AppProvider>
-            <Router />
-            <Toaster />
+            <TooltipProvider delayDuration={0}>
+              <Router />
+              <Toaster />
+            </TooltipProvider>
           </AppProvider>
         </PersistGate>
       </Provider>

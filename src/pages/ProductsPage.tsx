@@ -6,6 +6,7 @@ import { Badge } from '../components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip';
 import { useApp } from '../contexts/AppContext';
+import { useCart } from '../contexts/CartContext';
 import { Search, Filter, Star, Shield, Smartphone, Heart, ShoppingCart, Package } from 'lucide-react';
 import { ImageWithFallback } from '../shared/components/figma/ImageWithFallback';
 import { toast } from 'sonner';
@@ -18,6 +19,7 @@ interface ProductsPageProps {
 
 export const ProductsPage: React.FC<ProductsPageProps> = ({ onNavigate: _onNavigate, onTryAR }) => {
   const { t } = useApp();
+  const { addItem } = useCart();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState('featured');
@@ -359,6 +361,16 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ onNavigate: _onNavig
                       <Button 
                         className="flex-1 kgf-gradient text-white"
                         onClick={() => {
+                          addItem({
+                            id: String(product.id),
+                            name: product.name,
+                            priceLkr: product.price,
+                            image: product.image,
+                            seller: product.seller,
+                            purity: product.purity,
+                            weight: product.weight,
+                            quantity: 1,
+                          });
                           toast.success('Added to cart', {
                             description: `${product.name} has been added to your shopping cart.`,
                           });
