@@ -21,6 +21,10 @@ import {
   Skeleton,
   ThemeProvider,
   CssBaseline,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import { TrendingUp, TrendingDown, AccountBalance, AttachMoney, ShowChart, History, Add, Remove } from '@mui/icons-material';
 import { toast } from 'sonner';
@@ -71,7 +75,7 @@ function getWalletTransactionStatusChipSx(
 
 const TradePage: React.FC = () => {
   const { isDark, mode } = useTheme();
-  const { isAuthenticated } = useApp();
+  const { isAuthenticated, user } = useApp();
   const muiTheme = useMuiTheme();
   const theme = createAppTheme(mode);
   const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
@@ -90,6 +94,23 @@ const TradePage: React.FC = () => {
     open: false,
     message: '',
     severity: 'success',
+  });
+  const [tradeConfirm, setTradeConfirm] = useState<{
+    open: boolean;
+    type: 'BUY' | 'SELL';
+    grams: number;
+    pricePerGram: number;
+    tradeValue: number;
+    fee: number;
+    total: number;
+  }>({
+    open: false,
+    type: 'BUY',
+    grams: 0,
+    pricePerGram: 0,
+    tradeValue: 0,
+    fee: 0,
+    total: 0,
   });
 
   // API Queries
@@ -213,14 +234,27 @@ const TradePage: React.FC = () => {
 
   const usdToLkrRate = exchangeRateData?.exchange_rate || 300;
 
-  // Buy: gold at buy price (per gram from pawn price); fee matches backend per-gram fee
+  // Price Information card: per-gram buy/sell vs mid (current pawn price / 8 ± fee per gram)
+  const infoBuyPricePerGram = useMemo(() => {
+    const midPawn = priceData?.current_price_lkr;
+    if (!midPawn || midPawn <= 0) return 0;
+    return Math.round(midPawn / PAWN_GRAMS + TRANSACTION_FEE_PER_GRAM);
+  }, [priceData?.current_price_lkr]);
+
+  const infoSellPricePerGram = useMemo(() => {
+    const midPawn = priceData?.current_price_lkr;
+    if (!midPawn || midPawn <= 0) return 0;
+    return Math.round(midPawn / PAWN_GRAMS - TRANSACTION_FEE_PER_GRAM);
+  }, [priceData?.current_price_lkr]);
+
+  // Buy: gold at current market price (per gram from pawn price); fee matches backend per-gram fee
   const orderBuyGoldValue = useMemo(() => {
     if (!quantity || !priceData) return 0;
     const grams = parseFloat(quantity);
     if (Number.isNaN(grams) || grams <= 0) return 0;
-    const buyPricePerPawn = priceData.buy_price_lkr || priceData.current_price_lkr;
-    if (!buyPricePerPawn || buyPricePerPawn <= 0) return 0;
-    const pricePerGram = buyPricePerPawn / PAWN_GRAMS;
+    const currentPricePerPawn = priceData.current_price_lkr;
+    if (!currentPricePerPawn || currentPricePerPawn <= 0) return 0;
+    const pricePerGram = currentPricePerPawn / PAWN_GRAMS;
     return grams * pricePerGram;
   }, [quantity, priceData]);
 
@@ -237,9 +271,9 @@ const TradePage: React.FC = () => {
     if (!quantity || !priceData) return 0;
     const grams = parseFloat(quantity);
     if (Number.isNaN(grams) || grams <= 0) return 0;
-    const sellPricePerPawn = priceData.sell_price_lkr || priceData.current_price_lkr;
-    if (!sellPricePerPawn || sellPricePerPawn <= 0) return 0;
-    return grams * (sellPricePerPawn / PAWN_GRAMS);
+    const currentPricePerPawn = priceData.current_price_lkr;
+    if (!currentPricePerPawn || currentPricePerPawn <= 0) return 0;
+    return grams * (currentPricePerPawn / PAWN_GRAMS);
   }, [quantity, priceData]);
 
   const orderSellNet = useMemo(() => orderSellGoldValue - orderFee, [orderSellGoldValue, orderFee]);
@@ -247,9 +281,9 @@ const TradePage: React.FC = () => {
   // Calculate max buyable quantity (in grams), including per-gram transaction fee
   const maxBuyable = useMemo(() => {
     if (!balanceData || !priceData) return 0;
-    const buyPricePerPawn = priceData.buy_price_lkr || priceData.current_price_lkr;
-    if (!buyPricePerPawn || buyPricePerPawn <= 0) return 0;
-    const pricePerGram = buyPricePerPawn / PAWN_GRAMS;
+    const currentPricePerPawn = priceData.current_price_lkr;
+    if (!currentPricePerPawn || currentPricePerPawn <= 0) return 0;
+    const pricePerGram = currentPricePerPawn / PAWN_GRAMS;
     const costPerGram = pricePerGram + TRANSACTION_FEE_PER_GRAM;
     return balanceData.lkr_balance / costPerGram;
   }, [balanceData, priceData]);
@@ -261,45 +295,39 @@ const TradePage: React.FC = () => {
     return Math.round(balanceData.gold_balance * PAWN_GRAMS * 10000) / 10000;
   }, [balanceData]);
 
-  // Calculate total gold value in LKR (real-time with current market price)
+  // Calculate total gold value in LKR (using current market price)
   const totalGoldValueLKR = useMemo(() => {
     if (!balanceData || !priceData) return 0;
-    // gold_balance is in pawn, current_price_lkr is per pawn
-    return balanceData.gold_balance * priceData.current_price_lkr;
+    // gold_balance is in pawn, use current_price_lkr for real-time market value
+    const currentPricePerPawn = priceData.current_price_lkr;
+    return balanceData.gold_balance * currentPricePerPawn;
   }, [balanceData, priceData]);
 
-  // Minimum buy is 0.5 g (for "You can buy up to" only when >= this)
-  const MIN_GOLD_GRAMS = 0.5;
+  const canTrade = Boolean(isAuthenticated && user?.isVerified);
 
   // Quick fill functions
-  const fillMaxBuy = useCallback(() => {
-    if (maxBuyable > 0) {
-      setQuantity(maxBuyable.toFixed(4));
-    }
-  }, [maxBuyable]);
-
-
-  const fillPercentage = useCallback((percentage: number, isBuy: boolean) => {
-    const max = isBuy ? maxBuyable : maxSellable;
-    if (max > 0) {
-      setQuantity((max * percentage).toFixed(4));
-    }
-  }, [maxBuyable, maxSellable]);
-
-  // Handle BUY order
-  const handleBuy = useCallback(async () => {
-    if (!isAuthenticated) {
+  const ensureRegisteredUserForTrade = useCallback((): boolean => {
+    if (!isAuthenticated || !user) {
       toast.error('You need to register or login to trade.');
-      return;
+      return false;
     }
 
+    if (!user.isVerified) {
+      toast.error('Only active registered users can buy or sell gold.');
+      return false;
+    }
+
+    return true;
+  }, [isAuthenticated, user]);
+
+  const validateTradeQuantity = useCallback((isBuy: boolean): number | null => {
     if (!quantity) {
       setSnackbar({
         open: true,
         message: 'Please enter a valid quantity in grams',
         severity: 'error',
       });
-      return;
+      return null;
     }
 
     const grams = parseFloat(quantity);
@@ -309,156 +337,136 @@ const TradePage: React.FC = () => {
         message: 'Please enter a valid quantity in grams',
         severity: 'error',
       });
-      return;
+      return null;
     }
 
-    // Enforce 0.5–50 g range
     if (grams < 0.5 || grams > 50) {
       toast.error('Quantity must be between 0.5 and 50 grams');
-      return;
+      return null;
     }
 
-    // Enforce 0.5g step (circular numbers like 0.5, 1.0, 1.5, ...)
-    const multipleOfHalfSell = Math.round(grams * 2) / 2;
-    if (Math.abs(grams - multipleOfHalfSell) > 1e-6) {
+    const multipleOfHalf = Math.round(grams * 2) / 2;
+    if (Math.abs(grams - multipleOfHalf) > 1e-6) {
       toast.error('Quantity must be in steps of 0.5 grams (e.g. 0.5, 1.0, 1.5, ..., 50)');
-      return;
+      return null;
     }
 
-    // Enforce 0.5g step (circular numbers like 0.5, 1.0, 1.5, ...)
-    const multipleOfHalfBuy = Math.round(grams * 2) / 2;
-    if (Math.abs(grams - multipleOfHalfBuy) > 1e-6) {
-      toast.error('Quantity must be in steps of 0.5 grams (e.g. 0.5, 1.0, 1.5, ..., 50)');
-      return;
+    if (isBuy) {
+      if (grams > maxBuyable) {
+        setSnackbar({
+          open: true,
+          message: `Insufficient LKR balance. Maximum: ${maxBuyable.toFixed(2)} grams`,
+          severity: 'error',
+        });
+        return null;
+      }
+
+      const EPSILON = 0.01;
+      if (!balanceData || balanceData.lkr_balance < orderBuyTotalPayable - EPSILON) {
+        setSnackbar({
+          open: true,
+          message: `Insufficient LKR balance. Required: ${formatCurrency(orderBuyTotalPayable)} (incl. fee), Available: ${formatCurrency(balanceData?.lkr_balance || 0)}`,
+          severity: 'error',
+        });
+        return null;
+      }
+    } else {
+      const EPSILON = 1e-6;
+      if (grams > maxSellable + EPSILON) {
+        setSnackbar({
+          open: true,
+          message: `Insufficient gold balance. Maximum: ${maxSellable.toFixed(2)} grams`,
+          severity: 'error',
+        });
+        return null;
+      }
+
+      const availableGrams = (balanceData?.gold_balance ?? 0) * PAWN_GRAMS;
+      if (!balanceData || availableGrams < grams - EPSILON) {
+        setSnackbar({
+          open: true,
+          message: `Insufficient gold balance. Required: ${grams.toFixed(2)} grams, Available: ${availableGrams.toFixed(2)} grams`,
+          severity: 'error',
+        });
+        return null;
+      }
     }
 
-    if (grams > maxBuyable) {
-      setSnackbar({
-        open: true,
-        message: `Insufficient LKR balance. Maximum: ${maxBuyable.toFixed(2)} grams`,
-        severity: 'error',
-      });
-      return;
-    }
+    return grams;
+  }, [quantity, maxBuyable, maxSellable, balanceData, orderBuyTotalPayable]);
 
-    // Add epsilon tolerance to handle floating-point precision issues
-    const EPSILON = 0.01; // Use 0.01 for LKR (1 cent tolerance)
-    if (!balanceData || balanceData.lkr_balance < orderBuyTotalPayable - EPSILON) {
-      setSnackbar({
-        open: true,
-        message: `Insufficient LKR balance. Required: ${formatCurrency(orderBuyTotalPayable)} (incl. fee), Available: ${formatCurrency(balanceData?.lkr_balance || 0)}`,
-        severity: 'error',
-      });
-      return;
-    }
+  const openTradeConfirmation = useCallback((type: 'BUY' | 'SELL', grams: number) => {
+    const currentPricePerPawn = priceData?.current_price_lkr || 0;
+    const pricePerGram = currentPricePerPawn > 0 ? currentPricePerPawn / PAWN_GRAMS : 0;
+    const tradeValue = grams * pricePerGram;
+    const fee = grams * TRANSACTION_FEE_PER_GRAM;
+    const total = type === 'BUY' ? tradeValue + fee : tradeValue - fee;
 
-    try {
-      const quantityPawn = grams / PAWN_GRAMS;
-      await placeBuyOrder({ quantity: quantityPawn }).unwrap();
-      const buyPricePerPawn = priceData?.buy_price_lkr || priceData?.current_price_lkr || 0;
-      const buyPricePerGram = buyPricePerPawn > 0 ? buyPricePerPawn / PAWN_GRAMS : 0;
-      setSnackbar({
-        open: true,
-        message: `✅ Successfully bought ${grams.toFixed(2)} grams at ${formatCurrency(buyPricePerGram)}/g`,
-        severity: 'success',
-      });
-      setQuantity('');
-      refetchBalance();
-    } catch (error: unknown) {
-      const errorMessage = error && typeof error === 'object' && 'data' in error
-        ? (error as { data?: { detail?: string } }).data?.detail
-        : error && typeof error === 'object' && 'message' in error
-        ? (error as { message?: string }).message
-        : 'Failed to place buy order';
-      setSnackbar({
-        open: true,
-        message: errorMessage || 'Failed to place buy order',
-        severity: 'error',
-      });
-    }
-  }, [isAuthenticated, quantity, balanceData, orderBuyTotalPayable, maxBuyable, placeBuyOrder, refetchBalance, priceData]);
+    setTradeConfirm({
+      open: true,
+      type,
+      grams,
+      pricePerGram,
+      tradeValue,
+      fee,
+      total,
+    });
+  }, [priceData]);
 
-  // Handle SELL order
-  const handleSell = useCallback(async () => {
-    if (!isAuthenticated) {
-      toast.error('You need to register or login to trade.');
-      return;
-    }
+  const closeTradeConfirmation = useCallback(() => {
+    setTradeConfirm((prev) => ({ ...prev, open: false }));
+  }, []);
 
-    if (!quantity) {
-      setSnackbar({
-        open: true,
-        message: 'Please enter a valid quantity in grams',
-        severity: 'error',
-      });
-      return;
-    }
-
-    const grams = parseFloat(quantity);
-    if (Number.isNaN(grams) || grams <= 0) {
-      setSnackbar({
-        open: true,
-        message: 'Please enter a valid quantity in grams',
-        severity: 'error',
-      });
-      return;
-    }
-
-    // Enforce 0.5–50 g range
-    if (grams < 0.5 || grams > 50) {
-      toast.error('Quantity must be between 0.5 and 50 grams');
-      return;
-    }
-
-    // Add epsilon tolerance for floating-point precision
-    const EPSILON = 1e-6;
-    if (grams > maxSellable + EPSILON) {
-      setSnackbar({
-        open: true,
-        message: `Insufficient gold balance. Maximum: ${maxSellable.toFixed(2)} grams`,
-        severity: 'error',
-      });
-      return;
-    }
-
-    // Do comparison in grams for clarity
-    const availableGrams = (balanceData?.gold_balance ?? 0) * PAWN_GRAMS;
-    if (!balanceData || availableGrams < grams - EPSILON) {
-      setSnackbar({
-        open: true,
-        message: `Insufficient gold balance. Required: ${grams.toFixed(2)} grams, Available: ${availableGrams.toFixed(2)} grams`,
-        severity: 'error',
-      });
-      return;
-    }
-
+  const confirmTradeExecution = useCallback(async () => {
+    const { type, grams, pricePerGram, tradeValue } = tradeConfirm;
     const quantityPawn = grams / PAWN_GRAMS;
 
     try {
-      await placeSellOrder({ quantity: quantityPawn }).unwrap();
-      const sellPricePerPawn = priceData?.sell_price_lkr || priceData?.current_price_lkr || 0;
-      const sellPricePerGram = sellPricePerPawn > 0 ? sellPricePerPawn / PAWN_GRAMS : 0;
-      const sellValue = grams * sellPricePerGram;
-      setSnackbar({
-        open: true,
-        message: `✅ Successfully sold ${grams.toFixed(2)} grams at ${formatCurrency(sellPricePerGram)}/g for ${formatCurrency(sellValue)}`,
-        severity: 'success',
-      });
+      if (type === 'BUY') {
+        await placeBuyOrder({ quantity: quantityPawn }).unwrap();
+        toast.success(`✅ Successfully bought ${grams.toFixed(2)} grams at ${formatCurrencyFull(pricePerGram)}/g`);
+      } else {
+        await placeSellOrder({ quantity: quantityPawn }).unwrap();
+        toast.success(`✅ Successfully sold ${grams.toFixed(2)} grams at ${formatCurrencyFull(pricePerGram)}/g for ${formatCurrencyFull(tradeValue)}`);
+      }
       setQuantity('');
+      closeTradeConfirmation();
       refetchBalance();
     } catch (error: unknown) {
       const errorMessage = error && typeof error === 'object' && 'data' in error
         ? (error as { data?: { detail?: string } }).data?.detail
         : error && typeof error === 'object' && 'message' in error
         ? (error as { message?: string }).message
-        : 'Failed to place sell order';
+        : `Failed to place ${type.toLowerCase()} order`;
       setSnackbar({
         open: true,
-        message: errorMessage || 'Failed to place sell order',
+        message: errorMessage || `Failed to place ${type.toLowerCase()} order`,
         severity: 'error',
       });
     }
-  }, [isAuthenticated, quantity, balanceData, maxSellable, placeSellOrder, refetchBalance, priceData]);
+  }, [tradeConfirm, placeBuyOrder, placeSellOrder, closeTradeConfirmation, refetchBalance]);
+
+  // Handle BUY order
+  const handleBuy = useCallback(() => {
+    if (!ensureRegisteredUserForTrade()) {
+      return;
+    }
+
+    const grams = validateTradeQuantity(true);
+    if (grams === null) return;
+    openTradeConfirmation('BUY', grams);
+  }, [ensureRegisteredUserForTrade, validateTradeQuantity, openTradeConfirmation]);
+
+  // Handle SELL order
+  const handleSell = useCallback(() => {
+    if (!ensureRegisteredUserForTrade()) {
+      return;
+    }
+
+    const grams = validateTradeQuantity(false);
+    if (grams === null) return;
+    openTradeConfirmation('SELL', grams);
+  }, [ensureRegisteredUserForTrade, validateTradeQuantity, openTradeConfirmation]);
 
   // Format currency with compact suffix (K/M)
   const formatCurrency = (value: number) => {
@@ -663,18 +671,18 @@ const TradePage: React.FC = () => {
                     <Box sx={{ display: 'flex', gap: 2, marginTop: 1.5, flexWrap: 'wrap' }}>
                       <Box>
                         <Typography variant="caption" sx={{ color: isDark ? '#9ca3af' : '#6b7280', display: 'block', fontSize: '0.65rem' }}>
-                          Buy Price
+                          Buy Price (1g)
                         </Typography>
                         <Typography variant="body2" sx={{ color: isDark ? '#34d399' : '#10b981', fontWeight: 600, fontSize: '0.875rem' }}>
-                          {formatCurrencyFull(priceData.buy_price_lkr)}
+                          {formatCurrencyFull(infoBuyPricePerGram)}
                         </Typography>
                       </Box>
                       <Box>
                         <Typography variant="caption" sx={{ color: isDark ? '#9ca3af' : '#6b7280', display: 'block', fontSize: '0.65rem' }}>
-                          Sell Price
+                          Sell Price (1g)
                         </Typography>
                         <Typography variant="body2" sx={{ color: isDark ? '#fca5a5' : '#ef4444', fontWeight: 600, fontSize: '0.875rem' }}>
-                          {formatCurrencyFull(priceData.sell_price_lkr)}
+                          {formatCurrencyFull(infoSellPricePerGram)}
                         </Typography>
                       </Box>
                       <Box>
@@ -682,7 +690,7 @@ const TradePage: React.FC = () => {
                           Fee
                         </Typography>
                         <Typography variant="body2" sx={{ color: isDark ? '#888888' : '#999999', fontWeight: 600 }}>
-                          {formatCurrencyFull(priceData.spread_lkr)} / 1g
+                          {formatCurrencyFull(TRANSACTION_FEE_PER_GRAM)} / 1g
                         </Typography>
                       </Box>
                     </Box>
@@ -771,11 +779,6 @@ const TradePage: React.FC = () => {
                     {formatCurrencyFull(balanceData.total_value_lkr)}
                   </Typography>
                 </Box>
-                {maxBuyable >= MIN_GOLD_GRAMS && (
-                  <Typography variant="caption" sx={{ color: isDark ? '#9ca3af' : '#6b7280', display: 'block', marginTop: 1, fontSize: '0.75rem' }}>
-                    You can buy up to {formatGold(maxBuyable)}
-                  </Typography>
-                )}
               </>
             ) : (
               <Typography variant="body2" sx={{ color: isDark ? '#9ca3af' : '#6b7280' }}>
@@ -898,98 +901,6 @@ const TradePage: React.FC = () => {
                     </Typography>
                   </Box>
                 )}
-
-                {/* Quick Fill Buttons */}
-                <Box sx={{ display: 'flex', gap: 1, marginTop: 1.5, flexWrap: 'wrap' }}>
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    onClick={() => fillPercentage(0.25, true)}
-                    disabled={!maxBuyable || maxBuyable <= 0}
-                    sx={{ 
-                      fontSize: '0.75rem', 
-                      paddingX: 1,
-                      color: isDark ? '#9ca3af' : '#6b7280',
-                      borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#e5e7eb',
-                      '&:hover': {
-                        borderColor: isDark ? 'rgba(255, 255, 255, 0.2)' : '#d1d5db',
-                        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
-                      },
-                      '&.Mui-disabled': {
-                        borderColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#f3f4f6',
-                        color: isDark ? 'rgba(255, 255, 255, 0.3)' : '#9ca3af',
-                      },
-                    }}
-                  >
-                    25%
-                  </Button>
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    onClick={() => fillPercentage(0.5, true)}
-                    disabled={!maxBuyable || maxBuyable <= 0}
-                    sx={{ 
-                      fontSize: '0.75rem', 
-                      paddingX: 1,
-                      color: isDark ? '#9ca3af' : '#6b7280',
-                      borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#e5e7eb',
-                      '&:hover': {
-                        borderColor: isDark ? 'rgba(255, 255, 255, 0.2)' : '#d1d5db',
-                        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
-                      },
-                      '&.Mui-disabled': {
-                        borderColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#f3f4f6',
-                        color: isDark ? 'rgba(255, 255, 255, 0.3)' : '#9ca3af',
-                      },
-                    }}
-                  >
-                    50%
-                  </Button>
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    onClick={() => fillPercentage(0.75, true)}
-                    disabled={!maxBuyable || maxBuyable <= 0}
-                    sx={{ 
-                      fontSize: '0.75rem', 
-                      paddingX: 1,
-                      color: isDark ? '#9ca3af' : '#6b7280',
-                      borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#e5e7eb',
-                      '&:hover': {
-                        borderColor: isDark ? 'rgba(255, 255, 255, 0.2)' : '#d1d5db',
-                        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
-                      },
-                      '&.Mui-disabled': {
-                        borderColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#f3f4f6',
-                        color: isDark ? 'rgba(255, 255, 255, 0.3)' : '#9ca3af',
-                      },
-                    }}
-                  >
-                    75%
-                  </Button>
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    onClick={fillMaxBuy}
-                    disabled={!maxBuyable || maxBuyable <= 0}
-                    sx={{ 
-                      fontSize: '0.75rem', 
-                      paddingX: 1,
-                      color: isDark ? '#9ca3af' : '#6b7280',
-                      borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#e5e7eb',
-                      '&:hover': {
-                        borderColor: isDark ? 'rgba(255, 255, 255, 0.2)' : '#d1d5db',
-                        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
-                      },
-                      '&.Mui-disabled': {
-                        borderColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#f3f4f6',
-                        color: isDark ? 'rgba(255, 255, 255, 0.3)' : '#9ca3af',
-                      },
-                    }}
-                  >
-                    Max
-                  </Button>
-                </Box>
               </Box>
 
               {/* Action Buttons */}
@@ -1000,7 +911,7 @@ const TradePage: React.FC = () => {
                   size="large"
                   startIcon={buyLoading ? <CircularProgress size={20} color="inherit" /> : <TrendingUp />}
                   onClick={handleBuy}
-                  disabled={!!(buyLoading || sellLoading || !quantity || parseFloat(quantity) <= 0 || (balanceData && balanceData.lkr_balance < orderBuyTotalPayable - 0.01))}
+                  disabled={!!(!canTrade || buyLoading || sellLoading || !quantity || parseFloat(quantity) <= 0 || (balanceData && balanceData.lkr_balance < orderBuyTotalPayable - 0.01))}
                   sx={{
                     backgroundColor: isDark ? '#10b981' : '#10b981',
                     color: '#FFFFFF',
@@ -1028,6 +939,7 @@ const TradePage: React.FC = () => {
                   startIcon={sellLoading ? <CircularProgress size={20} color="inherit" /> : <TrendingDown />}
                   onClick={handleSell}
                   disabled={Boolean(
+                    !canTrade ||
                     buyLoading ||
                       sellLoading ||
                       !quantity ||
@@ -1530,7 +1442,7 @@ const TradePage: React.FC = () => {
               Minimum withdrawal amount is LKR 5,000. Withdrawal fee: LKR 100.
             </Typography>
             <Typography variant="caption" sx={{ color: isDark ? '#9ca3af' : '#6b7280', display: 'block', mb: 2 }}>
-              Withdrawals are processed after admin approval and may take up to 3 days.
+              Withdrawal requests are processed within up to 3 business days.
             </Typography>
             <Button
               fullWidth
@@ -1684,6 +1596,105 @@ const TradePage: React.FC = () => {
           </div>
         </ThemeProvider>
       </div>
+
+      <Dialog
+        open={tradeConfirm.open}
+        onClose={buyLoading || sellLoading ? undefined : closeTradeConfirmation}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          sx: {
+            backgroundColor: isDark ? '#1a1a1a' : '#FFFFFF',
+            color: isDark ? '#FFFFFF' : '#111827',
+            border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.12)' : '#e5e7eb'}`,
+            borderRadius: '12px',
+            boxShadow: isDark
+              ? '0 20px 40px rgba(0, 0, 0, 0.45)'
+              : '0 20px 40px rgba(17, 24, 39, 0.12)',
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            fontWeight: 700,
+            color: isDark ? '#FFFFFF' : '#111827',
+            borderBottom: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.08)' : '#f3f4f6'}`,
+          }}
+        >
+          {tradeConfirm.type === 'BUY' ? 'Confirm Buy Order' : 'Confirm Sell Order'}
+        </DialogTitle>
+        <DialogContent sx={{ pt: 2 }}>
+          <Typography variant="body2" sx={{ color: isDark ? '#9ca3af' : '#6b7280', mb: 2 }}>
+            Please review your order details before you continue.
+          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+            <Typography variant="body2" sx={{ color: isDark ? '#9ca3af' : '#6b7280' }}>Action</Typography>
+            <Typography variant="body2" sx={{ fontWeight: 600, color: tradeConfirm.type === 'BUY' ? (isDark ? '#34d399' : '#059669') : (isDark ? '#fca5a5' : '#dc2626') }}>
+              {tradeConfirm.type} GOLD
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+            <Typography variant="body2" sx={{ color: isDark ? '#9ca3af' : '#6b7280' }}>Quantity</Typography>
+            <Typography variant="body2" sx={{ fontWeight: 600, color: isDark ? '#FFFFFF' : '#111827' }}>{tradeConfirm.grams.toFixed(2)} g</Typography>
+          </Box>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+            <Typography variant="body2" sx={{ color: isDark ? '#9ca3af' : '#6b7280' }}>Price per 1g</Typography>
+            <Typography variant="body2" sx={{ fontWeight: 600, color: isDark ? '#FFFFFF' : '#111827' }}>{formatCurrencyFull(tradeConfirm.pricePerGram)}</Typography>
+          </Box>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+            <Typography variant="body2" sx={{ color: isDark ? '#9ca3af' : '#6b7280' }}>Trade value</Typography>
+            <Typography variant="body2" sx={{ fontWeight: 600, color: isDark ? '#FFFFFF' : '#111827' }}>{formatCurrencyFull(tradeConfirm.tradeValue)}</Typography>
+          </Box>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5 }}>
+            <Typography variant="body2" sx={{ color: isDark ? '#9ca3af' : '#6b7280' }}>Trading fee</Typography>
+            <Typography variant="body2" sx={{ fontWeight: 600, color: isDark ? '#FFFFFF' : '#111827' }}>{formatCurrencyFull(tradeConfirm.fee)}</Typography>
+          </Box>
+          <Divider sx={{ my: 1, borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : '#e5e7eb' }} />
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1.5 }}>
+            <Typography variant="body1" sx={{ fontWeight: 700, color: isDark ? '#FFFFFF' : '#111827' }}>
+              {tradeConfirm.type === 'BUY' ? 'Total payable' : 'Net receivable'}
+            </Typography>
+            <Typography variant="body1" sx={{ fontWeight: 700, color: tradeConfirm.type === 'BUY' ? (isDark ? '#34d399' : '#059669') : (isDark ? '#fca5a5' : '#dc2626') }}>
+              {formatCurrencyFull(tradeConfirm.total)}
+            </Typography>
+          </Box>
+        </DialogContent>
+        <DialogActions
+          sx={{
+            px: 3,
+            pb: 2,
+            borderTop: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.08)' : '#f3f4f6'}`,
+          }}
+        >
+          <Button
+            onClick={closeTradeConfirmation}
+            disabled={buyLoading || sellLoading}
+            variant="outlined"
+            sx={{
+              color: isDark ? '#e5e7eb' : '#374151',
+              borderColor: isDark ? 'rgba(255, 255, 255, 0.25)' : '#d1d5db',
+              '&:hover': {
+                borderColor: isDark ? 'rgba(255, 255, 255, 0.4)' : '#9ca3af',
+                backgroundColor: isDark ? 'rgba(255, 255, 255, 0.04)' : '#f9fafb',
+              },
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={confirmTradeExecution}
+            disabled={buyLoading || sellLoading}
+            variant="contained"
+            color={tradeConfirm.type === 'BUY' ? 'success' : 'error'}
+            autoFocus
+            sx={{
+              fontWeight: 600,
+            }}
+          >
+            {buyLoading || sellLoading ? 'Processing...' : 'Confirm'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Snackbar for notifications - outside ThemeProvider */}
       <Snackbar
