@@ -66,7 +66,7 @@ const translations = {
     'common.loading': 'Loading...',
     
     // Home
-    'home.hero.title': 'KGF - Unified Gold Marketplace',
+    'home.hero.title': 'KGF TradeX - Smart Digital Gold Marketplace',
     'home.hero.subtitle': 'Trade gold, invest digitally, and discover premium jewelry with AR try-on',
     'home.hero.cta': 'Start Trading',
     'home.features.title': 'Why Choose KGF?',
@@ -260,38 +260,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [language]);
 
   const login = useCallback(async (email: string, password: string) => {
-    try {
-      const response = await authService.login({ email, password });
-      if (response.success && response.data.user) {
-        const userData = response.data.user;
-        setUser({
-          id: userData.id,
-          name: userData.name,
-          email: userData.email,
-          role: 'buyer', // Default role, can be updated later
-          isVerified: true,
-        });
-      }
-    } catch (error) {
-      throw error;
+    const response = await authService.login({ email, password });
+    if (response.success && response.data.user) {
+      const userData = response.data.user;
+      setUser({
+        id: userData.id,
+        name: userData.name,
+        email: userData.email,
+        role: 'buyer', // Default role, can be updated later
+        isVerified: true,
+      });
     }
   }, []);
 
   const register = useCallback(async (data: { name: string; email: string; phone: string; password: string; address: string }) => {
-    try {
-      const response = await authService.register(data);
-      if (response.success && response.data.user) {
-        const userData = response.data.user;
-        setUser({
-          id: userData.id,
-          name: userData.name,
-          email: userData.email,
-          role: 'buyer', // Default role, can be updated later
-          isVerified: true,
-        });
-      }
-    } catch (error) {
-      throw error;
+    const response = await authService.register(data);
+    if (response.success && response.data.user) {
+      const userData = response.data.user;
+      setUser({
+        id: userData.id,
+        name: userData.name,
+        email: userData.email,
+        role: 'buyer', // Default role, can be updated later
+        isVerified: true,
+      });
     }
   }, []);
 
