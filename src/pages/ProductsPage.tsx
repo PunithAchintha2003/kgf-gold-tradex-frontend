@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent } from '../components/ui/card';
@@ -140,6 +141,7 @@ function toProductForAR(card: CatalogCard): Product {
 export const ProductsPage: React.FC<ProductsPageProps> = ({ onNavigate: _onNavigate, onTryAR }) => {
   const { t } = useApp();
   const { addItem } = useCart();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState('featured');
@@ -160,6 +162,13 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ onNavigate: _onNavig
     { value: 'coins', label: t('products.category.coins') },
     { value: 'bars', label: t('products.category.bars') },
   ];
+
+  useEffect(() => {
+    const id = searchParams.get('product')?.trim();
+    if (id && /^[a-f\d]{24}$/i.test(id)) {
+      setDetailProductId(id);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     let cancelled = false;
@@ -529,7 +538,14 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ onNavigate: _onNavig
         productId={detailProductId}
         open={detailProductId !== null}
         onOpenChange={(next) => {
-          if (!next) setDetailProductId(null);
+          if (!next) {
+            setDetailProductId(null);
+            if (searchParams.get('product')) {
+              const nextParams = new URLSearchParams(searchParams);
+              nextParams.delete('product');
+              setSearchParams(nextParams, { replace: true });
+            }
+          }
         }}
         onTryAR={onTryAR}
         onAddToCart={(payload) => {
