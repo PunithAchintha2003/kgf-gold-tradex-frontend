@@ -18,6 +18,8 @@ export interface CartLineItem {
   purity: string;
   weight: string;
   quantity: number;
+  /** Storefront product merchant (ObjectId string) for checkout / fulfilment */
+  merchantId?: string;
 }
 
 function loadCartFromStorage(): CartLineItem[] {
@@ -33,7 +35,9 @@ function loadCartFromStorage(): CartLineItem[] {
         typeof (row as CartLineItem).id === 'string' &&
         typeof (row as CartLineItem).name === 'string' &&
         typeof (row as CartLineItem).priceLkr === 'number' &&
-        typeof (row as CartLineItem).quantity === 'number',
+        typeof (row as CartLineItem).quantity === 'number' &&
+        ((row as CartLineItem).merchantId == null ||
+          typeof (row as CartLineItem).merchantId === 'string'),
     );
   } catch {
     return [];
@@ -88,9 +92,18 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setItems((prev) => {
         const idx = prev.findIndex((p) => p.id === item.id);
         if (idx >= 0) {
-          return prev.map((p, i) =>
-            i === idx ? { ...p, quantity: p.quantity + q } : p,
-          );
+          return prev.map((p, i) => {
+            if (i !== idx) return p;
+            const nextMerchantId = item.merchantId ?? p.merchantId;
+            const next: CartLineItem = {
+              ...p,
+              quantity: p.quantity + q,
+            };
+            if (nextMerchantId) {
+              next.merchantId = nextMerchantId;
+            }
+            return next;
+          });
         }
         const line: CartLineItem = {
           id: item.id,
@@ -102,6 +115,9 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
           weight: item.weight,
           quantity: q,
         };
+        if (item.merchantId) {
+          line.merchantId = item.merchantId;
+        }
         return [...prev, line];
       });
     },

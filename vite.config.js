@@ -40,6 +40,19 @@ export default defineConfig(function (_a) {
                     secure: false,
                     rewrite: function (path) { return path; },
                 },
+                // Storefront product catalog (Node MERN backend)
+                '/api/v1/catalog': {
+                    target: 'http://localhost:5001',
+                    changeOrigin: true,
+                    secure: false,
+                    rewrite: function (path) { return path; },
+                },
+                '/api/v1/checkout': {
+                    target: 'http://localhost:5001',
+                    changeOrigin: true,
+                    secure: false,
+                    rewrite: function (path) { return path; },
+                },
                 // Route all other API endpoints (including spot-trade, xauusd, etc.) to Python backend (port 8001)
                 '/api': {
                     target: 'http://localhost:8001',

@@ -5,13 +5,14 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Tooltip, TooltipContent, TooltipTrigger } from '../components/ui/tooltip';
 import { Badge } from '../components/ui/badge';
 import { useApp } from '../contexts/AppContext';
-import { Sun, Moon, Globe, User, Settings, LogOut, Menu, ShoppingCart } from 'lucide-react';
+import { Sun, Moon, Globe, User, Settings, LogOut, Menu, ShoppingCart, History } from 'lucide-react';
 import { GiGoldBar } from 'react-icons/gi';
 import { useGetRealtimePriceQuery, useGetExchangeRateQuery } from '../store/api/goldApi';
 import { convertTroyOunceToPawn } from '../utils/currencyConverter';
 import logoImage from '../assets/28A9A4B0-D00A-4539-82A6-89A2130B5FAF.PNG';
 import { buildPublicNavItems } from './publicNav.config';
 import { useCart } from '../contexts/CartContext';
+import { ROUTES } from '../core/config/routes.config';
 
 interface HeaderProps {
   onNavigate: (path: string) => void;
@@ -128,8 +129,8 @@ export const Header: React.FC<HeaderProps> = React.memo(({ onNavigate, currentPa
             </div>
           </nav>
 
-          {/* Utilities: fixed-width spacers between clusters (reliable with Radix portals/triggers) */}
-          <div className="ml-auto flex min-w-0 shrink-0 flex-nowrap items-center md:ml-0">
+          {/* Utilities: ms-auto keeps cluster at the trailing edge; same horizontal bounds as page `container` */}
+          <div className="ms-auto flex min-w-0 shrink-0 flex-nowrap items-center">
               {/* Gold Price Display */}
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -267,7 +268,7 @@ export const Header: React.FC<HeaderProps> = React.memo(({ onNavigate, currentPa
                     <DropdownMenuTrigger asChild>
                       <Button 
                         variant="ghost" 
-                        className="relative h-10 w-10 rounded-full"
+                        className="relative size-10 rounded-full p-0"
                         aria-label={`User menu for ${user.name}`}
                         title={`${user.name} (${user.role})`}
                       >
@@ -303,6 +304,10 @@ export const Header: React.FC<HeaderProps> = React.memo(({ onNavigate, currentPa
                         <User className="mr-2 h-4 w-4" />
                         {t('nav.profile')}
                       </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onNavigate(ROUTES.PURCHASE_HISTORY)}>
+                        <History className="mr-2 h-4 w-4" />
+                        {t('nav.purchaseHistory')}
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={logout}>
                         <LogOut className="mr-2 h-4 w-4" />
                         {t('nav.logout')}
@@ -328,34 +333,32 @@ export const Header: React.FC<HeaderProps> = React.memo(({ onNavigate, currentPa
                 )}
               </div>
 
-              <div
-                aria-hidden
-                className={wideUtilitySpacers ? 'w-3 shrink-0 sm:w-5 md:w-6' : 'w-2 shrink-0'}
-              />
+              {/* Gap before hamburger — mobile only so desktop profile aligns with page content edge */}
+              <div aria-hidden className="w-2 shrink-0 sm:w-3 md:hidden" />
 
               {/* Mobile Menu */}
-              <div className="flex shrink-0 items-center">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild className="md:hidden">
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    aria-label="Open navigation menu"
-                    title="Navigation menu"
-                    className="mr-0"
-                  >
-                    <Menu className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="end">
-                  {publicNavItems.map((item) => (
-                    <DropdownMenuItem key={item.path} onClick={() => onNavigate(item.path)}>
-                      {item.icon && <item.icon className="mr-2 h-4 w-4" />}
-                      {item.label}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <div className="flex shrink-0 items-center md:hidden">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      aria-label="Open navigation menu"
+                      title="Navigation menu"
+                      className="mr-0"
+                    >
+                      <Menu className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56" align="end">
+                    {publicNavItems.map((item) => (
+                      <DropdownMenuItem key={item.path} onClick={() => onNavigate(item.path)}>
+                        {item.icon && <item.icon className="mr-2 h-4 w-4" />}
+                        {item.label}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
         </div>

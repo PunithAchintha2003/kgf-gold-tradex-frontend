@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -7,6 +7,7 @@ import {
   IconButton,
   Stack,
   Typography,
+  CircularProgress,
 } from '@mui/material';
 import { Add, Remove, DeleteOutline } from '@mui/icons-material';
 import { toast } from 'sonner';
@@ -20,14 +21,13 @@ import { ImageWithFallback } from '../../shared/components/figma/ImageWithFallba
 export const CartSheet: React.FC = () => {
   const navigate = useNavigate();
   const { isDark } = useTheme();
-  const { isAuthenticated, user } = useApp();
+  const { isAuthenticated } = useApp();
   const {
     items,
     isOpen,
     closeCart,
     setQuantity,
     removeItem,
-    clearCart,
     subtotalLkr,
   } = useCart();
 
@@ -35,19 +35,51 @@ export const CartSheet: React.FC = () => {
     return `LKR ${Math.round(n).toLocaleString('en-LK')}`;
   }, []);
 
-  const handleCheckout = useCallback(() => {
-    if (!isAuthenticated) return;
-    toast.success('Order placed', {
-      description: 'Thank you for your purchase. You will receive a confirmation shortly.',
-    });
-    clearCart();
-    closeCart();
-    if (user?.role === 'buyer') {
-      navigate(ROUTES.DASHBOARD.CUSTOMER);
-    } else {
-      navigate(ROUTES.HOME);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+
+  const handleCheckout = useCallback(async () => {
+    if (!isAuthenticated || items.length === 0) return;
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      toast.error('Session expired', { description: 'Please sign in again to checkout.' });
+      return;
     }
-  }, [isAuthenticated, user, clearCart, closeCart, navigate]);
+    setCheckoutLoading(true);
+    try {
+      const res = await fetch('/api/v1/checkout/cart-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          items: items.map((i) => ({
+            name: i.name,
+            priceLkr: Math.round(i.priceLkr),
+            quantity: i.quantity,
+            productId: i.id,
+            imageUrl: i.image,
+            ...(i.merchantId ? { merchantId: i.merchantId } : {}),
+          })),
+        }),
+      });
+      const json = (await res.json()) as {
+        success?: boolean;
+        data?: { url?: string };
+        error?: string;
+      };
+      if (!res.ok || !json.success || !json.data?.url) {
+        throw new Error(json.error || 'Could not start checkout');
+      }
+      toast.success('Redirecting to secure payment…');
+      window.location.assign(json.data.url);
+    } catch (e) {
+      toast.error('Checkout failed', {
+        description: e instanceof Error ? e.message : 'Please try again.',
+      });
+      setCheckoutLoading(false);
+    }
+  }, [isAuthenticated, items]);
 
   const goLogin = useCallback(() => {
     closeCart();
@@ -115,10 +147,18 @@ export const CartSheet: React.FC = () => {
             fullWidth
             variant="contained"
             size="large"
-            onClick={handleCheckout}
+            disabled={checkoutLoading}
+            onClick={() => void handleCheckout()}
             sx={primaryButtonSx}
           >
-            Checkout
+            {checkoutLoading ? (
+              <Stack direction="row" alignItems="center" justifyContent="center" spacing={1.5}>
+                <CircularProgress size={22} color="inherit" aria-hidden />
+                <span>Redirecting…</span>
+              </Stack>
+            ) : (
+              'Checkout'
+            )}
           </Button>
         )}
       </Stack>

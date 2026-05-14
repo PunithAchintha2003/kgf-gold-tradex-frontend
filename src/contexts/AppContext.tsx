@@ -49,6 +49,7 @@ const translations = {
     'nav.register': 'Register',
     'nav.dashboard': 'Dashboard',
     'nav.profile': 'Profile',
+    'nav.purchaseHistory': 'Purchase history',
     'nav.logout': 'Logout',
     
     // Common
@@ -80,6 +81,10 @@ const translations = {
     'products.category.necklaces': 'Necklaces',
     'products.category.earrings': 'Earrings',
     'products.category.bracelets': 'Bracelets',
+    'products.category.pendants': 'Pendants',
+    'products.category.biscuits': 'Biscuits',
+    'products.category.coins': 'Coins',
+    'products.category.bars': 'Bars',
     'products.tryar': 'Try with AR',
     
     // Auctions
@@ -111,6 +116,7 @@ const translations = {
     'nav.register': 'ලියාපදිංචිය',
     'nav.dashboard': 'උපකරණ පුවරුව',
     'nav.profile': 'පැතිකඩ',
+    'nav.purchaseHistory': 'මිලදී ගැනීමේ ඉතිහාසය',
     'nav.logout': 'පිටවීම',
     
     // Common
@@ -142,6 +148,10 @@ const translations = {
     'products.category.necklaces': 'හාරය',
     'products.category.earrings': 'කරාබු',
     'products.category.bracelets': 'වළලු',
+    'products.category.pendants': 'විලිගු',
+    'products.category.biscuits': 'රන් බිස්කට්',
+    'products.category.coins': 'රන් කාසි',
+    'products.category.bars': 'රන් තීරු',
     'products.tryar': 'AR සමඟ අත්හදා බලන්න',
     
     // Auctions

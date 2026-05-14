@@ -50,6 +50,10 @@ export const PRODUCT_CATEGORIES = {
   NECKLACES: 'necklaces',
   EARRINGS: 'earrings',
   BRACELETS: 'bracelets',
+  PENDANTS: 'pendants',
+  BISCUITS: 'biscuits',
+  COINS: 'coins',
+  BARS: 'bars',
   OTHER: 'other',
 } as const;
 

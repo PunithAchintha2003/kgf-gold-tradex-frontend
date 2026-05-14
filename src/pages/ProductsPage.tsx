@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent } from '../components/ui/card';
@@ -11,10 +11,130 @@ import { Search, Filter, Star, Shield, Smartphone, Heart, ShoppingCart, Package 
 import { ImageWithFallback } from '../shared/components/figma/ImageWithFallback';
 import { toast } from 'sonner';
 import { Product } from '../types';
+import { cn } from '../components/ui/utils';
+import { ProductDetailModal } from '../components/products/ProductDetailModal';
 
 interface ProductsPageProps {
   onNavigate: (path: string) => void;
   onTryAR: (product: Product) => void;
+}
+
+const PLACEHOLDER_IMAGE =
+  'https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=400&h=400&fit=crop';
+
+type ApiMerchant = {
+  _id?: string;
+  name?: string;
+  merchantVerified?: boolean;
+};
+
+type ApiPublishedProduct = {
+  _id: string;
+  title: string;
+  description?: string;
+  price: number;
+  currency?: string;
+  category?: string;
+  images?: string[];
+  imageUrl?: string;
+  stock?: number;
+  merchant?: ApiMerchant | null;
+  createdAt?: string;
+};
+
+interface CatalogCard {
+  id: string;
+  name: string;
+  price: number;
+  currency: string;
+  originalPrice?: number;
+  image: string;
+  rating: number;
+  reviews: number;
+  seller: string;
+  merchantId: string;
+  category: Product['category'];
+  isVerified: boolean;
+  isOnSale: boolean;
+  arAvailable: boolean;
+  purity: string;
+  weight: string;
+  createdAtMs: number;
+  description: string;
+}
+
+function mapCategoryTitleToSlug(title: string | undefined): Product['category'] {
+  const map: Record<string, Product['category']> = {
+    Rings: 'rings',
+    Necklaces: 'necklaces',
+    Earrings: 'earrings',
+    Bracelets: 'bracelets',
+    Pendants: 'pendants',
+    Biscuits: 'biscuits',
+    Coins: 'coins',
+    Bars: 'bars',
+  };
+  return map[title || ''] ?? 'other';
+}
+
+function mapApiProductToCard(p: ApiPublishedProduct): CatalogCard {
+  const imgs = [...(p.images || [])].filter(Boolean);
+  const image = imgs[0] || p.imageUrl || PLACEHOLDER_IMAGE;
+  const createdAtMs = p.createdAt ? Date.parse(p.createdAt) : 0;
+  const m = p.merchant;
+  let merchantId = '';
+  let seller = 'Merchant';
+  let isVerified = false;
+  if (typeof m === 'string') {
+    merchantId = m;
+  } else if (m && typeof m === 'object') {
+    if (m._id) merchantId = String(m._id);
+    if (m.name) seller = m.name;
+    isVerified = Boolean(m.merchantVerified);
+  }
+
+  return {
+    id: p._id,
+    name: p.title,
+    price: p.price,
+    currency: (p.currency || 'LKR').toUpperCase(),
+    image,
+    rating: 5,
+    reviews: 0,
+    seller,
+    merchantId,
+    category: mapCategoryTitleToSlug(p.category),
+    isVerified,
+    isOnSale: false,
+    // Show AR for any listed product: preview uses the same image passed to the try-on modal.
+    arAvailable: true,
+    purity: '—',
+    weight: typeof p.stock === 'number' && p.stock >= 0 ? `Stock: ${p.stock}` : '—',
+    createdAtMs: Number.isFinite(createdAtMs) ? createdAtMs : 0,
+    description: p.description || '',
+  };
+}
+
+function toProductForAR(card: CatalogCard): Product {
+  return {
+    id: card.id,
+    name: card.name,
+    description: card.description,
+    price: card.price,
+    currency: card.currency === 'USD' ? 'USD' : 'LKR',
+    category: card.category,
+    images: [card.image],
+    karat: 18,
+    weight: 0,
+    seller: {
+      id: card.merchantId || 'merchant',
+      name: card.seller,
+      verified: card.isVerified,
+      rating: card.rating,
+    },
+    inStock: true,
+    featured: card.isOnSale,
+  };
 }
 
 export const ProductsPage: React.FC<ProductsPageProps> = ({ onNavigate: _onNavigate, onTryAR }) => {
@@ -24,6 +144,10 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ onNavigate: _onNavig
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState('featured');
   const [priceRange, setPriceRange] = useState('all');
+  const [products, setProducts] = useState<CatalogCard[]>([]);
+  const [catalogLoading, setCatalogLoading] = useState(true);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
+  const [detailProductId, setDetailProductId] = useState<string | null>(null);
 
   const categories = [
     { value: 'all', label: 'All Categories' },
@@ -31,102 +155,44 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ onNavigate: _onNavig
     { value: 'necklaces', label: t('products.category.necklaces') },
     { value: 'earrings', label: t('products.category.earrings') },
     { value: 'bracelets', label: t('products.category.bracelets') },
+    { value: 'pendants', label: t('products.category.pendants') },
+    { value: 'biscuits', label: t('products.category.biscuits') },
+    { value: 'coins', label: t('products.category.coins') },
+    { value: 'bars', label: t('products.category.bars') },
   ];
 
-  const products = [
-    {
-      id: 1,
-      name: 'Royal Crown Ring',
-      price: 125000,
-      originalPrice: 150000,
-      image: 'https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=400&h=400&fit=crop',
-      rating: 4.9,
-      reviews: 124,
-      seller: 'Golden Palace',
-      category: 'rings',
-      isVerified: true,
-      isOnSale: true,
-      arAvailable: true,
-      purity: '22K',
-      weight: '8.5g'
-    },
-    {
-      id: 2,
-      name: 'Heritage Necklace',
-      price: 85000,
-      image: 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&h=400&fit=crop',
-      rating: 4.8,
-      reviews: 89,
-      seller: 'Royal Jewelers',
-      category: 'necklaces',
-      isVerified: true,
-      isOnSale: false,
-      arAvailable: true,
-      purity: '18K',
-      weight: '12.3g'
-    },
-    {
-      id: 3,
-      name: 'Diamond Earrings',
-      price: 65000,
-      image: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=400&h=400&fit=crop',
-      rating: 4.7,
-      reviews: 156,
-      seller: 'Gem Palace',
-      category: 'earrings',
-      isVerified: true,
-      isOnSale: false,
-      arAvailable: true,
-      purity: '18K',
-      weight: '6.2g'
-    },
-    {
-      id: 4,
-      name: 'Traditional Kada',
-      price: 95000,
-      image: 'https://images.unsplash.com/photo-1611652022419-a9419f74343d?w=400&h=400&fit=crop',
-      rating: 4.6,
-      reviews: 78,
-      seller: 'Heritage Gold',
-      category: 'bracelets',
-      isVerified: true,
-      isOnSale: false,
-      arAvailable: false,
-      purity: '22K',
-      weight: '25.4g'
-    },
-    {
-      id: 5,
-      name: 'Elegant Chain',
-      price: 45000,
-      originalPrice: 55000,
-      image: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=400&h=400&fit=crop',
-      rating: 4.5,
-      reviews: 92,
-      seller: 'Modern Gold',
-      category: 'necklaces',
-      isVerified: true,
-      isOnSale: true,
-      arAvailable: true,
-      purity: '18K',
-      weight: '8.9g'
-    },
-    {
-      id: 6,
-      name: 'Designer Ring Set',
-      price: 175000,
-      image: 'https://images.unsplash.com/photo-1603561591411-07134e71a2a9?w=400&h=400&fit=crop',
-      rating: 4.9,
-      reviews: 203,
-      seller: 'Luxury Gems',
-      category: 'rings',
-      isVerified: true,
-      isOnSale: false,
-      arAvailable: true,
-      purity: '22K',
-      weight: '15.7g'
-    }
-  ];
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      setCatalogLoading(true);
+      setCatalogError(null);
+      try {
+        const res = await fetch('/api/v1/catalog/products?limit=100');
+        const json = (await res.json()) as {
+          success?: boolean;
+          data?: { products?: ApiPublishedProduct[] };
+          error?: string;
+        };
+        if (!res.ok || !json.success || !json.data?.products) {
+          throw new Error(json.error || `Could not load products (${res.status})`);
+        }
+        if (!cancelled) {
+          setProducts(json.data.products.map(mapApiProductToCard));
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setCatalogError(e instanceof Error ? e.message : 'Failed to load products');
+          setProducts([]);
+        }
+      } finally {
+        if (!cancelled) setCatalogLoading(false);
+      }
+    };
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -148,14 +214,14 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ onNavigate: _onNavig
       case 'rating':
         return b.rating - a.rating;
       case 'newest':
-        return b.id - a.id;
+        return b.createdAtMs - a.createdAtMs;
       default:
         return 0;
     }
   });
 
-  const formatPrice = (price: number) => {
-    return `LKR ${price.toLocaleString()}`;
+  const formatPrice = (currency: string, price: number) => {
+    return `${currency} ${price.toLocaleString()}`;
   };
 
   return (
@@ -168,6 +234,12 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ onNavigate: _onNavig
             Discover premium gold jewelry from verified sellers
           </p>
         </div>
+
+        {catalogError && (
+          <div className="mb-6 rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            {catalogError}
+          </div>
+        )}
 
         {/* Filters */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
@@ -225,7 +297,9 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ onNavigate: _onNavig
         {/* Results Count */}
         <div className="flex items-center justify-between mb-6">
           <p className="text-muted-foreground">
-            Showing {sortedProducts.length} of {products.length} products
+            {catalogLoading && products.length === 0
+              ? 'Loading catalog…'
+              : `Showing ${sortedProducts.length} of ${products.length} products`}
           </p>
           <Button variant="outline" size="sm">
             <Filter className="h-4 w-4 mr-2" />
@@ -234,9 +308,29 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ onNavigate: _onNavig
         </div>
 
         {/* Products Grid */}
+        {catalogLoading && products.length === 0 ? (
+          <div className="py-16 text-center text-muted-foreground">Loading products…</div>
+        ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {sortedProducts.map((product) => (
-            <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow group">
+            <Card
+              key={product.id}
+              tabIndex={0}
+              onClick={(e) => {
+                if ((e.target as HTMLElement).closest('button')) return;
+                setDetailProductId(product.id);
+              }}
+              onKeyDown={(e) => {
+                if (e.key !== 'Enter' && e.key !== ' ') return;
+                if ((e.target as HTMLElement).closest('button')) return;
+                e.preventDefault();
+                setDetailProductId(product.id);
+              }}
+              className={cn(
+                'overflow-hidden transition-shadow hover:shadow-lg group',
+                'cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+              )}
+            >
               <div className="relative aspect-square overflow-hidden">
                 <ImageWithFallback
                   src={product.image}
@@ -266,7 +360,8 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ onNavigate: _onNavig
                           size="sm" 
                           variant="secondary" 
                           className="w-10 h-10 p-0"
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             toast.success('Added to wishlist', {
                               description: `${product.name} has been saved to your wishlist.`,
                             });
@@ -286,28 +381,9 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ onNavigate: _onNavig
                             size="sm" 
                             variant="secondary" 
                             className="w-10 h-10 p-0"
-                            onClick={() => {
-                              // Convert mock product to Product type
-                              const productForAR: Product = {
-                                id: product.id.toString(),
-                                name: product.name,
-                                description: '',
-                                price: product.price,
-                                currency: 'LKR',
-                                category: product.category as Product['category'],
-                                images: [product.image],
-                                karat: parseInt(product.purity) || 18,
-                                weight: parseFloat(product.weight) || 0,
-                                seller: {
-                                  id: '1',
-                                  name: product.seller,
-                                  verified: product.isVerified,
-                                  rating: product.rating,
-                                },
-                                inStock: true,
-                                featured: product.isOnSale,
-                              };
-                              onTryAR(productForAR);
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onTryAR(toProductForAR(product));
                             }}
                           >
                             <Smartphone className="h-4 w-4" />
@@ -346,11 +422,11 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ onNavigate: _onNavig
                   {/* Price */}
                   <div className="flex items-center space-x-2">
                     <span className="text-xl font-bold text-primary">
-                      {formatPrice(product.price)}
+                      {formatPrice(product.currency, product.price)}
                     </span>
                     {product.originalPrice && (
                       <span className="text-sm text-muted-foreground line-through">
-                        {formatPrice(product.originalPrice)}
+                        {formatPrice(product.currency, product.originalPrice)}
                       </span>
                     )}
                   </div>
@@ -360,9 +436,10 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ onNavigate: _onNavig
                     <div className="flex space-x-2">
                       <Button 
                         className="flex-1 kgf-gradient text-white"
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           addItem({
-                            id: String(product.id),
+                            id: product.id,
                             name: product.name,
                             priceLkr: product.price,
                             image: product.image,
@@ -370,6 +447,7 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ onNavigate: _onNavig
                             purity: product.purity,
                             weight: product.weight,
                             quantity: 1,
+                            ...(product.merchantId ? { merchantId: product.merchantId } : {}),
                           });
                           toast.success('Added to cart', {
                             description: `${product.name} has been added to your shopping cart.`,
@@ -385,28 +463,9 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ onNavigate: _onNavig
                             <Button 
                               variant="outline" 
                               size="sm"
-                              onClick={() => {
-                                // Convert mock product to Product type
-                                const productForAR: Product = {
-                                  id: product.id.toString(),
-                                  name: product.name,
-                                  description: '',
-                                  price: product.price,
-                                  currency: 'LKR',
-                                  category: product.category as Product['category'],
-                                  images: [product.image],
-                                  karat: parseInt(product.purity) || 18,
-                                  weight: parseFloat(product.weight) || 0,
-                                  seller: {
-                                    id: '1',
-                                    name: product.seller,
-                                    verified: product.isVerified,
-                                    rating: product.rating,
-                                  },
-                                  inStock: true,
-                                  featured: product.isOnSale,
-                                };
-                                onTryAR(productForAR);
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onTryAR(toProductForAR(product));
                               }}
                             >
                               <Smartphone className="h-4 w-4" />
@@ -424,18 +483,10 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ onNavigate: _onNavig
             </Card>
           ))}
         </div>
-
-        {/* Load More */}
-        {sortedProducts.length > 0 && (
-          <div className="text-center mt-12">
-            <Button variant="outline" size="lg">
-              Load More Products
-            </Button>
-          </div>
         )}
 
         {/* No Results */}
-        {sortedProducts.length === 0 && (
+        {!catalogLoading && sortedProducts.length === 0 && (
           <div className="text-center py-16">
             <div className="flex justify-center mb-4">
               <div className="p-4 rounded-full bg-muted">
@@ -473,6 +524,18 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ onNavigate: _onNavig
           </div>
         )}
       </div>
+
+      <ProductDetailModal
+        productId={detailProductId}
+        open={detailProductId !== null}
+        onOpenChange={(next) => {
+          if (!next) setDetailProductId(null);
+        }}
+        onTryAR={onTryAR}
+        onAddToCart={(payload) => {
+          addItem({ ...payload, quantity: 1 });
+        }}
+      />
     </div>
   );
 };
