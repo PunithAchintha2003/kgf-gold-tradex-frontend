@@ -11,7 +11,16 @@ export type Theme = 'light' | 'dark';
 
 export type Currency = 'USD' | 'LKR';
 
-export type ProductCategory = 'rings' | 'necklaces' | 'earrings' | 'bracelets' | 'other';
+export type ProductCategory =
+  | 'rings'
+  | 'necklaces'
+  | 'earrings'
+  | 'bracelets'
+  | 'pendants'
+  | 'biscuits'
+  | 'coins'
+  | 'bars'
+  | 'other';
 
 export interface BaseEntity {
   id: string;

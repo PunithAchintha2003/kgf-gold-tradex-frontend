@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from
 import { useApp } from '../contexts/AppContext';
 import { CartProvider } from '../contexts/CartContext';
 import { CartSheet } from '../components/cart/CartSheet';
+import { CheckoutReturnListener } from '../components/cart/CheckoutReturnListener';
 import { Header } from '../layouts/Header';
 import { ErrorBoundary } from '../shared/components/ErrorBoundary';
 import { PageLoader } from '../shared/components/LoadingSpinner';
@@ -25,6 +26,9 @@ const ARTryOnModal = lazy(() => import('../shared/components/ARTryOnModal').then
 const ChatModal = lazy(() => import('../shared/components/ChatModal').then(module => ({ default: module.ChatModal })));
 const PricePredictorPage = lazy(() => import('../components/price-predictor/PricePredictorPage'));
 const TradePage = lazy(() => import('../pages/TradePage'));
+const PurchaseHistoryPage = lazy(() =>
+  import('../pages/PurchaseHistoryPage').then((m) => ({ default: m.PurchaseHistoryPage })),
+);
 
 /**
  * App routes component
@@ -77,7 +81,15 @@ const AppRoutes: React.FC = () => {
               <Route path={ROUTES.TRADE} element={<TradePage />} />
               <Route path={ROUTES.LOGIN} element={<LoginPage onNavigate={handleNavigate} />} />
               <Route path={ROUTES.REGISTER} element={<RegisterPage onNavigate={handleNavigate} />} />
-              
+              <Route
+                path={ROUTES.PURCHASE_HISTORY}
+                element={
+                  <ProtectedRoute onNavigate={handleNavigate}>
+                    <PurchaseHistoryPage onNavigate={handleNavigate} />
+                  </ProtectedRoute>
+                }
+              />
+
               {/* Protected Dashboard Routes */}
               <Route
                 path={ROUTES.DASHBOARD.CUSTOMER}
@@ -174,6 +186,7 @@ export const Router: React.FC = () => {
   return (
     <BrowserRouter>
       <CartProvider>
+        <CheckoutReturnListener />
         <AppRoutes />
         <CartSheet />
       </CartProvider>

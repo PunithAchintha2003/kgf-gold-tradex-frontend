@@ -11,6 +11,7 @@ export const ROUTES = {
   TRADE: '/trade',
   LOGIN: '/login',
   REGISTER: '/register',
+  PURCHASE_HISTORY: '/purchase-history',
   DASHBOARD: {
     ROOT: '/dashboard',
     CUSTOMER: '/dashboard/customer',
@@ -59,6 +60,11 @@ export const ROUTE_CONFIG: Record<string, RouteConfig> = {
   [ROUTES.REGISTER]: {
     path: ROUTES.REGISTER,
     title: 'Register',
+  },
+  [ROUTES.PURCHASE_HISTORY]: {
+    path: ROUTES.PURCHASE_HISTORY,
+    requiresAuth: true,
+    title: 'Purchase history',
   },
   [ROUTES.DASHBOARD.CUSTOMER]: {
     path: ROUTES.DASHBOARD.CUSTOMER,

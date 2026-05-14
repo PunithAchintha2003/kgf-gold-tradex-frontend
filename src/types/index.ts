@@ -4,7 +4,16 @@ export interface Product {
   description: string;
   price: number;
   currency: 'USD' | 'LKR';
-  category: 'rings' | 'necklaces' | 'earrings' | 'bracelets' | 'other';
+  category:
+    | 'rings'
+    | 'necklaces'
+    | 'earrings'
+    | 'bracelets'
+    | 'pendants'
+    | 'biscuits'
+    | 'coins'
+    | 'bars'
+    | 'other';
   images: string[];
   karat: number;
   weight: number;
