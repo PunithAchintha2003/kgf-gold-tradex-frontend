@@ -83,12 +83,7 @@ export const ARTryOnModal: React.FC<ARTryOnModalProps> = ({ isOpen, onClose, pro
             ) : (
               <>
                 {/* Simulated Camera Feed */}
-                <div className="absolute inset-0">
-                  <ImageWithFallback
-                    src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&h=600&fit=crop&crop=face"
-                    alt="Camera feed"
-                    className="w-full h-full object-cover"
-                  />
+                <div className="absolute inset-0 bg-gradient-to-br from-gray-900 to-black">
                   
                   {/* AR Overlay */}
                   <div 
@@ -103,7 +98,11 @@ export const ARTryOnModal: React.FC<ARTryOnModalProps> = ({ isOpen, onClose, pro
                       <ImageWithFallback
                         src={product.images[0]}
                         alt={product.name}
-                        className="w-full h-full object-contain opacity-80 drop-shadow-lg"
+                        className="w-full h-full object-contain drop-shadow-2xl"
+                        style={{
+                          mixBlendMode: 'multiply',
+                          filter: 'brightness(1.3) contrast(1.1)',
+                        }}
                       />
                     )}
                   </div>

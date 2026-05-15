@@ -17,6 +17,7 @@ import { useApp } from '../../contexts/AppContext';
 import { useCart } from '../../contexts/CartContext';
 import { ROUTES } from '../../core/config/routes.config';
 import { ImageWithFallback } from '../../shared/components/figma/ImageWithFallback';
+import { getNodeApiV1Base } from '@/utils/env';
 
 export const CartSheet: React.FC = () => {
   const navigate = useNavigate();
@@ -46,7 +47,7 @@ export const CartSheet: React.FC = () => {
     }
     setCheckoutLoading(true);
     try {
-      const res = await fetch('/api/v1/checkout/cart-session', {
+      const res = await fetch(`${getNodeApiV1Base()}/checkout/cart-session`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -20,6 +20,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { ImageWithFallback } from '../shared/components/figma/ImageWithFallback';
+import { getNodeApiV1Base } from '@/utils/env';
 
 interface HomePageProps {
   onNavigate: (path: string) => void;
@@ -109,7 +110,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
     const fetchProducts = async () => {
       setIsLoading(true);
       try {
-        const res = await fetch('/api/v1/catalog/products?limit=100');
+        const res = await fetch(`${getNodeApiV1Base()}/catalog/products?limit=100`);
         const json = (await res.json()) as {
           success?: boolean;
           data?: { products?: ApiPublishedProduct[] };

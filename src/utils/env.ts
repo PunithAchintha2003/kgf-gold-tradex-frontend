@@ -3,6 +3,29 @@
  * Provides type-safe access to environment variables
  */
 
+/**
+ * Base URL for the Node commerce API (`/api/v1` on the MERN backend).
+ * In development and on localhost preview, returns a relative path so the Vite proxy can route traffic.
+ * On a deployed host (e.g. Vercel), uses `VITE_NODE_API_BASE_URL` (origin like `https://your-api.onrender.com`).
+ */
+export function getNodeApiV1Base(): string {
+  if (import.meta.env.DEV) {
+    return '/api/v1';
+  }
+  if (typeof window !== 'undefined') {
+    const h = window.location.hostname;
+    if (h === 'localhost' || h === '127.0.0.1') {
+      return '/api/v1';
+    }
+  }
+  const raw = (import.meta.env['VITE_NODE_API_BASE_URL'] as string | undefined)?.trim();
+  if (!raw) {
+    return '/api/v1';
+  }
+  const u = raw.replace(/\/$/, '');
+  return u.endsWith('/api/v1') ? u : `${u}/api/v1`;
+}
+
 export const env = {
   // API Configuration
   // In development, use relative URLs to leverage Vite proxy (bypasses CORS)
@@ -38,7 +61,7 @@ export const env = {
  * Validates that required environment variables are set
  */
 export function validateEnv(): void {
-  const required = ['VITE_API_BASE_URL'] as const;
+  const required = ['VITE_API_BASE_URL', 'VITE_NODE_API_BASE_URL'] as const;
   const missing: string[] = [];
 
   required.forEach((key) => {

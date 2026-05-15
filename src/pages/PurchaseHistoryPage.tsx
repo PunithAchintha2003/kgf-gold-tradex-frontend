@@ -15,6 +15,7 @@ import { ROUTES } from '../core/config/routes.config';
 import { ImageWithFallback } from '../shared/components/figma/ImageWithFallback';
 import { cn } from '../components/ui/utils';
 import { useTheme } from '../hooks/useTheme';
+import { getNodeApiV1Base } from '@/utils/env';
 
 const PLACEHOLDER_IMAGE =
   'https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=400&h=400&fit=crop';
@@ -218,7 +219,7 @@ export const PurchaseHistoryPage: React.FC<PurchaseHistoryPageProps> = ({ onNavi
       if (!token) {
         throw new Error('Not signed in');
       }
-      const res = await fetch('/api/v1/checkout/orders', {
+      const res = await fetch(`${getNodeApiV1Base()}/checkout/orders`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const json = (await res.json()) as {

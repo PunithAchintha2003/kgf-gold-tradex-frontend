@@ -2,6 +2,8 @@
  * Authentication service for API calls
  */
 
+import { getNodeApiV1Base } from '@/utils/env';
+
 export interface RegisterData {
   name: string;
   email: string;
@@ -78,27 +80,7 @@ export class ApiRequestError extends Error {
   }
 }
 
-// Get API base URL - use relative URLs in development to leverage Vite proxy
-// The Vite proxy routes /api/v1/auth and /api/v1/users to Node.js backend (5001)
-// and all other /api/* to Python backend (8001)
-const getApiBaseUrl = (): string => {
-  // In development, always use relative URLs to leverage Vite proxy
-  if (import.meta.env.DEV) {
-    return '/api/v1';
-  }
-  
-  // In production, check if env var is set
-  const envUrl = import.meta.env.VITE_API_BASE_URL;
-  if (envUrl) {
-    const url = envUrl.endsWith('/') ? envUrl.slice(0, -1) : envUrl;
-    return url.endsWith('/api/v1') ? url : `${url}/api/v1`;
-  }
-  
-  // Default to Node.js backend for auth endpoints
-  return 'http://localhost:5001/api/v1';
-};
-
-const API_BASE_URL = getApiBaseUrl();
+const API_BASE_URL = getNodeApiV1Base();
 
 /**
  * Get stored access token

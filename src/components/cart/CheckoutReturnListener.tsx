@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useCart } from '../../contexts/CartContext';
+import { getNodeApiV1Base } from '@/utils/env';
 
 /**
  * Handles return from Stripe Checkout (?checkout=success|cancelled on /products).
@@ -71,7 +72,7 @@ export const CheckoutReturnListener: React.FC = () => {
     void (async () => {
       try {
         const res = await fetch(
-          `/api/v1/checkout/verify-session?session_id=${encodeURIComponent(sessionId)}`,
+          `${getNodeApiV1Base()}/checkout/verify-session?session_id=${encodeURIComponent(sessionId)}`,
           { headers: { Authorization: `Bearer ${token}` } },
         );
         const json = (await res.json()) as {

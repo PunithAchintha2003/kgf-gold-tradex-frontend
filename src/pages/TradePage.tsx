@@ -1,5 +1,4 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef, useLayoutEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Box, 
   Typography, 
@@ -33,7 +32,6 @@ import { useTheme } from '../hooks/useTheme';
 import { createAppTheme } from '../theme/theme';
 import { useApp } from '../contexts/AppContext';
 import Sidebar from '../components/price-predictor/Sidebar';
-import { PublicSiteNavInline } from '../components/layout/PublicSiteNavInline';
 import { 
   useGetSpotTradePriceQuery,
   usePlaceBuyOrderMutation,
@@ -76,11 +74,6 @@ function getWalletTransactionStatusChipSx(
 }
 
 const TradePage: React.FC = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const handleSiteNavigate = useCallback((path: string) => {
-    navigate(path);
-  }, [navigate]);
   const { isDark, mode } = useTheme();
   const { isAuthenticated, user } = useApp();
   const muiTheme = useMuiTheme();
@@ -586,12 +579,6 @@ const TradePage: React.FC = () => {
           <p className="text-muted-foreground">
             Trade gold at live market prices in LKR
           </p>
-          <div className="mt-4 min-w-0 border-t border-border pt-4">
-            <PublicSiteNavInline
-              onNavigate={handleSiteNavigate}
-              currentPath={location.pathname}
-            />
-          </div>
         </div>
         
         {/* Wrap Dashboard with MUI ThemeProvider for its internal MUI components */}
