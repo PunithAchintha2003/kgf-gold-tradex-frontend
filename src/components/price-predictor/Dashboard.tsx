@@ -1990,7 +1990,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currencyUnit, onCurrencyUnitChang
                               : '0 0 6px rgba(38, 212, 180, 0.4)',
                           }}
                         />
-                        Prediction Analysis
+                        AI Prediction Analysis
                       </Typography>
                       <Tooltip
                         title="AI-generated explanation of the prediction"

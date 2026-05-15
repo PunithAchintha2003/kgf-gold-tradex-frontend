@@ -16,6 +16,7 @@ import { Star, Shield, ShoppingCart, Smartphone, Loader2, MessageSquareQuote } f
 import { toast } from 'sonner';
 import { Product } from '../../types';
 import { cn } from '../ui/utils';
+import { getNodeApiV1Base } from '@/utils/env';
 
 type ApiMerchant = { _id?: string; name?: string; merchantVerified?: boolean } | string | null;
 
@@ -193,7 +194,7 @@ export function ProductDetailModal({
     setLoading(true);
     setLoadError(null);
     try {
-      const res = await fetch(`/api/v1/catalog/products/${productId}`);
+      const res = await fetch(`${getNodeApiV1Base()}/catalog/products/${productId}`);
       const json = (await res.json()) as {
         success?: boolean;
         data?: { product: ApiProductDetail; reviews: ApiReview[]; reviewSummary: ReviewSummary };
@@ -242,7 +243,7 @@ export function ProductDetailModal({
     }
     setSubmitting(true);
     try {
-      const res = await fetch(`/api/v1/catalog/products/${productId}/reviews`, {
+      const res = await fetch(`${getNodeApiV1Base()}/catalog/products/${productId}/reviews`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

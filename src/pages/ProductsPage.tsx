@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { Product } from '../types';
 import { cn } from '../components/ui/utils';
 import { ProductDetailModal } from '../components/products/ProductDetailModal';
+import { getNodeApiV1Base } from '@/utils/env';
 
 interface ProductsPageProps {
   onNavigate: (path: string) => void;
@@ -176,7 +177,7 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ onNavigate: _onNavig
       setCatalogLoading(true);
       setCatalogError(null);
       try {
-        const res = await fetch('/api/v1/catalog/products?limit=100');
+        const res = await fetch(`${getNodeApiV1Base()}/catalog/products?limit=100`);
         const json = (await res.json()) as {
           success?: boolean;
           data?: { products?: ApiPublishedProduct[] };
