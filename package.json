@@ -7,6 +7,7 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@hookform/resolvers": "^5.2.2",
+    "@mediapipe/tasks-vision": "^0.10.35",
     "@mui/icons-material": "^7.3.2",
     "@mui/material": "^7.3.2",
     "@radix-ui/react-accordion": "^1.2.3",
@@ -101,6 +102,10 @@
     "vitest": "^2.1.9"
   },
   "scripts": {
+    "mediapipe:copy": "node scripts/copy-mediapipe-assets.js",
+    "postinstall": "node scripts/copy-mediapipe-assets.js",
+    "predev": "node scripts/copy-mediapipe-assets.js",
+    "prebuild": "node scripts/copy-mediapipe-assets.js",
     "dev": "vite --port 4000 --strictPort",
     "build": "tsc -b --force && vite build",
     "build:analyze": "tsc -b --force && vite build --mode analyze",

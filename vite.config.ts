@@ -52,6 +52,12 @@ export default defineConfig(({ mode }: { mode: string }) => ({
         secure: false,
         rewrite: (path) => path,
       },
+      '/api/v1/ar-tryon': {
+        target: 'http://localhost:5001',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path,
+      },
       // Route all other API endpoints (including spot-trade, xauusd, etc.) to Python backend (port 8001)
       '/api': {
         target: 'http://localhost:8001',
